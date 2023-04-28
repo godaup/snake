@@ -4,31 +4,36 @@ from pathlib import Path
 
 import omegaconf
 import pyxel
+import datetime
 
-from map import Map
-from snake import Snake
 from sound import SoundManager
 from states.abstract import GameState
 from states.menu import MenuState
 from states.pause import PauseState
 from states.running import RunningState
+from states.death import DeathState
 
 
-class State(Enum):
+class StateID(Enum):
     MENU = 0
     PAUSE = 1
     RUNNING = 2
+    DEATH = 3
 
 
 class Game:
     def __init__(self):
-        """define variables and start"""
-        self.cfg = None
-        self.sm = None
-        self.state = None
-        self._states = None
-        self.level_counter = 1
-        self.initialized = False
+        """define variables and start, inital values are likely overwritten immediately in start"""
+        self.cfg: omegaconf.DictConfig = omegaconf.DictConfig({})
+        self.sm: SoundManager = SoundManager()
+        self.stateID: StateID = StateID.MENU
+        self._stateIMPLs: dict[StateID, GameState] = {}
+        self.score = 0
+        self.level_counter: int = 1
+        self.initialized: bool = False
+        self.dt: datetime.timedelta = datetime.timedelta(seconds=1)
+        self.background: int = 0
+        self._ref_time = datetime.datetime = datetime.datetime.now()
         self.start()
 
     def start(self) -> None:
@@ -37,38 +42,52 @@ class Game:
             pyxel.quit()
             self.initialized = False
         self.reload_settings()
-        self.sm = SoundManager()
+        self.sm = SoundManager(effects=self.cfg.effects, music=self.cfg.music)
         pyxel.init(width=self.cfg.width, height=self.cfg.height, title='Snake', fps=self.cfg.fps,
                    display_scale=self.cfg.scale)
         self.initialized = True
         pyxel.load(filename="assets.pyxres")
-        self.state = State.MENU
-        self._states: dict[State, GameState] = {State.MENU: MenuState(self),
-                                                State.PAUSE: PauseState(self),
-                                                State.RUNNING: RunningState(self)}
+        self.stateID = StateID.MENU
+        self._stateIMPLs: dict[StateID, GameState] = {StateID.MENU: MenuState(self),
+                                                      StateID.PAUSE: PauseState(self),
+                                                      StateID.RUNNING: RunningState(self),
+                                                      StateID.DEATH: DeathState(self)}
+        self.background = self.cfg.background
         pyxel.run(self.update, self.draw)
 
     def reload_settings(self) -> None:
         """Load settings from yaml file."""
         self.cfg = omegaconf.OmegaConf.load(Path(__file__).parent / 'settings.yaml')
 
-    def change_state(self, state: State) -> None:
+    def change_state(self, state: StateID) -> None:
         """Updates state and mouse visibility."""
-        if state == self.state:
+        if state == self.stateID:
             raise RuntimeError
-        if state == State.MENU:
-            pyxel.mouse(visible=True)
-        else:
-            pyxel.mouse(visible=False)
-        self.state = state
+        # stop music
+        self.sm.interrupt()
+        # set mouse visibility
+        pyxel.mouse(visible=self._stateIMPLs[state].is_visible())
+        # play new music
+        self.sm.play(music=self._stateIMPLs[state].get_music())
+        self.stateID = state
 
     def update(self) -> None:
-        """Call correct state dependent update."""
-        self._states[self.state].update()
+        """Update dt and call correct state dependent update."""
+        now = datetime.datetime.now()
+        self.dt = now - self._ref_time
+        self._ref_time = now
+        self._stateIMPLs[self.stateID].update()
 
     def draw(self) -> None:
         """Call correct state dependent draw."""
-        self._states[self.state].draw()
+        self._stateIMPLs[self.stateID].draw()
+
+    @staticmethod
+    def center_text(text, page_width, char_width=pyxel.FONT_WIDTH):
+        """Helper function for calculating the start x value for centered text."""
+
+        text_width = len(text) * char_width
+        return (page_width - text_width) // 2
 
 
 if __name__ == "__main__":

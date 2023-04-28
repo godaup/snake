@@ -5,3 +5,4 @@ effects: True
 width: 800
 height: 400
 scale: 8
+background: 0
