@@ -1,33 +1,31 @@
 """ main pyxel game engine """
+import datetime
 from enum import Enum
 from pathlib import Path
 
 import omegaconf
 import pyxel
-import datetime
 
 from sound import SoundManager
-from states.abstract import GameState
-from states.menu import MenuState
-from states.pause import PauseState
-from states.running import RunningState
-from states.death import DeathState
+from states.abstract import GameStateHandler
+from states.menu import MenuStateHandler
+from states.pause import PauseStateHandler
+from states.running import RunningStateHandler
+from states.death import DeathStateHandler
 
 
-class StateID(Enum):
-    MENU = 0
-    PAUSE = 1
-    RUNNING = 2
-    DEATH = 3
+from states import StateID
 
 
 class Game:
     def __init__(self):
         """define variables and start, inital values are likely overwritten immediately in start"""
+        self.next_stateID: StateID = StateID.MENU
         self.cfg: omegaconf.DictConfig = omegaconf.DictConfig({})
         self.sm: SoundManager = SoundManager()
         self.stateID: StateID = StateID.MENU
-        self._stateIMPLs: dict[StateID, GameState] = {}
+        from states.abstract import GameStateHandler
+        self._state_handlers: dict[StateID, GameStateHandler] = {}
         self.score = 0
         self.level_counter: int = 1
         self.initialized: bool = False
@@ -48,12 +46,17 @@ class Game:
         self.initialized = True
         pyxel.load(filename="assets.pyxres")
         self.stateID = StateID.MENU
-        self._stateIMPLs: dict[StateID, GameState] = {StateID.MENU: MenuState(self),
-                                                      StateID.PAUSE: PauseState(self),
-                                                      StateID.RUNNING: RunningState(self),
-                                                      StateID.DEATH: DeathState(self)}
+        self._state_handlers: dict[StateID, GameStateHandler] = {StateID.MENU: MenuStateHandler(self),
+                                                                 StateID.PAUSE: PauseStateHandler(self),
+                                                                 StateID.RUNNING: RunningStateHandler(self),
+                                                                 StateID.DEATH: DeathStateHandler(self)}
         self.background = self.cfg.background
+        self.change_state(StateID.DEATH)
         pyxel.run(self.update, self.draw)
+
+    @property
+    def handler(self) -> 'GameStateHandler':
+        return self._state_handlers[self.stateID]
 
     def reload_settings(self) -> None:
         """Load settings from yaml file."""
@@ -61,33 +64,37 @@ class Game:
 
     def change_state(self, state: StateID) -> None:
         """Updates state and mouse visibility."""
-        if state == self.stateID:
-            raise RuntimeError
+        assert isinstance(state, StateID)
         # stop music
         self.sm.interrupt()
         # set mouse visibility
-        pyxel.mouse(visible=self._stateIMPLs[state].is_visible())
+        pyxel.mouse(visible=self.handler.is_visible())
         # play new music
-        self.sm.play(music=self._stateIMPLs[state].get_music())
-        self.stateID = state
+        self.sm.play(music=self.handler.get_music())
+        # do not set stateID directly, we want update to be performed first on the new handler
+        self.next_stateID = state
 
     def update(self) -> None:
         """Update dt and call correct state dependent update."""
         now = datetime.datetime.now()
         self.dt = now - self._ref_time
         self._ref_time = now
-        self._stateIMPLs[self.stateID].update()
+        self.handler.update()
 
     def draw(self) -> None:
         """Call correct state dependent draw."""
-        self._stateIMPLs[self.stateID].draw()
+        self.handler.draw()
+        self.stateID = self.next_stateID
 
-    @staticmethod
-    def center_text(text, page_width, char_width=pyxel.FONT_WIDTH):
-        """Helper function for calculating the start x value for centered text."""
+        # debugging
+        msg = f"{self.stateID}"
+        pyxel.text(self.handler.center_text(msg), 1, msg, 6)
 
-        text_width = len(text) * char_width
-        return (page_width - text_width) // 2
+    def restart(self):
+        self.score = 0
+        self.level_counter = 1
+        self._state_handlers[StateID.RUNNING] = RunningStateHandler(self)
+        self.change_state(state=StateID.RUNNING)
 
 
 if __name__ == "__main__":

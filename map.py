@@ -1,10 +1,13 @@
+from snake import Vec2
+import pyxel
+
 class Map:
 
     def __init__(self, level: int):
-        pass
+        self.pos = Vec2(100, 100)
 
     def update(self):
         pass
 
     def draw(self):
-        pass
+        pyxel.cls(col=3)

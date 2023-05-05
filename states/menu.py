@@ -1,8 +1,8 @@
-from abstract import GameState
+from .abstract import GameStateHandler
 import pyxel
 
 
-class MenuState(GameState):
+class MenuStateHandler(GameStateHandler):
     @staticmethod
     def is_visible() -> bool:
         return True
