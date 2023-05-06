@@ -10,10 +10,10 @@ from snake import Snake, Vec2
 if TYPE_CHECKING:
     from main import Game
 
-HEIGHT_SCORE = pyxel.FONT_HEIGHT
 COL_SCORE = 6
 COL_SCORE_BACKGROUND = 5
 
+TURN_SPEED = 9
 
 class RunningStateHandler(GameStateHandler):
 
@@ -33,15 +33,15 @@ class RunningStateHandler(GameStateHandler):
         if pyxel.btn(pyxel.KEY_P):
             self.game.change_state(state=StateID.PAUSE)
         if pyxel.btn(pyxel.KEY_LEFT) or pyxel.btn(pyxel.GAMEPAD1_BUTTON_DPAD_LEFT):
-            self.snake.turn(-5)
+            self.snake.turn(-TURN_SPEED)
         elif pyxel.btn(pyxel.KEY_RIGHT) or pyxel.btn(pyxel.GAMEPAD1_BUTTON_DPAD_RIGHT):
-            self.snake.turn(5)
-        self.snake.update()
-        # if self.snake.self_intersect():
-            # self.game.change_state(state=StateID.DEATH)
+            self.snake.turn(TURN_SPEED)
+        self.snake.update(self.game.dt)
+        if self.snake.self_intersect():
+            self.game.change_state(state=StateID.DEATH)
 
     def draw(self) -> None:
         self.map.draw()
         self.snake.draw()
-        pyxel.rect(0, 0, self.game.cfg.width, HEIGHT_SCORE, self.game.background)
+        pyxel.rect(0, 0, self.game.cfg.width, pyxel.FONT_HEIGHT, self.game.background)
         pyxel.text(1, 1, f"{self.game.score:04}", COL_SCORE)

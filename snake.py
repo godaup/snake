@@ -1,3 +1,4 @@
+import datetime
 from copy import copy
 from dataclasses import dataclass
 
@@ -6,12 +7,14 @@ import pyxel
 COL_BODY = 11
 COL_HEAD = 7
 
+SPAWN_DELAY = datetime.timedelta(microseconds=300)
+
 
 @dataclass
 class Vec2:
     """A simple 2D vector"""
-    x: int = 0
-    y: int = 0
+    x: float = 0
+    y: float = 0
 
     def __add__(self, other):
         if not isinstance(other, Vec2):
@@ -19,15 +22,15 @@ class Vec2:
         return Vec2(self.x + other.x, self.y + other.y)
 
     def __sub__(self, other):
-        return self + -1 * other
+        return Vec2(self.x - other.x, self.y - other.y)
 
     def __mul__(self, other):
-        if not isinstance(other, int):
+        if not (isinstance(other, int) or isinstance(other, float)):
             raise ValueError
         return Vec2(other * self.x, other * self.y)
 
-    def __len__(self):
-        pyxel.sqrt(self.x ** 2 + self.y ** 2)
+    def length(self):
+        return pyxel.sqrt(self.x ** 2 + self.y ** 2)
 
 
 class SnakeSeg:
@@ -50,7 +53,11 @@ class Snake:
         self.orient: int = orient
         self.speed: float = speed
         self.segs: list[SnakeSeg] = [SnakeSeg(pos, self.size, COL_HEAD)]  #
-        self.grow: int = 5
+        self.grow: int = 200
+        self.delay = datetime.timedelta(seconds=0)
+
+    def __len__(self):
+        return len(self.segs)
 
     @property
     def head(self) -> SnakeSeg:
@@ -63,23 +70,29 @@ class Snake:
         for seg in self.segs:
             seg.draw()
 
-    def update(self):
+    def update(self, dt: datetime.timedelta):
         previous = None
         for ix, seg in enumerate(self.segs):
             if ix == 0:
-                new = Vec2(x=self.head.pos.x + pyxel.ceil(self.speed * (pyxel.cos(self.orient))),
-                           y=self.head.pos.y + pyxel.ceil(self.speed * (pyxel.sin(self.orient))))
+                new = Vec2(x=self.head.pos.x + (self.speed * (pyxel.cos(self.orient))),
+                           y=self.head.pos.y + (self.speed * (pyxel.sin(self.orient))))
             else:
                 new = previous
             previous = copy(seg.pos)
             seg.pos = new
 
         if self.grow > 0:
-            self.segs.append(SnakeSeg(pos=previous, size=self.size, col=COL_BODY))
-            self.grow -= 1
+            if self.delay < SPAWN_DELAY:
+                self.delay += dt
+            else:
+                self.segs.append(SnakeSeg(pos=previous, size=self.size, col=COL_BODY))
+                self.grow -= 1
+                self.delay = datetime.timedelta(seconds=0)
 
     def self_intersect(self) -> bool:
-        return any([len(self.head.pos - other.pos) < self.size for other in self.segs[1:]])
+        if len(self) < 4:
+            return False
+        return any([(self.head.pos - other.pos).length() < self.size for other in self.segs[3:]])
 
     def head_in_box(self, x, y, h, w) -> bool:
         if x <= self.head.pos.x <= x + w:
@@ -89,6 +102,6 @@ class Snake:
         else:
             # check all 4 corners
             for vec in [Vec2(x, y), Vec2(x+w, y), Vec2(x, y+h), Vec2(x+w, y+h)]:
-                if len(self.head.pos - vec.pos) < self.size:
+                if (self.head.pos - vec).length() < self.size:
                     return True
         return False
