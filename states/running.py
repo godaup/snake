@@ -14,13 +14,16 @@ COL_SCORE = 6
 COL_SCORE_BACKGROUND = 5
 
 TURN_SPEED = 9
+MOVE_SPEED = 1.3
+SNAKE_SIZE = 2
+
 
 class RunningStateHandler(GameStateHandler):
 
     def __init__(self, game: 'Game'):
         super().__init__(game=game)
-        self.map = Map(level=game.level_counter)
-        self.snake = Snake(pos=self.map.pos, orient=45, size=5, speed=3)
+        self.map = Map(level=game.level_counter, game=self.game)
+        self.snake = Snake(pos=self.map.pos, orient=45, size=SNAKE_SIZE, speed=MOVE_SPEED)
 
     @staticmethod
     def is_visible() -> bool:

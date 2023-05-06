@@ -1,4 +1,8 @@
 tm: 0
 width: 256
-hight: 192
+height: 192
+
+start:
+  x: 100
+  y: 100
 
