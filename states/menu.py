@@ -11,4 +11,4 @@ class MenuStateHandler(GameStateHandler):
         pass
 
     def draw(self) -> None:
-        pyxel.cls(col=self.game.background)
+        pyxel.cls(col=self.game.cfg.area.bg)

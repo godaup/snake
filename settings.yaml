@@ -3,6 +3,17 @@ fps: 24
 music: True
 effects: True
 width: 320
-height: 198
+header:
+  h: 10
+  bg: 1
+  border: null
+footer:
+  h: 10
+  bg: 2
+  border: null
+area:
+  h: 192
+  bg: 0
+  border: null
 scale: 4
-background: 0
+text: 1

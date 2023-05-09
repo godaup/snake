@@ -1,20 +1,17 @@
 """ main pyxel game engine """
 import datetime
-from enum import Enum
 from pathlib import Path
 
 import omegaconf
 import pyxel
 
 from sound import SoundManager
+from states import StateID
 from states.abstract import GameStateHandler
+from states.death import DeathStateHandler
 from states.menu import MenuStateHandler
 from states.pause import PauseStateHandler
 from states.running import RunningStateHandler
-from states.death import DeathStateHandler
-
-
-from states import StateID
 
 
 class Game:
@@ -30,7 +27,6 @@ class Game:
         self.level_counter: int = 1
         self.initialized: bool = False
         self.dt: datetime.timedelta = datetime.timedelta(seconds=1)
-        self.background: int = 0
         self._ref_time = datetime.datetime = datetime.datetime.now()
         self.start()
 
@@ -41,7 +37,8 @@ class Game:
             self.initialized = False
         self.reload_settings()
         self.sm = SoundManager(effects=self.cfg.effects, music=self.cfg.music)
-        pyxel.init(width=self.cfg.width, height=self.cfg.height, title='Snake', fps=self.cfg.fps,
+        pyxel.init(width=self.cfg.width, height=self.cfg.header.h + self.cfg.area.h + self.cfg.footer.h, title='Snake',
+                   fps=self.cfg.fps,
                    display_scale=self.cfg.scale)
         self.initialized = True
         pyxel.load(filename="assets.pyxres")
@@ -50,7 +47,6 @@ class Game:
                                                                  StateID.PAUSE: PauseStateHandler(self),
                                                                  StateID.RUNNING: RunningStateHandler(self),
                                                                  StateID.DEATH: DeathStateHandler(self)}
-        self.background = self.cfg.background
         self.change_state(StateID.DEATH)
         pyxel.run(self.update, self.draw)
 
@@ -87,8 +83,8 @@ class Game:
         self.stateID = self.next_stateID
 
         # debugging
-        msg = f"{self.stateID}"
-        pyxel.text(self.handler.center_text(msg), 1, msg, 6)
+        # msg = f"{self.stateID}"
+        # pyxel.text(self.handler.center_text(msg), 1, msg, 6)
 
     def restart(self):
         self.score = 0

@@ -25,6 +25,6 @@ class DeathStateHandler(GameStateHandler):
         pyxel.cls(col=COL_DEATH)
         display_text = ["GAME OVER", f"{self.game.score:04}", "(Q)UIT", "(R)ESTART"]
         for i, text in enumerate(display_text):
-            y_offset = (pyxel.FONT_HEIGHT + 2) * (i - len(display_text)//2)
+            y_offset = (pyxel.FONT_HEIGHT + 2) * (i - len(display_text)//2) + self.game.cfg.header.h
             text_x = self.center_text(text)
-            pyxel.text(text_x, self.game.cfg.height // 2 + y_offset, text, COL_TEXT_DEATH)
+            pyxel.text(text_x, self.game.cfg.area.h // 2 + y_offset, text, COL_TEXT_DEATH)

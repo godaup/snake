@@ -43,8 +43,10 @@ class RunningStateHandler(GameStateHandler):
         if self.snake.self_intersect():
             self.game.change_state(state=StateID.DEATH)
 
+        self.header.text = f"{self.game.score:04}"
+
     def draw(self) -> None:
+        self.header.draw()
+        self.footer.draw()
         self.map.draw()
         self.snake.draw()
-        pyxel.rect(0, 0, self.game.cfg.width, pyxel.FONT_HEIGHT, self.game.background)
-        pyxel.text(1, 1, f"{self.game.score:04}", COL_SCORE)
