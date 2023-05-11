@@ -18,7 +18,6 @@ class Map:
         pass
 
     def draw(self):
-        pyxel.cls(col=3)
         pyxel.bltm(x=0, y=self.game.cfg.header.h, tm=self.cfg.tm, u=0, v=0, w=self.game.cfg.width, h=self.game.cfg.area.h)
 
 

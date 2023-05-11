@@ -33,7 +33,7 @@ class GameStateHandler(ABC):
     def draw(self) -> None:
         pass
 
-    def center_text(self, text, char_width=pyxel.FONT_WIDTH):
+    def center_text(self, text, char_width=pyxel.FONT_WIDTH) -> int:
         """Helper function for calculating the start x value for centered text."""
 
         text_width = len(text) * char_width

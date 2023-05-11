@@ -64,9 +64,9 @@ class Game:
         # stop music
         self.sm.interrupt()
         # set mouse visibility
-        pyxel.mouse(visible=self.handler.is_visible())
+        pyxel.mouse(visible=self._state_handlers[state].is_visible())
         # play new music
-        self.sm.play(music=self.handler.get_music())
+        self.sm.play(music=self._state_handlers[state].get_music())
         # do not set stateID directly, we want update to be performed first on the new handler
         self.next_stateID = state
 

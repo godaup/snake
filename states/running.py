@@ -1,11 +1,12 @@
 from typing import Optional, TYPE_CHECKING
 
-from .abstract import GameStateHandler
-from states import StateID
-
 import pyxel
+
 from map import Map
-from snake import Snake, Vec2
+from snake import Snake
+from states import StateID
+from widget import Widget, WIDGET_MARGIN
+from .abstract import GameStateHandler
 
 if TYPE_CHECKING:
     from main import Game
@@ -24,6 +25,19 @@ class RunningStateHandler(GameStateHandler):
         super().__init__(game=game)
         self.map = Map(level=game.level_counter, game=self.game)
         self.snake = Snake(pos=self.map.pos, orient=45, size=SNAKE_SIZE, speed=MOVE_SPEED)
+        self.score_board = Widget(x=0, y=0, w=len(self.get_score_text()) * pyxel.FONT_WIDTH + 2 * WIDGET_MARGIN, bg=10,
+                                  text_col=12)
+        self.header.add_sub_widget(self.score_board)
+        self.level_widget = Widget(x=(self.game.cfg.width + len(self.get_level_text())) / 2, y=0,
+                                   w=len(self.get_level_text()) * pyxel.FONT_WIDTH + 2 * WIDGET_MARGIN, bg=10,
+                                   text_col=12)
+        self.header.add_sub_widget(self.level_widget)
+
+    def get_score_text(self):
+        return f"Score: {self.game.score:04}"
+
+    def get_level_text(self):
+        return f"Level: {self.game.level_counter}"
 
     @staticmethod
     def is_visible() -> bool:
@@ -43,7 +57,8 @@ class RunningStateHandler(GameStateHandler):
         if self.snake.self_intersect():
             self.game.change_state(state=StateID.DEATH)
 
-        self.header.text = f"{self.game.score:04}"
+        self.score_board.text = [self.get_score_text()]
+        self.level_widget.text = [self.get_level_text()]
 
     def draw(self) -> None:
         self.header.draw()

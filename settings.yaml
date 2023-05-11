@@ -4,7 +4,7 @@ music: True
 effects: True
 width: 320
 header:
-  h: 10
+  h: 20
   bg: 1
   border: null
 footer:
