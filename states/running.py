@@ -2,6 +2,7 @@ from typing import Optional, TYPE_CHECKING
 
 import pyxel
 
+from cam import Cam
 from map import Map
 from snake import Snake
 from states import StateID
@@ -25,6 +26,7 @@ class RunningStateHandler(GameStateHandler):
         super().__init__(game=game)
         self.map = Map(level=game.level_counter, game=self.game)
         self.snake = Snake(pos=self.map.pos, orient=45, size=SNAKE_SIZE, speed=MOVE_SPEED)
+        self.cam = Cam(snake=self.snake, map=self.map, game=self.game)
         self.score_board = Widget(x=0, y=0, w=len(self.get_score_text()) * pyxel.FONT_WIDTH + 2 * WIDGET_MARGIN, bg=10,
                                   text_col=12)
         self.header.add_sub_widget(self.score_board)
@@ -37,7 +39,8 @@ class RunningStateHandler(GameStateHandler):
         return f"Score: {self.game.score:04}"
 
     def get_level_text(self):
-        return f"Level: {self.game.level_counter}"
+        #return f"Level: {self.game.level_counter}"
+        return f"X: {self.cam.offset.x:4} Y: {self.cam.offset.y:4}"
 
     @staticmethod
     def is_visible() -> bool:
@@ -47,7 +50,7 @@ class RunningStateHandler(GameStateHandler):
         return 0
 
     def update(self) -> None:
-        if pyxel.btn(pyxel.KEY_P):
+        if pyxel.btnp(pyxel.KEY_P):
             self.game.change_state(state=StateID.PAUSE)
         if pyxel.btn(pyxel.KEY_LEFT) or pyxel.btn(pyxel.GAMEPAD1_BUTTON_DPAD_LEFT):
             self.snake.turn(-TURN_SPEED)
@@ -59,9 +62,12 @@ class RunningStateHandler(GameStateHandler):
 
         self.score_board.text = [self.get_score_text()]
         self.level_widget.text = [self.get_level_text()]
+        # calc offset
+        self.cam.update()
 
     def draw(self) -> None:
+        pyxel.cls(self.game.cfg.area.bg)
         self.header.draw()
         self.footer.draw()
-        self.map.draw()
-        self.snake.draw()
+        # draw game with offset
+        self.cam.draw()

@@ -41,8 +41,8 @@ class SnakeSeg:
         self.size = size
         self.col = col
 
-    def draw(self):
-        pyxel.circ(self.pos.x, self.pos.y, self.size, self.col)
+    def draw(self, offset: Vec2):
+        pyxel.circ(self.pos.x + offset.x, self.pos.y + offset.y, self.size, self.col)
 
 
 class Snake:
@@ -66,9 +66,9 @@ class Snake:
     def turn(self, val: int):
         self.orient = (self.orient + val) % 360
 
-    def draw(self):
+    def draw(self, offset: Vec2):
         for seg in self.segs:
-            seg.draw()
+            seg.draw(offset)
 
     def update(self, dt: datetime.timedelta):
         previous = None

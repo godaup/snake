@@ -24,7 +24,7 @@ class PauseStateHandler(GameStateHandler):
 
     def update(self) -> None:
 
-        if pyxel.btn(pyxel.KEY_P):
+        if pyxel.btnp(pyxel.KEY_P):
             self.game.change_state(state=StateID.RUNNING)
 
     def draw(self) -> None:
