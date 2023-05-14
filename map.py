@@ -11,7 +11,7 @@ class Map:
     def __init__(self, level: int, game: 'Game'):
         self.cfg = omegaconf.OmegaConf.load(Path(__file__).parent / 'levels' / f'{level}.yaml')
 
-        self.pos = Vec2(self.cfg.start.x, self.cfg.start.y)
+        self.start = Vec2(self.cfg.start.x, self.cfg.start.y)
         self.game = game
 
     def update(self):

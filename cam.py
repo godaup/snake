@@ -1,12 +1,14 @@
 from typing import TYPE_CHECKING
 
+import pyxel
+
 if TYPE_CHECKING:
     from main import Game
     from map import Map
 from snake import Snake, Vec2
 
 
-CAM_CENTER_SIZE = 30
+CAM_CENTER_SIZE = 0
 
 
 class Cam:
@@ -15,33 +17,11 @@ class Cam:
         self.map: 'Map' = map
         self.game: 'Game' = game
         self.offset: Vec2 = Vec2(0, 0)
-        if self.width < 2 * CAM_CENTER_SIZE or self.height < 2 * CAM_CENTER_SIZE:
-            raise RuntimeError('CAM_CENTER_SIZE too large.')
-
-    @property
-    def height(self):
-        return self.game.cfg.area.h
-
-    @property
-    def width(self):
-        return self.game.cfg.width
-
-    @property
-    def header_offset(self):
-        return self.game.cfg.header.h
-
-    @property
-    def map_height(self):
-        return self.map.cfg.height
-
-    @property
-    def map_width(self):
-        return self.map.cfg.width
 
     def update(self):
         # set default such that snake head is at the center
-        self.offset.x = self.width / 2 - self.snake.head.pos.x
-        self.offset.y = self.height / 2 - (self.snake.head.pos.y - self.header_offset)
+        self.offset.x = self.map.cfg.width / 2 - self.snake.head.pos.x
+        self.offset.y = self.map.cfg.height / 2 - (self.snake.head.pos.y - self.game.cfg.header.h)
         # now we may need to modify based on snake position
         # top border
         self.offset.y = min(CAM_CENTER_SIZE, self.offset.y)
@@ -52,7 +32,13 @@ class Cam:
         # right border
         self.offset.x = max(-CAM_CENTER_SIZE, self.offset.x)
 
-
     def draw(self):
         self.map.draw(self.offset)
         self.snake.draw(self.offset)
+        if self.game.cfg.debug:
+            # draw collision points
+            p, q = self.snake.get_collision_points()
+            pyxel.pset(x=p.x + self.offset.x, y=p.y + self.offset.y, col=12)
+            pyxel.pset(x=q.x + self.offset.x, y=q.y + self.offset.y, col=12)
+            # draw snake center
+            pyxel.pset(x=self.snake.head.pos.x + self.offset.x, y=self.snake.head.pos.y + self.offset.y, col=15)

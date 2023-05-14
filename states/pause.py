@@ -20,7 +20,7 @@ class PauseStateHandler(GameStateHandler):
 
     @staticmethod
     def is_visible() -> bool:
-        return False
+        return True
 
     def update(self) -> None:
 
@@ -29,6 +29,3 @@ class PauseStateHandler(GameStateHandler):
 
     def draw(self) -> None:
         self.wdg.draw()
-
-
-# TODO look up button buffering in examples to avoid flickering

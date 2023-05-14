@@ -17,3 +17,4 @@ area:
   border: null
 scale: 4
 text: 1
+debug: False

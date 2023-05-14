@@ -105,3 +105,10 @@ class Snake:
                 if (self.head.pos - vec).length() < self.size:
                     return True
         return False
+
+    def get_collision_points(self) -> tuple[Vec2, Vec2]:
+        # horizontal extreme
+        hor = Vec2(x=self.head.pos.x + pyxel.cos(self.orient) * (self.size + 0), y=self.head.pos.y)
+        # vertical extreme
+        ver = Vec2(x=self.head.pos.x, y=self.head.pos.y + pyxel.sin(self.orient) * (self.size + 0))
+        return hor, ver

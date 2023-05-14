@@ -25,7 +25,7 @@ class RunningStateHandler(GameStateHandler):
     def __init__(self, game: 'Game'):
         super().__init__(game=game)
         self.map = Map(level=game.level_counter, game=self.game)
-        self.snake = Snake(pos=self.map.pos, orient=45, size=SNAKE_SIZE, speed=MOVE_SPEED)
+        self.snake = Snake(pos=self.map.start, orient=45, size=SNAKE_SIZE, speed=MOVE_SPEED)
         self.cam = Cam(snake=self.snake, map=self.map, game=self.game)
         self.score_board = Widget(x=0, y=0, w=len(self.get_score_text()) * pyxel.FONT_WIDTH + 2 * WIDGET_MARGIN, bg=10,
                                   text_col=12)
@@ -39,8 +39,9 @@ class RunningStateHandler(GameStateHandler):
         return f"Score: {self.game.score:04}"
 
     def get_level_text(self):
-        #return f"Level: {self.game.level_counter}"
-        return f"X: {self.cam.offset.x:4} Y: {self.cam.offset.y:4}"
+        return f"Level: {self.game.level_counter}"
+        #p = self.snake.get_collision_points()[0]
+        #return f"{pyxel.tilemap(0).pget(pyxel.mouse_x / 8, (pyxel.mouse_y - self.header.h) / 8)}"
 
     @staticmethod
     def is_visible() -> bool:
@@ -64,6 +65,10 @@ class RunningStateHandler(GameStateHandler):
         self.level_widget.text = [self.get_level_text()]
         # calc offset
         self.cam.update()
+        # check wall collisions
+        p, q = self.snake.get_collision_points()
+        if pyxel.tilemap(0).pget(p.x // 8, (p.y - self.header.h) // 8) == (0, 3) or pyxel.tilemap(0).pget(q.x // 8, (q.y - self.header.h) // 8) == (0, 3):
+            self.game.change_state(state=StateID.DEATH)
 
     def draw(self) -> None:
         pyxel.cls(self.game.cfg.area.bg)

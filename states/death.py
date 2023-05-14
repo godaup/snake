@@ -1,13 +1,23 @@
-from .abstract import GameStateHandler
 import pyxel
 
-from states import StateID
+from widget import Widget, WIDGET_MARGIN, TEXT_LINE_SPACING
+from .abstract import GameStateHandler
 
 COL_TEXT_DEATH = 0
 COL_DEATH = 8
 
 
 class DeathStateHandler(GameStateHandler):
+
+    def __init__(self, game):
+        super().__init__(game=game)
+        text = ["GAME OVER", "(Q)UIT", "(R)ESTART"]
+        self.wdg = Widget(x=min([self.center_text(line) for line in text]) - WIDGET_MARGIN,
+                          y=self.game.cfg.area.h // 2 + self.game.cfg.header.h + (pyxel.FONT_HEIGHT + TEXT_LINE_SPACING) * (-len(text) // 2),
+                          w=max(len(line) for line in text) * pyxel.FONT_WIDTH + 2 * WIDGET_MARGIN,
+                          h=None,
+                          bg=COL_DEATH, border=None,
+                          text=text, text_col=COL_TEXT_DEATH)
 
     def update(self) -> None:
         if pyxel.btnp(pyxel.KEY_R) or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_A):
@@ -20,11 +30,5 @@ class DeathStateHandler(GameStateHandler):
         return False
 
     def draw(self) -> None:
-        """Draw a blank screen with some text."""
-
-        pyxel.cls(col=COL_DEATH)
-        display_text = ["GAME OVER", f"{self.game.score:04}", "(Q)UIT", "(R)ESTART"]
-        for i, text in enumerate(display_text):
-            y_offset = (pyxel.FONT_HEIGHT + 2) * (i - len(display_text)//2) + self.game.cfg.header.h
-            text_x = self.center_text(text)
-            pyxel.text(text_x, self.game.cfg.area.h // 2 + y_offset, text, COL_TEXT_DEATH)
+        """Draw a widget with some text information."""
+        self.wdg.draw()

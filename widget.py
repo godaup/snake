@@ -23,7 +23,13 @@ class Widget:
                  text_col: int = TEXT_COL):
         self.x: int = x
         self.y: int = y
-        self.h: int = h if h else pyxel.FONT_HEIGHT + 2 * WIDGET_MARGIN
+        if h:
+            self.h: int = h
+        else:
+            if text and isinstance(text, list) and len(text) > 1:
+                self.h: int = (pyxel.FONT_HEIGHT * len(text)) + (len(text) - 1) * TEXT_LINE_SPACING + 2 * WIDGET_MARGIN
+            else:
+                self.h: int = pyxel.FONT_HEIGHT + 2 * WIDGET_MARGIN
         self.w: int = w
         self.bg: Optional[int] = bg
         self.border: Optional[int] = border
@@ -55,7 +61,7 @@ class Widget:
                 x_offset = WIDGET_MARGIN
 
             for ix, line in enumerate(self.text):
-                y_offset = (pyxel.FONT_HEIGHT + TEXT_LINE_SPACING) * (ix - len(self.text) // 2) + WIDGET_MARGIN
+                y_offset = (pyxel.FONT_HEIGHT + TEXT_LINE_SPACING) * ix + WIDGET_MARGIN
                 pyxel.text(self.x + x_offset, self.y + y_offset, line, self.text_col)
         for wdg in self.sub_widgets:
             wdg.draw()
