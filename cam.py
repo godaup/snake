@@ -5,10 +5,10 @@ import pyxel
 if TYPE_CHECKING:
     from main import Game
     from map import Map
-from snake import Snake, Vec2
+from snake import Snake
+from utils import Vec2
 
-
-CAM_CENTER_SIZE = 0
+CAM_CENTER_SIZE = 30
 
 
 class Cam:

@@ -27,7 +27,7 @@ class Game:
         self.level_counter: int = 1
         self.initialized: bool = False
         self.dt: datetime.timedelta = datetime.timedelta(seconds=1)
-        self._ref_time = datetime.datetime = datetime.datetime.now()
+        self._ref_time: datetime.datetime = datetime.datetime.now()
         self.start()
 
     def start(self) -> None:
@@ -89,6 +89,7 @@ class Game:
     def restart(self):
         self.score = 0
         self.level_counter = 1
+        pyxel.load(filename="assets.pyxres")
         self._state_handlers[StateID.RUNNING] = RunningStateHandler(self)
         self.change_state(state=StateID.RUNNING)
 

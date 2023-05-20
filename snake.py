@@ -1,36 +1,16 @@
 import datetime
 from copy import copy
-from dataclasses import dataclass
 
 import pyxel
 
-COL_BODY = 11
+from utils import Vec2
+
+BODY_COLS = (11, 11, 4, 3, 3)
 COL_HEAD = 7
-
+MAX_SPEED = 4
+MIN_SPEED = 1
+INIT_SPEED = 1.3
 SPAWN_DELAY = datetime.timedelta(microseconds=300)
-
-
-@dataclass
-class Vec2:
-    """A simple 2D vector"""
-    x: float = 0
-    y: float = 0
-
-    def __add__(self, other):
-        if not isinstance(other, Vec2):
-            raise ValueError
-        return Vec2(self.x + other.x, self.y + other.y)
-
-    def __sub__(self, other):
-        return Vec2(self.x - other.x, self.y - other.y)
-
-    def __mul__(self, other):
-        if not (isinstance(other, int) or isinstance(other, float)):
-            raise ValueError
-        return Vec2(other * self.x, other * self.y)
-
-    def length(self):
-        return pyxel.sqrt(self.x ** 2 + self.y ** 2)
 
 
 class SnakeSeg:
@@ -48,12 +28,12 @@ class SnakeSeg:
 class Snake:
     """Snake class."""
 
-    def __init__(self, pos: Vec2, orient: int, speed: float, size: int):
+    def __init__(self, pos: Vec2, orient: int, size: int):
         self.size: int = size
         self.orient: int = orient
-        self.speed: float = speed
+        self._speed: float = INIT_SPEED
         self.segs: list[SnakeSeg] = [SnakeSeg(pos, self.size, COL_HEAD)]  #
-        self.grow: int = 200
+        self.grow: int = 20
         self.delay = datetime.timedelta(seconds=0)
 
     def __len__(self):
@@ -62,6 +42,14 @@ class Snake:
     @property
     def head(self) -> SnakeSeg:
         return self.segs[0]
+
+    @property
+    def speed(self):
+        return self._speed
+
+    @speed.setter
+    def speed(self, val):
+        self._speed = max(min(val, MAX_SPEED), MIN_SPEED)
 
     def turn(self, val: int):
         self.orient = (self.orient + val) % 360
@@ -74,8 +62,8 @@ class Snake:
         previous = None
         for ix, seg in enumerate(self.segs):
             if ix == 0:
-                new = Vec2(x=self.head.pos.x + (self.speed * (pyxel.cos(self.orient))),
-                           y=self.head.pos.y + (self.speed * (pyxel.sin(self.orient))))
+                new = Vec2(x=self.head.pos.x + (self._speed * (pyxel.cos(self.orient))),
+                           y=self.head.pos.y + (self._speed * (pyxel.sin(self.orient))))
             else:
                 new = previous
             previous = copy(seg.pos)
@@ -85,14 +73,21 @@ class Snake:
             if self.delay < SPAWN_DELAY:
                 self.delay += dt
             else:
-                self.segs.append(SnakeSeg(pos=previous, size=self.size, col=COL_BODY))
+                self.segs.append(SnakeSeg(pos=previous, size=self.size, col=BODY_COLS[len(self) % len(BODY_COLS)]))
                 self.grow -= 1
                 self.delay = datetime.timedelta(seconds=0)
+        if self.grow < 0:
+            if len(self) < -1*self.grow:
+                raise RuntimeError('Dead')
+            self.segs = self.segs[:self.grow]
 
     def self_intersect(self) -> bool:
         if len(self) < 4:
             return False
         return any([(self.head.pos - other.pos).length() < self.size for other in self.segs[3:]])
+
+    def covers(self, point: Vec2) -> bool:
+        return any([(point - seg.pos).length() < self.size for seg in self.segs])
 
     def head_in_box(self, x, y, h, w) -> bool:
         if x <= self.head.pos.x <= x + w:
@@ -101,7 +96,7 @@ class Snake:
             return not (self.head.pos.x + self.size < x or self.head.pos.x - self.size > x + w)
         else:
             # check all 4 corners
-            for vec in [Vec2(x, y), Vec2(x+w, y), Vec2(x, y+h), Vec2(x+w, y+h)]:
+            for vec in [Vec2(x, y), Vec2(x + w, y), Vec2(x, y + h), Vec2(x + w, y + h)]:
                 if (self.head.pos - vec).length() < self.size:
                     return True
         return False

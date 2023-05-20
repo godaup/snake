@@ -16,7 +16,6 @@ COL_SCORE = 6
 COL_SCORE_BACKGROUND = 5
 
 TURN_SPEED = 9
-MOVE_SPEED = 1.3
 SNAKE_SIZE = 2
 
 
@@ -25,7 +24,7 @@ class RunningStateHandler(GameStateHandler):
     def __init__(self, game: 'Game'):
         super().__init__(game=game)
         self.map = Map(level=game.level_counter, game=self.game)
-        self.snake = Snake(pos=self.map.start, orient=45, size=SNAKE_SIZE, speed=MOVE_SPEED)
+        self.snake = Snake(pos=self.map.start, orient=45, size=SNAKE_SIZE)
         self.cam = Cam(snake=self.snake, map=self.map, game=self.game)
         self.score_board = Widget(x=0, y=0, w=len(self.get_score_text()) * pyxel.FONT_WIDTH + 2 * WIDGET_MARGIN, bg=10,
                                   text_col=12)
@@ -65,6 +64,8 @@ class RunningStateHandler(GameStateHandler):
         self.level_widget.text = [self.get_level_text()]
         # calc offset
         self.cam.update()
+        # update entities
+        self.map.update(snake=self.snake)
         # check wall collisions
         p, q = self.snake.get_collision_points()
         if pyxel.tilemap(0).pget(p.x // 8, (p.y - self.header.h) // 8) == (0, 3) or pyxel.tilemap(0).pget(q.x // 8, (q.y - self.header.h) // 8) == (0, 3):
@@ -72,7 +73,7 @@ class RunningStateHandler(GameStateHandler):
 
     def draw(self) -> None:
         pyxel.cls(self.game.cfg.area.bg)
-        self.header.draw()
-        self.footer.draw()
         # draw game with offset
         self.cam.draw()
+        self.header.draw()
+        self.footer.draw()
