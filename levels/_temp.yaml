@@ -1,0 +1,26 @@
+tm: 1
+width: 385
+height: 256
+
+start:
+  x: 200
+  y: 100
+
+timers:
+  golden1:
+    duration: 0
+    frequency: 5
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: golden
+  enemy1:
+    duration: 5
+    frequency: 30
+    fire_n: 4
+    callback:
+      type: spawn
+      entity: enemy
+
+goal:
+  score: 10

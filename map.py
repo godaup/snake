@@ -36,11 +36,12 @@ class Map:
                         pyxel.tilemap(self.cfg.tm).pset(tile_x, tile_y, (0, 0))
                         # print(f'found {e_cls.__name__} at {tile_x=}, {tile_y=}')
         # create timers by rules
-        for k, v in self.cfg.timers.items():
-            cb = self.create_callback(description=v.callback)
-            self.timers.append(Timer(duration=datetime.timedelta(seconds=v.duration), callback=cb,
-                                     frequency=datetime.timedelta(seconds=v.frequency) if v.frequency > 0 else None,
-                                     fire_n=v.fire_n))
+        if 'timers' in self.cfg:
+            for k, v in self.cfg.timers.items():
+                cb = self.create_callback(description=v.callback)
+                self.timers.append(Timer(duration=datetime.timedelta(seconds=v.duration), callback=cb,
+                                         frequency=datetime.timedelta(seconds=v.frequency) if v.frequency > 0 else None,
+                                         fire_n=v.fire_n))
         # projectiles
         self.projectiles: list['Projectiles'] = []
 
