@@ -8,7 +8,7 @@ from timers import Timer
 import datetime
 if TYPE_CHECKING:
     from main import Game
-    from snake import Snake
+    from snake import Snake, Projectiles
 
 
 class Map:
@@ -17,6 +17,7 @@ class Map:
 
         self.start = Vec2(self.cfg.start.x, self.cfg.start.y)
         self.game = game
+        self._score_before = self.game.score
         self.timers: list[Timer] = []
         # create initial game objects
         self.entities: list[Entity] = []
@@ -40,6 +41,8 @@ class Map:
             self.timers.append(Timer(duration=datetime.timedelta(seconds=v.duration), callback=cb,
                                      frequency=datetime.timedelta(seconds=v.frequency) if v.frequency > 0 else None,
                                      fire_n=v.fire_n))
+        # projectiles
+        self.projectiles: list['Projectiles'] = []
 
     def update(self, snake: 'Snake'):
         # remove dead entities
@@ -50,6 +53,10 @@ class Map:
         deads = [tmr for tmr in self.timers if not tmr.alive]
         for dead in deads:
             self.timers.remove(dead)
+        # remove dead projectiles
+        deads = [proj for proj in self.projectiles if not proj.alive]
+        for dead in deads:
+            self.projectiles.remove(dead)
         # check snake intersections
         p, q = snake.get_collision_points()
         for ent in self.entities:
@@ -58,6 +65,9 @@ class Map:
         # update alive entities
         for ent in self.entities:
             ent.update(snake=snake, map=self)
+        # update alive projectiles
+        for proj in self.projectiles:
+            proj.update(map=self, snake=snake)
         # update alive timers
         for tmr in self.timers:
             tmr.update(map=self, snake=snake)
@@ -66,6 +76,8 @@ class Map:
         pyxel.bltm(x=0, y=self.game.cfg.header.h, tm=self.cfg.tm, u=-offset.x, v=-offset.y, w=self.game.cfg.width, h=self.game.cfg.area.h)
         for ent in self.entities:
             ent.draw(offset)
+        for proj in self.projectiles:
+            proj.draw(offset=offset)
 
     def new_pos(self, w: int = 8, h: int = 8, snake: Optional['Snake'] = None) -> Vec2:
         _x, _y = 0, 0
@@ -90,6 +102,9 @@ class Map:
                     break
         return Vec2(_x, _y)
 
+    def check_on_wall(self, pos: Vec2) -> bool:
+        return pyxel.tilemap(self.cfg.tm).pget(pos.x // 8, (pos.y - self.game.cfg.header.h) // 8) == (0, 3)
+
     def create_callback(self, description: dict) -> Callable[['Map', 'Snake'], None]:
         if description['type'] == 'spawn':
             def callback(map: 'Map', snake: 'Snake'):
@@ -106,3 +121,10 @@ class Map:
                 snake.grow += description['value']
             return callback
 
+    def check_win(self, snake: 'Snake') -> bool:
+        # all conditions must be met
+        if 'score' in self.cfg.goal and self.game.score - self._score_before < self.cfg.goal.score:
+            return False
+        if 'length' in self.cfg.goal and len(snake) < self.cfg.goal.length:
+            return False
+        return True

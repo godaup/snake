@@ -21,6 +21,7 @@ class Entity:
         self.w = w
         self.h = h
         self.alive = True
+        self.health = float('inf')
 
     def draw(self, offset: 'Vec2'):
         if self.alive:
@@ -38,6 +39,11 @@ class Entity:
     @classmethod
     def at_pos(cls, pos: 'Vec2'):
         return cls(pos=pos, img_x=8*cls._img_x, img_y=8*cls._img_y)
+
+    def hit(self, dmg: int):
+        self.health -= dmg
+        if self.health <= 0:
+            self.alive = False
 
 
 class Apple(Entity):
@@ -79,6 +85,7 @@ class Enemy(Entity):
         self.speed = 1.0
         self.wdg = Widget(x=0, y=0, w=3*pyxel.FONT_WIDTH + 2*WIDGET_MARGIN, bg=6, border=14, text=['Zzz'], text_col=2)
         self.dir = Vec2(1, 1)
+        self.health = 1
 
     def update(self, snake: 'Snake', map: 'Map'):
         _time = datetime.datetime.now()
@@ -106,6 +113,7 @@ class Enemy(Entity):
     def on_intersect(self, snake: 'Snake', map: 'Map'):
         # update stats
         snake._speed *= 1.15
+        map.game.score -= 10
         # destroy self
         self.alive = False
 

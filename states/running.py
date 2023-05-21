@@ -50,26 +50,32 @@ class RunningStateHandler(GameStateHandler):
         return 0
 
     def update(self) -> None:
+        # pause
         if pyxel.btnp(pyxel.KEY_P):
             self.game.change_state(state=StateID.PAUSE)
+        # turn
         if pyxel.btn(pyxel.KEY_LEFT) or pyxel.btn(pyxel.GAMEPAD1_BUTTON_DPAD_LEFT):
             self.snake.turn(-TURN_SPEED)
         elif pyxel.btn(pyxel.KEY_RIGHT) or pyxel.btn(pyxel.GAMEPAD1_BUTTON_DPAD_RIGHT):
             self.snake.turn(TURN_SPEED)
-        self.snake.update(self.game.dt)
+        # update snake
+        self.snake.update(dt=self.game.dt, map=self.map)
         if self.snake.self_intersect():
             self.game.change_state(state=StateID.DEATH)
-
+        # update widgets
         self.score_board.text = [self.get_score_text()]
         self.level_widget.text = [self.get_level_text()]
         # calc offset
         self.cam.update()
-        # update entities
+        # update entities and timers and projectiles
         self.map.update(snake=self.snake)
         # check wall collisions
         p, q = self.snake.get_collision_points()
-        if pyxel.tilemap(0).pget(p.x // 8, (p.y - self.header.h) // 8) == (0, 3) or pyxel.tilemap(0).pget(q.x // 8, (q.y - self.header.h) // 8) == (0, 3):
+        if self.map.check_on_wall(p) or self.map.check_on_wall(q):
             self.game.change_state(state=StateID.DEATH)
+        # check win
+        if self.map.check_win(snake=self.snake):
+            self.game.level_up()
 
     def draw(self) -> None:
         pyxel.cls(self.game.cfg.area.bg)

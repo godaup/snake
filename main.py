@@ -93,6 +93,10 @@ class Game:
         self._state_handlers[StateID.RUNNING] = RunningStateHandler(self)
         self.change_state(state=StateID.RUNNING)
 
+    def level_up(self):
+        self.level_counter += 1
+        self._state_handlers[StateID.RUNNING] = RunningStateHandler(self)
+
 
 if __name__ == "__main__":
     Game()

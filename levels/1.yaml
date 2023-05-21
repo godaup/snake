@@ -21,3 +21,6 @@ timers:
     callback:
       type: spawn
       entity: enemy
+
+goal:
+  score: 10

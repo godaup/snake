@@ -2,7 +2,6 @@
 
 
 todo 
-- timed events / entities
 - more entities
 - goal
 - footer usage (health bar?)
