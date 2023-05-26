@@ -85,8 +85,8 @@ class Map:
         invalid = True
         while invalid:
             invalid = False
-            _x = pyxel.rndi(0, self.cfg.width)
-            _y = pyxel.rndi(0, self.cfg.height) + self.game.cfg.header.h
+            _x = pyxel.rndi(0, self.cfg.width - w)
+            _y = pyxel.rndi(0, self.cfg.height - h) + self.game.cfg.header.h
             for pos in [Vec2(_x, _y), Vec2(_x + w, _y), Vec2(_x, _y + h), Vec2(_x + w, _y + h)]:
                 # no walls at the for corners
                 if pyxel.tilemap(self.cfg.tm).pget(pos.x // 8, (pos.y - self.game.cfg.header.h) // 8) != (0, 0):

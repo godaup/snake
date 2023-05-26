@@ -3,8 +3,8 @@ width: 385
 height: 256
 
 start:
-  x: 200
-  y: 100
+  x: 50
+  y: 50
 
 timers:
   golden1:

@@ -6,6 +6,14 @@ start:
   x: 200
   y: 100
 
+timers:
+  golden1:
+    duration: 0
+    frequency: 1
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: golden
 
 goal:
-  score: 100
+  score: 1

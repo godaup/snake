@@ -8,7 +8,8 @@ if TYPE_CHECKING:
 from snake import Snake
 from utils import Vec2
 
-CAM_CENTER_SIZE = 30
+CAM_CENTER_SIZE_X = 140
+CAM_CENTER_SIZE_Y = 80
 
 
 class Cam:
@@ -19,18 +20,15 @@ class Cam:
         self.offset: Vec2 = Vec2(0, 0)
 
     def update(self):
+        left_border = CAM_CENTER_SIZE_X
+        right_border = self.map.cfg.width - CAM_CENTER_SIZE_X
+        top_border = CAM_CENTER_SIZE_Y + self.game.cfg.header.h
+        bottom_border = self.map.cfg.height + self.game.cfg.header.h - CAM_CENTER_SIZE_Y
+        perspective_pos_x = min(max(left_border, int(self.snake.head.pos.x)), right_border)
+        perspective_pos_y = min(max(top_border, int(self.snake.head.pos.y)), bottom_border)
         # set default such that snake head is at the center
-        self.offset.x = self.map.cfg.width / 2 - self.snake.head.pos.x
-        self.offset.y = self.map.cfg.height / 2 - (self.snake.head.pos.y - self.game.cfg.header.h)
-        # now we may need to modify based on snake position
-        # top border
-        self.offset.y = min(CAM_CENTER_SIZE, self.offset.y)
-        # left border
-        self.offset.x = min(CAM_CENTER_SIZE, self.offset.x)
-        # bottom border
-        self.offset.y = max(-CAM_CENTER_SIZE, self.offset.y)
-        # right border
-        self.offset.x = max(-CAM_CENTER_SIZE, self.offset.x)
+        self.offset.x = self.game.cfg.width / 2 - perspective_pos_x
+        self.offset.y = self.game.cfg.area.h / 2 - perspective_pos_y + self.game.cfg.header.h
 
     def draw(self):
         self.map.draw(self.offset)
