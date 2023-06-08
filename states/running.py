@@ -33,6 +33,7 @@ class RunningStateHandler(GameStateHandler):
                                    w=len(self.get_level_text()) * pyxel.FONT_WIDTH + 2 * WIDGET_MARGIN, bg=10,
                                    text_col=12)
         self.header.add_sub_widget(self.level_widget)
+        self.countdown = True
 
     def get_score_text(self):
         return f"Score: {self.game.score:04}"
@@ -76,6 +77,10 @@ class RunningStateHandler(GameStateHandler):
         # check win
         if self.map.check_win(snake=self.snake):
             self.game.level_up()
+        # after first frame is rendered, change into countdown mode once
+        if self.countdown:
+            self.countdown = False
+            self.game.change_state(StateID.COUNTDOWN)
 
     def draw(self) -> None:
         pyxel.cls(self.game.cfg.area.bg)

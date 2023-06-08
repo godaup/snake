@@ -16,4 +16,6 @@ timers:
       entity: golden
 
 goal:
-  score: 1
+  score: 100
+
+title: Classic

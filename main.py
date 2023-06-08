@@ -12,6 +12,7 @@ from states.death import DeathStateHandler
 from states.menu import MenuStateHandler
 from states.pause import PauseStateHandler
 from states.running import RunningStateHandler
+from states.countdown import CountdownHandler
 
 
 class Game:
@@ -42,12 +43,13 @@ class Game:
                    display_scale=self.cfg.scale)
         self.initialized = True
         pyxel.load(filename="assets.pyxres")
-        self.stateID = StateID.MENU
+        self.stateID = StateID.DEATH
         self._state_handlers: dict[StateID, GameStateHandler] = {StateID.MENU: MenuStateHandler(self),
                                                                  StateID.PAUSE: PauseStateHandler(self),
                                                                  StateID.RUNNING: RunningStateHandler(self),
-                                                                 StateID.DEATH: DeathStateHandler(self)}
-        self.change_state(StateID.DEATH)
+                                                                 StateID.DEATH: DeathStateHandler(self),
+                                                                 StateID.COUNTDOWN: CountdownHandler(self)}
+        self.change_state(StateID.MENU)
         pyxel.run(self.update, self.draw)
 
     @property
@@ -95,6 +97,7 @@ class Game:
 
     def level_up(self):
         self.level_counter += 1
+        # start a new running handler
         self._state_handlers[StateID.RUNNING] = RunningStateHandler(self)
 
 

@@ -6,3 +6,4 @@ class StateID(Enum):
     PAUSE = 1
     RUNNING = 2
     DEATH = 3
+    COUNTDOWN = 4

@@ -16,4 +16,6 @@ timers:
       entity: golden
 
 goal:
-  score: 200
+  score: 1
+
+title: Maneuver
