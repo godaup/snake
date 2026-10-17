@@ -1,14 +1,18 @@
-from utils import Vec2
-import pyxel
-from typing import TYPE_CHECKING, Optional, Callable
-import omegaconf
-from pathlib import Path
-from entity import Entity, ALL_ENTITIES, Enemy, GoldenApple, Apple
-from timers import Timer
 import datetime
+from collections.abc import Callable
+from pathlib import Path
+from typing import TYPE_CHECKING, Optional
+
+import omegaconf
+import pyxel
+
+from entity import ALL_ENTITIES, Apple, Enemy, Entity, GoldenApple
+from timers import Timer
+from utils import Vec2
+
 if TYPE_CHECKING:
     from main import Game
-    from snake import Snake, Projectiles
+    from snake import Projectile, Snake
 
 
 class Map:
@@ -24,7 +28,7 @@ class Map:
         # iterate over tilemap
         for tile_x in range(self.cfg.width // 8):
             for tile_y in range(self.cfg.height // 8):
-                img_x, img_y = pyxel.tilemap(self.cfg.tm).pget(tile_x, tile_y)
+                img_x, img_y = pyxel.tilemaps[self.cfg.tm].pget(tile_x, tile_y)
                 if (img_x == 0 and img_y == 0) or (img_x == 0 and img_y == 3):
                     continue
                 # print(f'at {tile_x=}, {tile_y=} there is {img_x=}, {img_y=}')
@@ -33,17 +37,17 @@ class Map:
                         ent = e_cls.at_pos(Vec2(x=tile_x * 8, y=tile_y * 8 + self.game.cfg.header.h))
                         self.entities.append(ent)
                         # remove entity from 'background'
-                        pyxel.tilemap(self.cfg.tm).pset(tile_x, tile_y, (0, 0))
+                        pyxel.tilemaps[self.cfg.tm].pset(tile_x, tile_y, (0, 0))
                         # print(f'found {e_cls.__name__} at {tile_x=}, {tile_y=}')
         # create timers by rules
         if 'timers' in self.cfg:
-            for k, v in self.cfg.timers.items():
+            for v in self.cfg.timers.values():
                 cb = self.create_callback(description=v.callback)
                 self.timers.append(Timer(duration=datetime.timedelta(seconds=v.duration), callback=cb,
                                          frequency=datetime.timedelta(seconds=v.frequency) if v.frequency > 0 else None,
                                          fire_n=v.fire_n))
         # projectiles
-        self.projectiles: list['Projectiles'] = []
+        self.projectiles: list[Projectile] = []
 
     def update(self, snake: 'Snake'):
         # remove dead entities
@@ -89,7 +93,7 @@ class Map:
             _y = pyxel.rndi(0, self.cfg.height - h) + self.game.cfg.header.h
             for pos in [Vec2(_x, _y), Vec2(_x + w, _y), Vec2(_x, _y + h), Vec2(_x + w, _y + h)]:
                 # no walls at the for corners
-                if pyxel.tilemap(self.cfg.tm).pget(pos.x // 8, (pos.y - self.game.cfg.header.h) // 8) != (0, 0):
+                if pyxel.tilemaps[self.cfg.tm].pget(pos.x // 8, (pos.y - self.game.cfg.header.h) // 8) != (0, 0):
                     invalid = True
                     break
                 # no other entities
@@ -104,7 +108,7 @@ class Map:
         return Vec2(_x, _y)
 
     def check_on_wall(self, pos: Vec2) -> bool:
-        return pyxel.tilemap(self.cfg.tm).pget(pos.x // 8, (pos.y - self.game.cfg.header.h) // 8) == (0, 3)
+        return pyxel.tilemaps[self.cfg.tm].pget(pos.x // 8, (pos.y - self.game.cfg.header.h) // 8) == (0, 3)
 
     def create_callback(self, description: dict) -> Callable[['Map', 'Snake'], None]:
         if description['type'] == 'spawn':
@@ -113,7 +117,7 @@ class Map:
                 if 'pos' in description:
                     new_pos = Vec2(*description['pos'])
                 else:
-                    new_pos: 'Vec2' = map.new_pos(snake=snake)
+                    new_pos: Vec2 = map.new_pos(snake=snake)
                 ent_cls: Entity = {'enemy': Enemy, 'apple': Apple, 'golden': GoldenApple}[description['entity']]
                 map.entities.append(ent_cls.at_pos(new_pos))
             return callback

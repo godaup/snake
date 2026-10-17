@@ -1,8 +1,10 @@
-import pyxel
-from typing import TYPE_CHECKING
 import datetime
-from widget import Widget, WIDGET_MARGIN
+from typing import TYPE_CHECKING
+
+import pyxel
+
 from utils import Vec2
+from widget import WIDGET_MARGIN, Widget
 
 if TYPE_CHECKING:
     from map import Map
@@ -14,7 +16,7 @@ class Entity:
     _img_y = None
 
     def __init__(self, pos: 'Vec2', img_x: int, img_y: int, img_b: int = 0, w: int = 8, h: int = 8):
-        self.pos: 'Vec2' = pos
+        self.pos: Vec2 = pos
         self.img_b: int = img_b
         self.img_x: int = img_x
         self.img_y: int = img_y
@@ -55,7 +57,7 @@ class Apple(Entity):
         snake.grow += 5
         map.game.score += 1
         # generate next apple
-        new_pos: 'Vec2' = map.new_pos(snake=snake)
+        new_pos: Vec2 = map.new_pos(snake=snake)
         map.entities.append(Apple.at_pos(new_pos))
         # destroy self
         self.alive = False

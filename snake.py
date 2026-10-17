@@ -1,11 +1,14 @@
 import datetime
 from abc import abstractmethod
 from copy import copy
-from typing import Optional
+from typing import TYPE_CHECKING
 
 import pyxel
 
 from utils import Vec2
+
+if TYPE_CHECKING:
+    from map import Map
 
 BODY_COLS = (11, 11, 4, 3, 3)
 COL_HEAD = 7
@@ -37,7 +40,7 @@ class Snake:
         self.segs: list[SnakeSeg] = [SnakeSeg(pos, self.size, COL_HEAD)]
         self.grow: int = 20
         self.delay = datetime.timedelta(seconds=0)
-        self.weapon: Optional[Weapon] = None
+        self.weapon: Weapon | None = None
 
     def __len__(self):
         return len(self.segs)
@@ -156,11 +159,10 @@ class Weapon:
         self._last_time = datetime.datetime.now()
 
     def update(self, map: 'Map'):
-        if pyxel.btnp(pyxel.KEY_SPACE):
-            if datetime.datetime.now() - self._last_time > self.delay:
-                self._last_time = datetime.datetime.now()
-                projectiles = self.next_pattern()
-                map.projectiles.extend(projectiles)
+        if pyxel.btnp(pyxel.KEY_SPACE) and datetime.datetime.now() - self._last_time > self.delay:
+            self._last_time = datetime.datetime.now()
+            projectiles = self.next_pattern()
+            map.projectiles.extend(projectiles)
 
     @abstractmethod
     def next_pattern(self) -> list[Projectile]:

@@ -1,6 +1,7 @@
 import pyxel
 
-from widget import Widget, WIDGET_MARGIN, TEXT_LINE_SPACING
+from widget import TEXT_LINE_SPACING, WIDGET_MARGIN, Widget
+
 from .abstract import GameStateHandler
 
 COL_TEXT_DEATH = 0

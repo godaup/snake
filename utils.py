@@ -18,7 +18,7 @@ class Vec2:
         return Vec2(self.x - other.x, self.y - other.y)
 
     def __mul__(self, other):
-        if not (isinstance(other, int) or isinstance(other, float)):
+        if not isinstance(other, (int, float)):
             raise TypeError()
         return Vec2(other * self.x, other * self.y)
 

@@ -8,11 +8,11 @@ import pyxel
 from sound import SoundManager
 from states import StateID
 from states.abstract import GameStateHandler
+from states.countdown import CountdownHandler
 from states.death import DeathStateHandler
 from states.menu import MenuStateHandler
 from states.pause import PauseStateHandler
 from states.running import RunningStateHandler
-from states.countdown import CountdownHandler
 
 
 class Game:

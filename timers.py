@@ -1,5 +1,6 @@
 import datetime
-from typing import Callable, Optional, TYPE_CHECKING
+from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from map import Map
@@ -7,7 +8,7 @@ if TYPE_CHECKING:
 
 
 class Timer:
-    def __init__(self, duration: datetime.timedelta, callback: Callable, frequency: Optional [datetime.timedelta] = None,
+    def __init__(self, duration: datetime.timedelta, callback: Callable, frequency: datetime.timedelta | None = None,
                  fire_n: int = 0):
         self._measured = datetime.timedelta(0)
         self.duration = duration

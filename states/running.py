@@ -1,4 +1,4 @@
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import pyxel
 
@@ -6,7 +6,8 @@ from cam import Cam
 from map import Map
 from snake import Snake
 from states import StateID
-from widget import Widget, WIDGET_MARGIN
+from widget import WIDGET_MARGIN, Widget
+
 from .abstract import GameStateHandler
 
 if TYPE_CHECKING:
@@ -47,7 +48,7 @@ class RunningStateHandler(GameStateHandler):
     def is_visible() -> bool:
         return False
 
-    def get_music(self) -> Optional[int]:
+    def get_music(self) -> int | None:
         return 0
 
     def update(self) -> None:

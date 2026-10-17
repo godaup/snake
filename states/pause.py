@@ -1,8 +1,11 @@
-from .abstract import GameStateHandler
-import pyxel
-from states import StateID
 from typing import TYPE_CHECKING
-from widget import Widget, WIDGET_MARGIN
+
+import pyxel
+
+from states import StateID
+from widget import WIDGET_MARGIN, Widget
+
+from .abstract import GameStateHandler
 
 if TYPE_CHECKING:
     from main import Game

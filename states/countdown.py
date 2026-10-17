@@ -1,10 +1,8 @@
 import datetime
 
-import pyxel
-
-from widget import Widget, WIDGET_MARGIN, TEXT_LINE_SPACING, ImgInfo
-from states.abstract import GameStateHandler
 from states import StateID
+from states.abstract import GameStateHandler
+from widget import ImgInfo, Widget
 
 COL_TEXT_COUNTDOWN = 0
 COL_COUNTDOWN = 8

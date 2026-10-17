@@ -1,7 +1,9 @@
 from abc import ABC, abstractmethod
-from typing import Optional, TYPE_CHECKING
-from widget import Widget
+from typing import TYPE_CHECKING
+
 import pyxel
+
+from widget import Widget
 
 if TYPE_CHECKING:
     from main import Game
@@ -9,7 +11,7 @@ if TYPE_CHECKING:
 
 class GameStateHandler(ABC):
     def __init__(self, game: 'Game') -> None:
-        self.game: 'Game' = game
+        self.game: Game = game
         self.header = Widget(x=0, y=0, h=self.game.cfg.header.h, w=self.game.cfg.width,
                              bg=self.game.cfg.header.bg, border=self.game.cfg.header.border)
         self.footer = Widget(x=0, y=self.game.cfg.header.h+self.game.cfg.area.h, h=self.game.cfg.footer.h, w=self.game.cfg.width,
@@ -21,7 +23,7 @@ class GameStateHandler(ABC):
         """whether the mouse is visible in this state"""
         pass
 
-    def get_music(self) -> Optional[int]:
+    def get_music(self) -> int | None:
         """if music should be played return id"""
         return None
 

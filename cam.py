@@ -14,9 +14,9 @@ CAM_CENTER_SIZE_Y = 80
 
 class Cam:
     def __init__(self, snake: 'Snake', map: 'Map', game: 'Game'):
-        self.snake: 'Snake' = snake
-        self.map: 'Map' = map
-        self.game: 'Game' = game
+        self.snake: Snake = snake
+        self.map: Map = map
+        self.game: Game = game
         self.offset: Vec2 = Vec2(0, 0)
 
     def update(self):

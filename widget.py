@@ -1,5 +1,5 @@
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import List, Optional, Callable
 
 import pyxel
 
@@ -15,12 +15,12 @@ class ImgInfo:
     v: int
     h: float
     w: float
-    collkey: Optional[int] = None
+    collkey: int | None = None
 
 
 class Widget:
-    def __init__(self, x: int, y: int, w: Optional[int] = None, h: Optional[int] = None, bg: Optional[int] = None,
-                 border: Optional[int] = None, img: Optional[ImgInfo] = None, text: Optional[List[str]] = None,
+    def __init__(self, x: int, y: int, w: int | None = None, h: int | None = None, bg: int | None = None,
+                 border: int | None = None, img: ImgInfo | None = None, text: list[str] | None = None,
                  text_col: int = TEXT_COL):
         self.x: int = x
         self.y: int = y
@@ -42,12 +42,12 @@ class Widget:
                 self.w: int = pyxel.FONT_WIDTH + 2 * WIDGET_MARGIN
             if img:
                 self.w += img.w + WIDGET_MARGIN
-        self.bg: Optional[int] = bg
-        self.border: Optional[int] = border
-        self.img: Optional[ImgInfo] = img
-        self.text: Optional[List[str]] = text
+        self.bg: int | None = bg
+        self.border: int | None = border
+        self.img: ImgInfo | None = img
+        self.text: list[str] | None = text
         self.text_col: int = text_col
-        self.sub_widgets: List[Widget] = []
+        self.sub_widgets: list[Widget] = []
         self.enabled: bool = True
 
     def update(self):
@@ -71,10 +71,7 @@ class Widget:
                       h=self.img.h, colkey=self.img.collkey)
         # optional text
         if self.text:
-            if self.img:
-                x_offset = WIDGET_MARGIN * 2 + self.img.w
-            else:
-                x_offset = WIDGET_MARGIN
+            x_offset = WIDGET_MARGIN * 2 + self.img.w if self.img else WIDGET_MARGIN
 
             for ix, line in enumerate(self.text):
                 y_offset = (pyxel.FONT_HEIGHT + TEXT_LINE_SPACING) * ix + WIDGET_MARGIN + 1
@@ -89,7 +86,7 @@ class Widget:
 
 
 class LifeBar(Widget):
-    def __init__(self, x: int, y: int, h: int, w: int, bg: int, fg: int, border: Optional[int] = None, val: float = 1.):
+    def __init__(self, x: int, y: int, h: int, w: int, bg: int, fg: int, border: int | None = None, val: float = 1.):
         super(LifeBar).__init__(x=x, y=y, h=h, w=w, bg=bg, border=border, text=None, img=None)
         self.val = val
         self.fg = fg
@@ -100,9 +97,9 @@ class LifeBar(Widget):
 
 
 class Button(Widget):
-    def __init__(self, x: int, y: int, text: list[str], on_click: Callable, h: Optional[int] = None,
-                 w: Optional[int] = None, img: Optional[ImgInfo] = None, hotkey: Optional[int] = None, bg: int = 11,
-                 hover: Optional[int] = 3, border: Optional[int] = 14):
+    def __init__(self, x: int, y: int, text: list[str], on_click: Callable, h: int | None = None,
+                 w: int | None = None, img: ImgInfo | None = None, hotkey: int | None = None, bg: int = 11,
+                 hover: int | None = 3, border: int | None = 14):
         super().__init__(x=x, y=y, h=h, w=w, bg=bg, border=border, text=text, img=img)
         self.on_click = on_click
         self.unhovered_bg = bg

@@ -1,5 +1,3 @@
-from typing import Optional
-
 import pyxel
 
 
@@ -12,7 +10,7 @@ class SoundManager:
     def interrupt():
         pyxel.stop()
 
-    def play(self, music: Optional[int] = None):
+    def play(self, music: int | None = None):
         if self.music and music:
             pyxel.playm(music, loop=True)
 

@@ -1,7 +1,13 @@
-from widget import Button, WIDGET_MARGIN, ImgInfo
-from states.abstract import GameStateHandler
-from states import StateID
+from typing import TYPE_CHECKING
+
 import pyxel
+
+from states import StateID
+from states.abstract import GameStateHandler
+from widget import WIDGET_MARGIN, Button, ImgInfo
+
+if TYPE_CHECKING:
+    from main import Game
 
 
 class MenuStateHandler(GameStateHandler):
