@@ -4,17 +4,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-A snake game built on [Pyxel](https://github.com/kitao/pyxel) (retro game engine, Pyxel 2.x API) with OmegaConf for YAML config. There is no dependency manifest, test suite or linter config.
+A snake game built on [Pyxel](https://github.com/kitao/pyxel) (retro game engine, Pyxel 2.x API) with OmegaConf for YAML config. Dependencies are pinned in `requirements.txt` / `requirements-dev.txt`; `pyproject.toml` only holds ruff and pytest config.
 
 ## Commands
 
 ```bash
-pip install pyxel omegaconf      # dependencies
-python main.py                   # run the game; run from the repo root (assets.pyxres is loaded by relative path)
-pyxel edit assets.pyxres         # edit sprites, tilemaps (level layouts), sounds and music
+pip install -r requirements-dev.txt   # runtime + pytest + ruff (Linux also needs the system SDL2 library)
+python main.py                        # run the game
+pyxel edit assets.pyxres              # edit sprites, tilemaps (level layouts), sounds and music
+pytest                                # run all tests
+pytest tests/test_map.py::test_new_pos_is_free   # run a single test
+ruff check . && ruff format --check .            # lint + format check (CI runs both plus pytest)
 ```
 
 Set `debug: True` in `settings.yaml` to draw the snake's collision points and head center.
+
+## Tests
+
+Tests that need Pyxel (`Map`, state handlers, widgets) rely on the session fixture in `tests/conftest.py`, which calls `pyxel.init(..., headless=True)` once. Request the `assets` fixture to get freshly loaded tilemaps (Map mutates them). `main.Game` cannot be built in tests because it enters `pyxel.run`; use the `game` fixture (`FakeGame`) instead, which records `change_state` calls in `requested_states`. Known bugs are kept as `xfail(strict=True)` tests, so fixing one makes that test fail until the marker is removed.
 
 ## Architecture
 
@@ -29,7 +36,7 @@ Set `debug: True` in `settings.yaml` to draw the snake's collision points and he
 - `goal`: win conditions, all of which must hold: `score` (counted from the level's start score) and/or `length` (segments).
 - `timers`: named entries with `duration`, `frequency` (0 = fire once), `fire_n` (0 = unlimited) and a `callback` of `type: spawn` (`entity: apple|golden|enemy`, optional `pos`) or `type: grow` (`value`). They are turned into closures by `Map.create_callback`.
 
-Tile semantics are hardcoded: tile `(0,0)` is empty and tile `(0,3)` is a wall (`check_on_wall`). Any other tile that matches an entity class's `_img_x/_img_y` (8px-tile coordinates in image bank 0) is spawned as that entity, and the tile is erased from the tilemap at load time. That changes the tilemap in memory, which is why `restart()` calls `pyxel.load` again. Level numbers are consecutive (`level_up` increments by 1). Only 1–3 and 9 exist, plus a scratch `_temp.yaml`.
+Tile semantics are hardcoded: tile `(0,0)` is empty and tile `(0,3)` is a wall (`check_on_wall`). Any other tile that matches an entity class's `_img_x/_img_y` (8px-tile coordinates in image bank 0) is spawned as that entity, and the tile is erased from the tilemap at load time. That changes the tilemap in memory, which is why `restart()` calls `pyxel.load` again. Level numbers must be consecutive (`level_up` increments by 1). Only 1–3 and 9 exist, plus a scratch `_temp.yaml`, so winning level 3 crashes (see `tests/test_levels.py`).
 
 **Entities (`entity.py`).** Subclass `Entity`, set `_img_x/_img_y` to the sprite tile and override `on_intersect` (snake head touches it), `update` and optionally `hit`. Then add the class to `ALL_ENTITIES` so the tilemap can place it, and to the name dict in `Map.create_callback` so timers can spawn it. Entities are removed by setting `alive = False`. `Map.update` drops dead entities, timers and projectiles at the start of the next update.
 
