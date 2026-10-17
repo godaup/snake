@@ -8,8 +8,13 @@ if TYPE_CHECKING:
 
 
 class Timer:
-    def __init__(self, duration: datetime.timedelta, callback: Callable, frequency: datetime.timedelta | None = None,
-                 fire_n: int = 0):
+    def __init__(
+        self,
+        duration: datetime.timedelta,
+        callback: Callable,
+        frequency: datetime.timedelta | None = None,
+        fire_n: int = 0,
+    ):
         self._measured = datetime.timedelta(0)
         self.duration = duration
         self.callback = callback
@@ -19,7 +24,7 @@ class Timer:
         self.enabled = True
         self.alive = True
 
-    def update(self, map: 'Map', snake: 'Snake'):
+    def update(self, map: "Map", snake: "Snake"):
         if self.enabled and self.alive:
             self._measured += map.game.dt
             if self._measured > self.duration:
@@ -32,4 +37,3 @@ class Timer:
                 # fire
                 self.callback(map=map, snake=snake)
                 self._fired += 1
-

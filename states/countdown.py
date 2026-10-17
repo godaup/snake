@@ -10,18 +10,21 @@ COUNTDOWN_SIZE = 38
 
 
 class CountdownHandler(GameStateHandler):
-
     def __init__(self, game):
         super().__init__(game=game)
         self.remaining = None
         self.img_1 = ImgInfo(nr=1, u=0, v=0, h=32, w=32, collkey=0)
         self.img_2 = ImgInfo(nr=1, u=0, v=40, h=32, w=32, collkey=0)
         self.img_3 = ImgInfo(nr=1, u=0, v=80, h=32, w=32, collkey=0)
-        self.wdg = Widget(x=(self.game.cfg.width - COUNTDOWN_SIZE) // 2,
-                          y=self.game.cfg.area.h // 2 + self.game.cfg.header.h + COUNTDOWN_SIZE // 2,
-                          w=COUNTDOWN_SIZE,
-                          h=COUNTDOWN_SIZE, img=self.img_3,
-                          bg=COL_COUNTDOWN, border=None)
+        self.wdg = Widget(
+            x=(self.game.cfg.width - COUNTDOWN_SIZE) // 2,
+            y=self.game.cfg.area.h // 2 + self.game.cfg.header.h + COUNTDOWN_SIZE // 2,
+            w=COUNTDOWN_SIZE,
+            h=COUNTDOWN_SIZE,
+            img=self.img_3,
+            bg=COL_COUNTDOWN,
+            border=None,
+        )
 
     def update(self) -> None:
         if self.remaining is None:

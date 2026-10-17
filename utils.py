@@ -6,6 +6,7 @@ import pyxel
 @dataclass
 class Vec2:
     """A simple 2D vector"""
+
     x: float = 0
     y: float = 0
 
@@ -23,4 +24,4 @@ class Vec2:
         return Vec2(other * self.x, other * self.y)
 
     def length(self):
-        return pyxel.sqrt(self.x ** 2 + self.y ** 2)
+        return pyxel.sqrt(self.x**2 + self.y**2)

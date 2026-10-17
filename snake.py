@@ -64,13 +64,15 @@ class Snake:
         for seg in self.segs:
             seg.draw(offset)
 
-    def update(self, dt: datetime.timedelta, map: 'Map'):
+    def update(self, dt: datetime.timedelta, map: "Map"):
         # move
         previous = None
         for ix, seg in enumerate(self.segs):
             if ix == 0:
-                new = Vec2(x=self.head.pos.x + (self._speed * (pyxel.cos(self.orient))),
-                           y=self.head.pos.y + (self._speed * (pyxel.sin(self.orient))))
+                new = Vec2(
+                    x=self.head.pos.x + (self._speed * (pyxel.cos(self.orient))),
+                    y=self.head.pos.y + (self._speed * (pyxel.sin(self.orient))),
+                )
             else:
                 new = previous
             previous = copy(seg.pos)
@@ -85,12 +87,12 @@ class Snake:
                 self.delay = datetime.timedelta(seconds=0)
         # shrink
         if self.grow < 0:
-            if len(self) < -1*self.grow:
-                raise RuntimeError('Dead')
-            self.segs = self.segs[:self.grow]
+            if len(self) < -1 * self.grow:
+                raise RuntimeError("Dead")
+            self.segs = self.segs[: self.grow]
         # fire
         if self.weapon:
-            print('A')
+            print("A")
             self.weapon.update(map=map)
 
     def self_intersect(self) -> bool:
@@ -134,7 +136,7 @@ class Projectile:
     def draw(self, offset: Vec2):
         pyxel.circ(self.pos.x + offset.x, self.pos.y + offset.y, self.size, self.col)
 
-    def update(self, map: 'Map', snake: 'Snake'):
+    def update(self, map: "Map", snake: "Snake"):
         # move
         self.pos = self.pos + self.dir * self.speed
         # check wall
@@ -149,7 +151,7 @@ class Projectile:
         if any(hit_pattern):
             # find first hit
             hit_index = hit_pattern.index(True)
-            snake.segs = snake.segs[:hit_index-1]
+            snake.segs = snake.segs[: hit_index - 1]
 
 
 class Weapon:
@@ -158,7 +160,7 @@ class Weapon:
         self.delay = delay
         self._last_time = datetime.datetime.now()
 
-    def update(self, map: 'Map'):
+    def update(self, map: "Map"):
         if pyxel.btnp(pyxel.KEY_SPACE) and datetime.datetime.now() - self._last_time > self.delay:
             self._last_time = datetime.datetime.now()
             projectiles = self.next_pattern()
@@ -170,9 +172,9 @@ class Weapon:
 
 
 class Gun(Weapon):
-    def __init__(self, snake: 'Snake'):
+    def __init__(self, snake: "Snake"):
         super().__init__(snake=snake, delay=datetime.timedelta(seconds=1.5))
 
     def next_pattern(self) -> list[Projectile]:
-        shot = Projectile(pos=self.snake.head.pos, size=2, speed=5., orient=self.snake.orient, col=9, dmg=1)
+        shot = Projectile(pos=self.snake.head.pos, size=2, speed=5.0, orient=self.snake.orient, col=9, dmg=1)
         return [shot]

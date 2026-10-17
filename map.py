@@ -16,8 +16,8 @@ if TYPE_CHECKING:
 
 
 class Map:
-    def __init__(self, level: int, game: 'Game'):
-        self.cfg = omegaconf.OmegaConf.load(Path(__file__).parent / 'levels' / f'{level}.yaml')
+    def __init__(self, level: int, game: "Game"):
+        self.cfg = omegaconf.OmegaConf.load(Path(__file__).parent / "levels" / f"{level}.yaml")
 
         self.start = Vec2(self.cfg.start.x, self.cfg.start.y)
         self.game = game
@@ -40,16 +40,21 @@ class Map:
                         pyxel.tilemaps[self.cfg.tm].pset(tile_x, tile_y, (0, 0))
                         # print(f'found {e_cls.__name__} at {tile_x=}, {tile_y=}')
         # create timers by rules
-        if 'timers' in self.cfg:
+        if "timers" in self.cfg:
             for v in self.cfg.timers.values():
                 cb = self.create_callback(description=v.callback)
-                self.timers.append(Timer(duration=datetime.timedelta(seconds=v.duration), callback=cb,
-                                         frequency=datetime.timedelta(seconds=v.frequency) if v.frequency > 0 else None,
-                                         fire_n=v.fire_n))
+                self.timers.append(
+                    Timer(
+                        duration=datetime.timedelta(seconds=v.duration),
+                        callback=cb,
+                        frequency=datetime.timedelta(seconds=v.frequency) if v.frequency > 0 else None,
+                        fire_n=v.fire_n,
+                    )
+                )
         # projectiles
         self.projectiles: list[Projectile] = []
 
-    def update(self, snake: 'Snake'):
+    def update(self, snake: "Snake"):
         # remove dead entities
         deads = [ent for ent in self.entities if not ent.alive]
         for dead in deads:
@@ -78,13 +83,21 @@ class Map:
             tmr.update(map=self, snake=snake)
 
     def draw(self, offset: Vec2):
-        pyxel.bltm(x=0, y=self.game.cfg.header.h, tm=self.cfg.tm, u=-offset.x, v=-offset.y, w=self.game.cfg.width, h=self.game.cfg.area.h)
+        pyxel.bltm(
+            x=0,
+            y=self.game.cfg.header.h,
+            tm=self.cfg.tm,
+            u=-offset.x,
+            v=-offset.y,
+            w=self.game.cfg.width,
+            h=self.game.cfg.area.h,
+        )
         for ent in self.entities:
             ent.draw(offset)
         for proj in self.projectiles:
             proj.draw(offset=offset)
 
-    def new_pos(self, w: int = 8, h: int = 8, snake: Optional['Snake'] = None) -> Vec2:
+    def new_pos(self, w: int = 8, h: int = 8, snake: Optional["Snake"] = None) -> Vec2:
         _x, _y = 0, 0
         invalid = True
         while invalid:
@@ -110,26 +123,30 @@ class Map:
     def check_on_wall(self, pos: Vec2) -> bool:
         return pyxel.tilemaps[self.cfg.tm].pget(pos.x // 8, (pos.y - self.game.cfg.header.h) // 8) == (0, 3)
 
-    def create_callback(self, description: dict) -> Callable[['Map', 'Snake'], None]:
-        if description['type'] == 'spawn':
-            def callback(map: 'Map', snake: 'Snake'):
+    def create_callback(self, description: dict) -> Callable[["Map", "Snake"], None]:
+        if description["type"] == "spawn":
+
+            def callback(map: "Map", snake: "Snake"):
                 # generate next entity
-                if 'pos' in description:
-                    new_pos = Vec2(*description['pos'])
+                if "pos" in description:
+                    new_pos = Vec2(*description["pos"])
                 else:
                     new_pos: Vec2 = map.new_pos(snake=snake)
-                ent_cls: Entity = {'enemy': Enemy, 'apple': Apple, 'golden': GoldenApple}[description['entity']]
+                ent_cls: Entity = {"enemy": Enemy, "apple": Apple, "golden": GoldenApple}[description["entity"]]
                 map.entities.append(ent_cls.at_pos(new_pos))
+
             return callback
-        elif description['type'] == 'grow':
-            def callback(map: 'Map', snake: 'Snake'):
-                snake.grow += description['value']
+        elif description["type"] == "grow":
+
+            def callback(map: "Map", snake: "Snake"):
+                snake.grow += description["value"]
+
             return callback
 
-    def check_win(self, snake: 'Snake') -> bool:
+    def check_win(self, snake: "Snake") -> bool:
         # all conditions must be met
-        if 'score' in self.cfg.goal and self.game.score - self._score_before < self.cfg.goal.score:
+        if "score" in self.cfg.goal and self.game.score - self._score_before < self.cfg.goal.score:
             return False
-        if 'length' in self.cfg.goal and len(snake) < self.cfg.goal.length:
+        if "length" in self.cfg.goal and len(snake) < self.cfg.goal.length:
             return False
         return True

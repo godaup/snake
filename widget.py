@@ -19,9 +19,18 @@ class ImgInfo:
 
 
 class Widget:
-    def __init__(self, x: int, y: int, w: int | None = None, h: int | None = None, bg: int | None = None,
-                 border: int | None = None, img: ImgInfo | None = None, text: list[str] | None = None,
-                 text_col: int = TEXT_COL):
+    def __init__(
+        self,
+        x: int,
+        y: int,
+        w: int | None = None,
+        h: int | None = None,
+        bg: int | None = None,
+        border: int | None = None,
+        img: ImgInfo | None = None,
+        text: list[str] | None = None,
+        text_col: int = TEXT_COL,
+    ):
         self.x: int = x
         self.y: int = y
         if h:
@@ -32,7 +41,7 @@ class Widget:
             else:
                 self.h: int = pyxel.FONT_HEIGHT + 2 * WIDGET_MARGIN
             if img:
-                self.h = max(self.h, int(img.h) + 2*WIDGET_MARGIN)
+                self.h = max(self.h, int(img.h) + 2 * WIDGET_MARGIN)
         if w:
             self.w: int = w
         else:
@@ -67,8 +76,16 @@ class Widget:
             pyxel.rectb(self.x, self.y, self.w, self.h, self.border)
         # optional image
         if self.img:
-            pyxel.blt(x=self.x + WIDGET_MARGIN, y=self.y + WIDGET_MARGIN, img=self.img.nr, u=self.img.u, v=self.img.v, w=self.img.w,
-                      h=self.img.h, colkey=self.img.collkey)
+            pyxel.blt(
+                x=self.x + WIDGET_MARGIN,
+                y=self.y + WIDGET_MARGIN,
+                img=self.img.nr,
+                u=self.img.u,
+                v=self.img.v,
+                w=self.img.w,
+                h=self.img.h,
+                colkey=self.img.collkey,
+            )
         # optional text
         if self.text:
             x_offset = WIDGET_MARGIN * 2 + self.img.w if self.img else WIDGET_MARGIN
@@ -79,14 +96,14 @@ class Widget:
         for wdg in self.sub_widgets:
             wdg.draw()
 
-    def add_sub_widget(self, wdg: 'Widget'):
+    def add_sub_widget(self, wdg: "Widget"):
         wdg.x += self.x + WIDGET_MARGIN
         wdg.y += self.y + WIDGET_MARGIN
         self.sub_widgets.append(wdg)
 
 
 class LifeBar(Widget):
-    def __init__(self, x: int, y: int, h: int, w: int, bg: int, fg: int, border: int | None = None, val: float = 1.):
+    def __init__(self, x: int, y: int, h: int, w: int, bg: int, fg: int, border: int | None = None, val: float = 1.0):
         super(LifeBar).__init__(x=x, y=y, h=h, w=w, bg=bg, border=border, text=None, img=None)
         self.val = val
         self.fg = fg
@@ -97,9 +114,20 @@ class LifeBar(Widget):
 
 
 class Button(Widget):
-    def __init__(self, x: int, y: int, text: list[str], on_click: Callable, h: int | None = None,
-                 w: int | None = None, img: ImgInfo | None = None, hotkey: int | None = None, bg: int = 11,
-                 hover: int | None = 3, border: int | None = 14):
+    def __init__(
+        self,
+        x: int,
+        y: int,
+        text: list[str],
+        on_click: Callable,
+        h: int | None = None,
+        w: int | None = None,
+        img: ImgInfo | None = None,
+        hotkey: int | None = None,
+        bg: int = 11,
+        hover: int | None = 3,
+        border: int | None = 14,
+    ):
         super().__init__(x=x, y=y, h=h, w=w, bg=bg, border=border, text=text, img=img)
         self.on_click = on_click
         self.unhovered_bg = bg

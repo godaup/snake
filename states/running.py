@@ -21,18 +21,22 @@ SNAKE_SIZE = 2
 
 
 class RunningStateHandler(GameStateHandler):
-
-    def __init__(self, game: 'Game'):
+    def __init__(self, game: "Game"):
         super().__init__(game=game)
         self.map = Map(level=game.level_counter, game=self.game)
         self.snake = Snake(pos=self.map.start, orient=45, size=SNAKE_SIZE)
         self.cam = Cam(snake=self.snake, map=self.map, game=self.game)
-        self.score_board = Widget(x=0, y=0, w=len(self.get_score_text()) * pyxel.FONT_WIDTH + 2 * WIDGET_MARGIN, bg=10,
-                                  text_col=12)
+        self.score_board = Widget(
+            x=0, y=0, w=len(self.get_score_text()) * pyxel.FONT_WIDTH + 2 * WIDGET_MARGIN, bg=10, text_col=12
+        )
         self.header.add_sub_widget(self.score_board)
-        self.level_widget = Widget(x=(self.game.cfg.width + len(self.get_level_text())) / 2, y=0,
-                                   w=len(self.get_level_text()) * pyxel.FONT_WIDTH + 2 * WIDGET_MARGIN, bg=10,
-                                   text_col=12)
+        self.level_widget = Widget(
+            x=(self.game.cfg.width + len(self.get_level_text())) / 2,
+            y=0,
+            w=len(self.get_level_text()) * pyxel.FONT_WIDTH + 2 * WIDGET_MARGIN,
+            bg=10,
+            text_col=12,
+        )
         self.header.add_sub_widget(self.level_widget)
         self.countdown = True
 
@@ -41,8 +45,8 @@ class RunningStateHandler(GameStateHandler):
 
     def get_level_text(self):
         return f"Level: {self.game.level_counter}"
-        #p = self.snake.get_collision_points()[0]
-        #return f"{pyxel.tilemap(0).pget(pyxel.mouse_x / 8, (pyxel.mouse_y - self.header.h) / 8)}"
+        # p = self.snake.get_collision_points()[0]
+        # return f"{pyxel.tilemap(0).pget(pyxel.mouse_x / 8, (pyxel.mouse_y - self.header.h) / 8)}"
 
     @staticmethod
     def is_visible() -> bool:

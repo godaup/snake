@@ -1,4 +1,5 @@
-""" main pyxel game engine """
+"""main pyxel game engine"""
+
 import datetime
 from pathlib import Path
 
@@ -23,6 +24,7 @@ class Game:
         self.sm: SoundManager = SoundManager()
         self.stateID: StateID = StateID.MENU
         from states.abstract import GameStateHandler
+
         self._state_handlers: dict[StateID, GameStateHandler] = {}
         self.score = 0
         self.level_counter: int = 1
@@ -38,27 +40,33 @@ class Game:
             self.initialized = False
         self.reload_settings()
         self.sm = SoundManager(effects=self.cfg.effects, music=self.cfg.music)
-        pyxel.init(width=self.cfg.width, height=self.cfg.header.h + self.cfg.area.h + self.cfg.footer.h, title='Snake',
-                   fps=self.cfg.fps,
-                   display_scale=self.cfg.scale)
+        pyxel.init(
+            width=self.cfg.width,
+            height=self.cfg.header.h + self.cfg.area.h + self.cfg.footer.h,
+            title="Snake",
+            fps=self.cfg.fps,
+            display_scale=self.cfg.scale,
+        )
         self.initialized = True
         pyxel.load(filename="assets.pyxres")
         self.stateID = StateID.DEATH
-        self._state_handlers: dict[StateID, GameStateHandler] = {StateID.MENU: MenuStateHandler(self),
-                                                                 StateID.PAUSE: PauseStateHandler(self),
-                                                                 StateID.RUNNING: RunningStateHandler(self),
-                                                                 StateID.DEATH: DeathStateHandler(self),
-                                                                 StateID.COUNTDOWN: CountdownHandler(self)}
+        self._state_handlers: dict[StateID, GameStateHandler] = {
+            StateID.MENU: MenuStateHandler(self),
+            StateID.PAUSE: PauseStateHandler(self),
+            StateID.RUNNING: RunningStateHandler(self),
+            StateID.DEATH: DeathStateHandler(self),
+            StateID.COUNTDOWN: CountdownHandler(self),
+        }
         self.change_state(StateID.MENU)
         pyxel.run(self.update, self.draw)
 
     @property
-    def handler(self) -> 'GameStateHandler':
+    def handler(self) -> "GameStateHandler":
         return self._state_handlers[self.stateID]
 
     def reload_settings(self) -> None:
         """Load settings from yaml file."""
-        self.cfg = omegaconf.OmegaConf.load(Path(__file__).parent / 'settings.yaml')
+        self.cfg = omegaconf.OmegaConf.load(Path(__file__).parent / "settings.yaml")
 
     def change_state(self, state: StateID) -> None:
         """Updates state and mouse visibility."""

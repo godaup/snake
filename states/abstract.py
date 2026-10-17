@@ -10,12 +10,24 @@ if TYPE_CHECKING:
 
 
 class GameStateHandler(ABC):
-    def __init__(self, game: 'Game') -> None:
+    def __init__(self, game: "Game") -> None:
         self.game: Game = game
-        self.header = Widget(x=0, y=0, h=self.game.cfg.header.h, w=self.game.cfg.width,
-                             bg=self.game.cfg.header.bg, border=self.game.cfg.header.border)
-        self.footer = Widget(x=0, y=self.game.cfg.header.h+self.game.cfg.area.h, h=self.game.cfg.footer.h, w=self.game.cfg.width,
-                             bg=self.game.cfg.footer.bg, border=self.game.cfg.footer.border)
+        self.header = Widget(
+            x=0,
+            y=0,
+            h=self.game.cfg.header.h,
+            w=self.game.cfg.width,
+            bg=self.game.cfg.header.bg,
+            border=self.game.cfg.header.border,
+        )
+        self.footer = Widget(
+            x=0,
+            y=self.game.cfg.header.h + self.game.cfg.area.h,
+            h=self.game.cfg.footer.h,
+            w=self.game.cfg.width,
+            bg=self.game.cfg.footer.bg,
+            border=self.game.cfg.footer.border,
+        )
 
     @staticmethod
     @abstractmethod
