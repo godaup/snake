@@ -15,6 +15,8 @@ from states.menu import MenuStateHandler
 from states.pause import PauseStateHandler
 from states.running import RunningStateHandler
 
+ASSETS = Path(__file__).parent / "assets.pyxres"
+
 
 class Game:
     def __init__(self):
@@ -48,7 +50,7 @@ class Game:
             display_scale=self.cfg.scale,
         )
         self.initialized = True
-        pyxel.load(filename="assets.pyxres")
+        pyxel.load(filename=str(ASSETS))
         self.stateID = StateID.DEATH
         self._state_handlers: dict[StateID, GameStateHandler] = {
             StateID.MENU: MenuStateHandler(self),
@@ -99,7 +101,7 @@ class Game:
     def restart(self):
         self.score = 0
         self.level_counter = 1
-        pyxel.load(filename="assets.pyxres")
+        pyxel.load(filename=str(ASSETS))
         self._state_handlers[StateID.RUNNING] = RunningStateHandler(self)
         self.change_state(state=StateID.RUNNING)
 
