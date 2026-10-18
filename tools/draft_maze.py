@@ -27,7 +27,7 @@ from pathlib import Path
 import omegaconf
 import pyxel
 
-from snake_quest.entity import ALL_ENTITIES, GoldenApple
+from snake_quest.entity import ENTITY_TILES, GoldenApple
 from snake_quest.map import DECOR_TILES, EMPTY_TILE, PATH_TILE, WALL_TILE
 
 PITCH = 8  # cell size in tiles, including one wall line
@@ -155,7 +155,7 @@ def main() -> None:
     width, height = level.width // 8, level.height // 8
     cols, rows = width // PITCH, height // PITCH
 
-    entity_sprites = {(cls._img_x, cls._img_y) for cls in ALL_ENTITIES}
+    entity_sprites = set(ENTITY_TILES)
     keep = {
         (x, y): src.pget(x, y)
         for y in range(height)

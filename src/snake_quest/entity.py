@@ -11,6 +11,26 @@ if TYPE_CHECKING:
     from snake_quest.snake import Snake
 
 
+# registry by name (used in level files: timers, goals), filled by @register
+ENTITY_NAMES: dict[str, type["Entity"]] = {}
+# entity class for each sprite tile (8px-tile coordinates in image bank 0), so tilemaps can place entities
+ENTITY_TILES: dict[tuple[int, int], type["Entity"]] = {}
+
+
+def register(name: str):
+    """Class decorator making an entity available to level files by `name` and to tilemaps by its sprite tile."""
+
+    def decorator(cls: type["Entity"]) -> type["Entity"]:
+        tile = (cls._img_x, cls._img_y)
+        if name in ENTITY_NAMES or tile in ENTITY_TILES:
+            raise ValueError(f"entity {name!r} or its sprite tile {tile} is registered twice")
+        ENTITY_NAMES[name] = cls
+        ENTITY_TILES[tile] = cls
+        return cls
+
+    return decorator
+
+
 class Entity:
     _img_x = None
     _img_y = None
@@ -58,6 +78,7 @@ class Entity:
             self.killed = True
 
 
+@register("apple")
 class Apple(Entity):
     _img_x = 2
     _img_y = 0
@@ -73,6 +94,7 @@ class Apple(Entity):
         self.alive = False
 
 
+@register("golden")
 class GoldenApple(Entity):
     _img_x = 2
     _img_y = 1
@@ -85,6 +107,7 @@ class GoldenApple(Entity):
         self.alive = False
 
 
+@register("speed")
 class SpeedApple(Entity):
     """No length, but a temporary speed boost. A second one restarts the boost instead of stacking it."""
 
@@ -99,6 +122,7 @@ class SpeedApple(Entity):
         self.alive = False
 
 
+@register("firefly")
 class Firefly(Entity):
     """Lights the breadcrumbs: the level's hidden path appears tile by tile, starting where the snake is."""
 
@@ -129,6 +153,7 @@ class Firefly(Entity):
         self.alive = False
 
 
+@register("enemy")
 class Enemy(Entity):
     _img_x = 3
     _img_y = 1
@@ -181,8 +206,3 @@ class Enemy(Entity):
             self.wdg.x = self.pos.x + (self.w / 2) - (self.wdg.w / 2) + offset.x
             self.wdg.y = self.pos.y - self.wdg.h - WIDGET_MARGIN + offset.y
             self.wdg.draw()
-
-
-ALL_ENTITIES = [Enemy, Apple, GoldenApple, SpeedApple, Firefly]
-# names used in level files (timers, goals)
-ENTITY_NAMES = {"enemy": Enemy, "apple": Apple, "golden": GoldenApple, "speed": SpeedApple, "firefly": Firefly}

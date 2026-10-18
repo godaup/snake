@@ -2,7 +2,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from snake_quest.entity import ALL_ENTITIES, Apple, Enemy, Entity, GoldenApple
+from snake_quest.entity import ENTITY_NAMES, ENTITY_TILES, Apple, Enemy, Entity, GoldenApple
 from snake_quest.map import FLOOR_TILES, PATH_TILE, WALL_TILES
 from snake_quest.snake import Snake
 from snake_quest.utils import Vec2
@@ -72,7 +72,16 @@ def test_enemy_speeds_up_snake_and_costs_score(map, snake):
 
 
 def test_entity_sprites_are_unique():
-    sprites = [(cls._img_x, cls._img_y) for cls in ALL_ENTITIES]
-    assert len(sprites) == len(set(sprites))
+    sprites = list(ENTITY_TILES)
+    assert len(sprites) == len(ENTITY_NAMES)
     # entity sprites must not collide with tiles that have a fixed meaning, see Map
     assert not (FLOOR_TILES | WALL_TILES | {PATH_TILE}) & set(sprites)
+
+
+def test_register_rejects_duplicates():
+    from snake_quest.entity import register
+
+    with pytest.raises(ValueError):
+        register("apple")(type("Twin", (Entity,), {"_img_x": 9, "_img_y": 15}))
+    with pytest.raises(ValueError):
+        register("twin")(type("Twin", (Entity,), {"_img_x": Apple._img_x, "_img_y": Apple._img_y}))

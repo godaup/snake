@@ -7,7 +7,7 @@ import omegaconf
 import pyxel
 
 from snake_quest.campaign import Level
-from snake_quest.entity import ALL_ENTITIES, ENTITY_NAMES, Entity
+from snake_quest.entity import ENTITY_NAMES, ENTITY_TILES, Entity
 from snake_quest.goals import Goal, load_goals
 from snake_quest.timers import Timer
 from snake_quest.utils import Vec2
@@ -59,14 +59,11 @@ class Map:
                     self.path.append(Vec2(x=tile_x * 8, y=tile_y * 8 + self.game.cfg.header.h))
                     pyxel.tilemaps[self.cfg.tm].pset(tile_x, tile_y, EMPTY_TILE)
                     continue
-                # print(f'at {tile_x=}, {tile_y=} there is {img_x=}, {img_y=}')
-                for e_cls in ALL_ENTITIES:
-                    if e_cls._img_x == img_x and e_cls._img_y == img_y:
-                        ent = e_cls.at_pos(Vec2(x=tile_x * 8, y=tile_y * 8 + self.game.cfg.header.h))
-                        self.entities.append(ent)
-                        # remove entity from 'background'
-                        pyxel.tilemaps[self.cfg.tm].pset(tile_x, tile_y, EMPTY_TILE)
-                        # print(f'found {e_cls.__name__} at {tile_x=}, {tile_y=}')
+                e_cls = ENTITY_TILES.get((img_x, img_y))
+                if e_cls is not None:
+                    self.entities.append(e_cls.at_pos(Vec2(x=tile_x * 8, y=tile_y * 8 + self.game.cfg.header.h)))
+                    # remove entity from 'background'
+                    pyxel.tilemaps[self.cfg.tm].pset(tile_x, tile_y, EMPTY_TILE)
         self._autotile_walls()
         # create timers by rules
         if "timers" in self.cfg:

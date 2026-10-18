@@ -22,7 +22,7 @@ from pathlib import Path
 import omegaconf
 import pyxel
 
-from snake_quest.entity import ALL_ENTITIES
+from snake_quest.entity import ENTITY_TILES
 from snake_quest.map import DECOR_TILES, EMPTY_TILE, WALL_TILE
 
 HEADER_H = 20  # world y of the map's top edge, see settings.yaml
@@ -189,7 +189,7 @@ def main() -> None:
     pyxel.load(str(resources))
     width, height = level.width // 8, level.height // 8
     start = start_tile(level)
-    entity_sprites = {(cls._img_x, cls._img_y) for cls in ALL_ENTITIES}
+    entity_sprites = set(ENTITY_TILES)
 
     if args.command == "decorate":
         tilemap = pyxel.tilemaps[level.tm]
