@@ -109,6 +109,37 @@ def test_maze_golden_apples_and_path_are_reachable(assets, game):
         assert (int(pos.x) // 8, (int(pos.y) - game.cfg.header.h) // 8) in reachable
 
 
+def test_maze_shortest_way_follows_the_whole_path(assets, game):
+    """No shortcuts: the shortest walk from the start to the golden apples passes every cell holding a path tile."""
+    level_map = maze_map(game)
+    tilemap = pyxel.tilemaps[level_map.cfg.tm]
+    width, height = level_map.cfg.width // 8, level_map.cfg.height // 8
+
+    def tile(pos):
+        return int(pos.x) // 8, (int(pos.y) - game.cfg.header.h) // 8
+
+    goals = {tile(ent.pos) for ent in level_map.entities if isinstance(ent, GoldenApple)}
+    start = tile(level_map.start)
+    previous = {start: None}
+    queue = [start]
+    while queue:  # breadth first, so the first golden apple reached is reached the shortest way
+        here = queue.pop(0)
+        if here in goals:
+            break
+        x, y = here
+        for nxt in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+            inside = 0 <= nxt[0] < width and 0 <= nxt[1] < height
+            if inside and nxt not in previous and tilemap.pget(*nxt) not in WALL_TILES:
+                previous[nxt] = here
+                queue.append(nxt)
+    walk = [here]
+    while previous[walk[-1]] is not None:
+        walk.append(previous[walk[-1]])
+    cells_walked = {(x // 8, y // 8) for x, y in walk}
+    path_cells = {(tx // 8, ty // 8) for tx, ty in map(tile, level_map.path)}
+    assert path_cells - cells_walked == set()
+
+
 def test_debug_shows_path(assets, game):
     game.cfg.debug = True
     assert breadcrumb_drawn(maze_map(game), game)

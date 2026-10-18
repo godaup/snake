@@ -1,10 +1,16 @@
 """Draft a maze around a designed pathway.
 
 The level designer marks the intended route with path tiles on an 8-tile grid (see PATH_TILE in map.py). This script
-builds a maze on that grid: cells of 7x7 floor tiles separated by 1-tile walls. The cells holding path tiles, the start
-cell and the cell holding the golden apples are connected first; every other cell is then attached as a dead-end branch
-(randomized Prim), so the result is a perfect maze whose only way to the golden apples runs along the pathway. Path
-tiles and entity tiles are copied over unchanged, and the floor gets a sprinkle of decorations.
+builds a maze on that grid: cells of 7x7 floor tiles separated by 1-tile walls.
+
+1. The path cells are put in order: the one chain that visits every path cell exactly once and ends in the cell holding
+   the golden apples. The script stops if the path cannot form such a chain, and warns if it allows several.
+2. The start cell is connected to the chain's first cell through cells that are not on the path.
+3. Only walls between consecutive cells of start -> chain -> golden apples are opened; every other cell is attached as
+   a dead-end branch (randomized Prim). The result is a perfect maze: its one and only way to the golden apples is the
+   whole pathway, in order, without shortcuts.
+
+Path tiles and entity tiles are copied over unchanged, and the floor gets a sprinkle of decorations.
 
 The draft is written to another tilemap of the same resource file, so the source layout stays untouched:
 
@@ -46,6 +52,98 @@ def neighbours(cell, cols, rows):
             yield nxt
 
 
+def order_path(cells: set, goal, start_cell, cols, rows) -> list:
+    """The chain through all `cells` (4-neighbouring cells in a row) that ends at `goal`. Its other end is a cell with a
+    single neighbour if there is one, else the cell closest to the start."""
+
+    def nbrs(cell):
+        return [n for n in neighbours(cell, cols, rows) if n in cells]
+
+    if start_cell in cells:
+        ends = [start_cell]
+    else:
+        ends = [c for c in cells if c != goal and len(nbrs(c)) == 1] or sorted(
+            cells - {goal}, key=lambda c: abs(c[0] - start_cell[0]) + abs(c[1] - start_cell[1])
+        )
+    if len(ends) > 1 and all(len(nbrs(c)) == 1 for c in ends):
+        raise SystemExit(f"the path has several loose ends {sorted(ends)}; it must form one line to the golden apples")
+
+    found: list[list] = []
+
+    def search(chain, unvisited):
+        if len(found) > 1:
+            return
+        here = chain[-1]
+        if not unvisited:
+            if here == goal:
+                found.append(list(chain))
+            return
+        if here == goal:
+            return
+        # prune: every unvisited cell except the goal needs two ways in and out
+        if any(c != goal and sum(n in unvisited or n == here for n in nbrs(c)) < 2 for c in unvisited):
+            return
+        options = sorted((n for n in nbrs(here) if n in unvisited), key=lambda n: sum(m in unvisited for m in nbrs(n)))
+        for n in options:
+            unvisited.discard(n)
+            chain.append(n)
+            search(chain, unvisited)
+            chain.pop()
+            unvisited.add(n)
+
+    for end in ends:
+        search([end], cells - {end})
+        if found:
+            break
+    if not found:
+        raise SystemExit(
+            "the path cells cannot be walked as one line ending at the golden apples; check the path tiles"
+        )
+    if len(found) > 1:
+        print("warning: the path can be walked in more than one order; using the first one found")
+    return found[0]
+
+
+def connect(frm, to, avoid: set, cols, rows) -> list:
+    """Shortest cell route from `frm` to `to` that does not touch `avoid` (except `to`); [] if frm is already `to`."""
+    if frm == to:
+        return []
+    previous = {frm: None}
+    todo = [frm]
+    while todo:
+        cell = todo.pop(0)
+        if cell == to:
+            route = [cell]
+            while previous[route[-1]] is not None:
+                route.append(previous[route[-1]])
+            return route[::-1]
+        for n in neighbours(cell, cols, rows):
+            if n not in previous and (n == to or n not in avoid):
+                previous[n] = cell
+                todo.append(n)
+    raise SystemExit(f"cannot reach the start of the path {to} from the start cell {frm} without crossing the path")
+
+
+def walk(edges: set, frm, to) -> list:
+    """The unique cell route between two cells of a tree given by its edges."""
+    links: dict = {}
+    for a, b in (tuple(edge) for edge in edges):
+        links.setdefault(a, []).append(b)
+        links.setdefault(b, []).append(a)
+    previous = {frm: None}
+    todo = [frm]
+    while todo:
+        cell = todo.pop()
+        for n in links.get(cell, []):
+            if n not in previous:
+                previous[n] = cell
+                todo.append(n)
+    route = [to]
+    while previous[route[-1]] is not None:
+        route.append(previous[route[-1]])
+    return route[::-1]
+
+
 def main() -> None:
     args = parse_args()
     resources = args.resources.resolve()  # before pyxel.init() changes the working directory
@@ -67,34 +165,18 @@ def main() -> None:
     golden_sprite = (GoldenApple._img_x, GoldenApple._img_y)
     start_cell = (int(level.start.x) // 8 // PITCH, (int(level.start.y) - HEADER_H) // 8 // PITCH)
     golden_cells = {(x // PITCH, y // PITCH) for (x, y), tile in keep.items() if tile == golden_sprite}
-    route = (
-        {(x // PITCH, y // PITCH) for (x, y), tile in keep.items() if tile == PATH_TILE} | {start_cell} | golden_cells
-    )
+    if len(golden_cells) != 1:
+        raise SystemExit(f"expected the golden apples in one cell, found them in {sorted(golden_cells)}")
+    (goal,) = golden_cells
+    path_cells = {(x // PITCH, y // PITCH) for (x, y), tile in keep.items() if tile == PATH_TILE}
 
-    # connect route components through other cells if the designed pathway has gaps
-    components = 0
-    unvisited = set(route)
-    tree_edges: set[frozenset] = set()
-    while unvisited:
-        components += 1
-        seed_cell = start_cell if start_cell in unvisited else min(unvisited)
-        unvisited.discard(seed_cell)
-        stack = [seed_cell]
-        while stack:  # randomized DFS spanning tree over the route cells
-            cell = stack[-1]
-            options = [n for n in neighbours(cell, cols, rows) if n in unvisited]
-            if not options:
-                stack.pop()
-                continue
-            nxt = rng.choice(options)
-            unvisited.discard(nxt)
-            tree_edges.add(frozenset((cell, nxt)))
-            stack.append(nxt)
-    if components > 1:
-        raise SystemExit(f"the pathway falls apart into {components} pieces; connect them in the source tilemap first")
+    chain = order_path(path_cells | {goal}, goal, start_cell, cols, rows)
+    lead_in = connect(start_cell, chain[0], avoid=path_cells | {goal}, cols=cols, rows=rows)
+    solution = lead_in + chain[1:] if lead_in else chain
+    tree_edges: set[frozenset] = {frozenset(pair) for pair in zip(solution, solution[1:], strict=False)}
 
     # attach every remaining cell as a dead-end branch (randomized Prim)
-    in_maze = set(route)
+    in_maze = set(solution)
     frontier = [(cell, n) for cell in in_maze for n in neighbours(cell, cols, rows) if n not in in_maze]
     while frontier:
         cell, nxt = frontier.pop(rng.randrange(len(frontier)))
@@ -130,6 +212,9 @@ def main() -> None:
             for x in xs:
                 dst.pset(x, by * PITCH, EMPTY_TILE)
 
+    # a perfect maze has exactly one way between two cells: make sure it is the designed one
+    assert walk(tree_edges, solution[0], solution[-1]) == solution, "the maze allows a shortcut"
+
     misplaced = [pos for pos in keep if dst.pget(*pos) == WALL_TILE]
     if misplaced:
         raise SystemExit(f"path or entity tiles would end up inside walls: {misplaced}")
@@ -158,8 +243,9 @@ def main() -> None:
     dst.imgsrc = src.imgsrc
     pyxel.save(str(resources))
     print(
-        f"maze {cols}x{rows} cells, route {len(route)} cells, golden cell(s) {sorted(golden_cells)}, "
-        f"start {start_cell}, {len(keep)} path/entity tiles kept, {decorated} decorations -> tilemap {args.dst_tm}"
+        f"maze {cols}x{rows} cells; route: start {start_cell}, {max(len(lead_in) - 2, 0)} lead-in cells, "
+        f"{len(chain)} path cells to the golden apples at {goal}; {len(keep)} path/entity tiles kept, "
+        f"{decorated} decorations -> tilemap {args.dst_tm}"
     )
 
 
