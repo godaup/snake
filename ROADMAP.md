@@ -20,7 +20,7 @@ Ground rules:
 |----|--------------------|----------------------------------------------------------------------------------------|-------------------------|-------------------------------|
 | 1  | Classic            | Plain snake, learn to steer                                                            | score                   | exists (rebalance goal)       |
 | 2  | Maneuver           | Large scrolling map with portals / wrap-around                                         | score                   | exists; portals missing       |
-| 3  | The Maze           | Navigation instead of eating                                                           | reach the exit          | exists; exit tile missing     |
+| 3  | The Maze           | Navigation: follow the (hidden) pathway to the golden apples at its end               | eat all golden apples   | exists; layout incomplete     |
 | 4  | Yummy              | Feast: food rains, the snake speeds up                                                 | score                   | exists                        |
 | 5  | **Boss: The Hunger** | Starving in the dark: constant shrinking, scarce food, a light radius around the head; the hunger bar is the boss bar | hold length | new                           |
 
@@ -88,7 +88,7 @@ home, explode, lifetime), weapon pickups and switching, and ammo/cooldown in the
 
 ### M1: Arc 1
 
-Portal tiles, exit tile in the maze, a trigger in the maze that reveals the hidden path tiles as breadcrumbs (`Map.reveal_path()` exists), rebalanced goals, darkness rendering (light radius), boss framework (boss bar,
+Portal tiles, a complete maze layout (corridors instead of open field), a more appealing Maneuver map, a trigger in the maze that reveals the hidden path tiles as breadcrumbs (`Map.reveal_path()` exists), rebalanced goals, darkness rendering (light radius), boss framework (boss bar,
 phases) and The Hunger.
 
 ### M2: Arc 2

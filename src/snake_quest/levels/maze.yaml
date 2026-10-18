@@ -7,6 +7,7 @@ start:
   y: 100
 
 goal:
-  score: 10
+  # eat every golden apple at the end of the pathway
+  collect_all: golden
 
 title: The Maze

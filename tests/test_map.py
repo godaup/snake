@@ -66,6 +66,43 @@ def test_path_is_drawn_only_when_revealed(assets, game):
     assert breadcrumb_drawn(level_map, game)
 
 
+def test_maze_is_won_by_eating_all_golden_apples(assets, game):
+    level_map = maze_map(game)
+    snake = Snake(pos=level_map.start, orient=0, size=2)
+    golden = [ent for ent in level_map.entities if isinstance(ent, GoldenApple)]
+    assert golden
+    for ent in golden[:-1]:
+        ent.on_intersect(snake=snake, map=level_map)
+    level_map.update(snake=snake)
+    assert not level_map.check_win(snake=snake)
+    golden[-1].on_intersect(snake=snake, map=level_map)
+    level_map.update(snake=snake)
+    assert level_map.check_win(snake=snake)
+
+
+def reachable_tiles(level_map, game) -> set[tuple[int, int]]:
+    """Floor tiles connected to the start tile (8px corridors are wide enough for the snake)."""
+    tilemap = pyxel.tilemaps[level_map.cfg.tm]
+    width, height = level_map.cfg.width // 8, level_map.cfg.height // 8
+    start = (int(level_map.start.x) // 8, (int(level_map.start.y) - game.cfg.header.h) // 8)
+    seen, todo = {start}, [start]
+    while todo:
+        x, y = todo.pop()
+        for nxt in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+            if 0 <= nxt[0] < width and 0 <= nxt[1] < height and nxt not in seen and tilemap.pget(*nxt) != WALL_TILE:
+                seen.add(nxt)
+                todo.append(nxt)
+    return seen
+
+
+def test_maze_golden_apples_and_path_are_reachable(assets, game):
+    level_map = maze_map(game)
+    reachable = reachable_tiles(level_map, game)
+    golden = [ent for ent in level_map.entities if isinstance(ent, GoldenApple)]
+    for pos in [ent.pos for ent in golden] + level_map.path:
+        assert (int(pos.x) // 8, (int(pos.y) - game.cfg.header.h) // 8) in reachable
+
+
 def test_debug_shows_path(assets, game):
     game.cfg.debug = True
     assert breadcrumb_drawn(maze_map(game), game)
