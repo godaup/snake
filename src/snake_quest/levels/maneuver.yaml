@@ -1,12 +1,19 @@
-tm: 1
-width: 385
-height: 256
+tm: 4  # natural layout from tools/draft_garden.py; the original geometric layout is still in tilemap 1
+width: 640
+height: 384
 
 start:
   x: 50
   y: 50
 
 timers:
+  apple1:  # one apple at a time: an eaten apple places the next one
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
   golden1:
     duration: 0
     frequency: 30
@@ -14,10 +21,18 @@ timers:
     callback:
       type: spawn
       entity: golden
+  speed1:  # speed apples: no length, +50% speed for a few seconds
+    duration: 4
+    frequency: 12
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: speed
 
 goal:
-  score: 1
+  score: 25
 
 title: Maneuver
 intro:
   - "A bigger garden. Mind the hedges!"
+  - "Blue apples make you faster for a while."

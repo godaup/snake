@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 
 COL_BORDER, COL_LABEL, COL_VALUE, COL_ACCENT = 5, 13, 7, 10
 COL_BAR_BG, COL_BAR, COL_BAR_DONE = 5, 11, 10
+COL_BOOST = 12  # same blue as the speed apple
 SCORE_SCALE = 2
 BAR_H = 4
 MARGIN = 4
@@ -69,9 +70,14 @@ class Hud:
         return f"LEVEL {self.game.level_counter}", str(self.map.cfg.get("title", self.map.level.name))
 
     def right_lines(self) -> tuple[str, str]:
+        """Best score and length; an active speed boost takes the place of the best score."""
+        length = f"LENGTH {len(self.snake)}"
+        if self.snake.boost_left > 0:
+            percent = round((self.snake.boost_factor - 1) * 100)
+            return f"SPEED {percent:+}% {self.snake.boost_left:.1f}s", length
         scores = self.game.profile.highscores
         best = max(scores[0].score if scores else 0, self.game.score)
-        return f"BEST {best}", f"LENGTH {len(self.snake)}"
+        return f"BEST {best}", length
 
     def draw_header(self) -> None:
         pyxel.rect(0, 0, self.width, self.header_h, self.game.cfg.header.bg)
@@ -82,7 +88,8 @@ class Hud:
         pyxel.text(MARGIN, bottom, title, COL_VALUE)
         best, length = self.right_lines()
         for y, text in ((top, best), (bottom, length)):
-            pyxel.text(self.width - MARGIN - len(text) * pyxel.FONT_WIDTH, y, text, COL_LABEL)
+            col = COL_BOOST if text.startswith("SPEED") else COL_LABEL
+            pyxel.text(self.width - MARGIN - len(text) * pyxel.FONT_WIDTH, y, text, col)
         # score in the middle, with an apple in front
         center_x, center_y = self.width / 2 + 6, (self.header_h - 1) / 2
         self.score_text.draw(center_x, center_y, f"{self.game.score:05}", COL_VALUE)

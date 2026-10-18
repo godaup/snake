@@ -85,6 +85,40 @@ class GoldenApple(Entity):
         self.alive = False
 
 
+class SpeedApple(Entity):
+    """No length, but a temporary speed boost. A second one restarts the boost instead of stacking it."""
+
+    _img_x = 4
+    _img_y = 0
+    BOOST = 1.5  # speed factor
+    SECONDS = 5.0
+
+    def on_intersect(self, snake: "Snake", map: "Map"):
+        snake.boost(self.BOOST, self.SECONDS)
+        map.game.score += 1
+        self.alive = False
+
+
+class Firefly(Entity):
+    """Lights the breadcrumbs: the level's hidden path appears tile by tile, starting where the snake is."""
+
+    _img_x = 5
+    _img_y = 0
+    NOTICE = 48  # px: closer than this, the firefly drifts towards the snake's head
+    SPEED = 1.5  # px per frame
+
+    def update(self, snake: "Snake", map: "Map"):
+        """Fly towards a snake passing nearby, so crossing its corridor is enough to catch it."""
+        to_head = snake.head.pos - (self.pos + Vec2(self.w / 2, self.h / 2))
+        distance = to_head.length()
+        if 0 < distance < self.NOTICE:
+            self.pos = self.pos + to_head * (min(self.SPEED, distance) / distance)
+
+    def on_intersect(self, snake: "Snake", map: "Map"):
+        map.reveal_path(origin=snake.head.pos)
+        self.alive = False
+
+
 class Enemy(Entity):
     _img_x = 3
     _img_y = 1
@@ -139,6 +173,6 @@ class Enemy(Entity):
             self.wdg.draw()
 
 
-ALL_ENTITIES = [Enemy, Apple, GoldenApple]
+ALL_ENTITIES = [Enemy, Apple, GoldenApple, SpeedApple, Firefly]
 # names used in level files (timers, goals)
-ENTITY_NAMES = {"enemy": Enemy, "apple": Apple, "golden": GoldenApple}
+ENTITY_NAMES = {"enemy": Enemy, "apple": Apple, "golden": GoldenApple, "speed": SpeedApple, "firefly": Firefly}

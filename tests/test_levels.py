@@ -6,6 +6,7 @@ import omegaconf
 import pytest
 
 from snake_quest.campaign import CAMPAIGN_FILE, LEVELS_DIR, load_campaign
+from snake_quest.entity import ENTITY_NAMES
 from snake_quest.goals import GOALS
 
 LEVEL_FILES = sorted(p for p in LEVELS_DIR.glob("*.yaml") if p != CAMPAIGN_FILE)
@@ -38,7 +39,7 @@ def test_level_timers(path: Path):
         assert timer.fire_n >= 0, name
         assert timer.callback.type in ("spawn", "grow"), name
         if timer.callback.type == "spawn":
-            assert timer.callback.entity in ("enemy", "apple", "golden"), name
+            assert timer.callback.entity in ENTITY_NAMES, name
         else:
             assert isinstance(timer.callback.value, int), name
 

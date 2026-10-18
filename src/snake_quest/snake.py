@@ -36,6 +36,8 @@ class Snake:
         self.size: int = size
         self.orient: int = orient
         self._speed: float = INIT_SPEED
+        self.boost_factor: float = 1.0  # temporary speed factor, see boost()
+        self.boost_left: float = 0.0  # seconds
         self.colors: Palette = colors or palette(DEFAULT_PALETTE)
         self.segs: list[SnakeSeg] = [SnakeSeg(pos, self.size, self.colors.head)]
         self.grow: int = 20
@@ -57,6 +59,16 @@ class Snake:
     def speed(self, val):
         self._speed = max(min(val, MAX_SPEED), MIN_SPEED)
 
+    @property
+    def effective_speed(self) -> float:
+        """Speed including an active boost, never above MAX_SPEED."""
+        return min(self._speed * self.boost_factor, MAX_SPEED) if self.boost_left > 0 else self._speed
+
+    def boost(self, factor: float, seconds: float) -> None:
+        """Move `factor` times faster for `seconds`; a new boost replaces a running one."""
+        self.boost_factor = factor
+        self.boost_left = seconds
+
     def body_color(self, index: int) -> int:
         return self.colors.body[index % len(self.colors.body)]
 
@@ -75,13 +87,14 @@ class Snake:
             seg.draw(offset)
 
     def update(self, dt: datetime.timedelta, map: "Map"):
+        self.boost_left = max(self.boost_left - dt.total_seconds(), 0.0)
         # move
         previous = None
         for ix, seg in enumerate(self.segs):
             if ix == 0:
                 new = Vec2(
-                    x=self.head.pos.x + (self._speed * (pyxel.cos(self.orient))),
-                    y=self.head.pos.y + (self._speed * (pyxel.sin(self.orient))),
+                    x=self.head.pos.x + (self.effective_speed * (pyxel.cos(self.orient))),
+                    y=self.head.pos.y + (self.effective_speed * (pyxel.sin(self.orient))),
                 )
             else:
                 new = previous

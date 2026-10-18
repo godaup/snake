@@ -1,4 +1,5 @@
 import datetime
+from collections import deque
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Optional
 
@@ -27,6 +28,7 @@ DECOR_TILES = frozenset((k, 9) for k in range(6))
 FLOOR_TILES = frozenset({EMPTY_TILE} | DECOR_TILES)
 # level design helper marking the intended route (e.g. through the maze); hidden until revealed
 PATH_TILE = (3, 0)
+CRUMBS_PER_SECOND = 6  # how fast a firefly lights the breadcrumbs
 
 
 class Map:
@@ -44,6 +46,7 @@ class Map:
         # world positions of path tiles, drawn as breadcrumbs once revealed
         self.path: list[Vec2] = []
         self.path_revealed = False
+        self.crumbs_shown = 0.0  # how many breadcrumbs are visible, grows while revealing
         # iterate over tilemap
         for tile_x in range(self.cfg.width // 8):
             for tile_y in range(self.cfg.height // 8):
@@ -109,6 +112,9 @@ class Map:
         # update alive timers
         for tmr in self.timers:
             tmr.update(map=self, snake=snake)
+        # light up breadcrumbs one after another
+        if self.path_revealed and self.crumbs_shown < len(self.path):
+            self.crumbs_shown += self.game.dt.total_seconds() * CRUMBS_PER_SECOND
         # update time based goals
         for goal in self.goals:
             goal.update(map=self, snake=snake, dt=self.game.dt)
@@ -123,9 +129,9 @@ class Map:
             w=self.game.cfg.width,
             h=self.game.cfg.area.h,
         )
-        if self.path_revealed or self.game.cfg.debug:
-            for pos in self.path:
-                pyxel.blt(pos.x + offset.x, pos.y + offset.y, 0, PATH_TILE[0] * 8, PATH_TILE[1] * 8, 8, 8, colkey=0)
+        shown = len(self.path) if self.game.cfg.debug else int(self.crumbs_shown) if self.path_revealed else 0
+        for pos in self.path[:shown]:
+            pyxel.blt(pos.x + offset.x, pos.y + offset.y, 0, PATH_TILE[0] * 8, PATH_TILE[1] * 8, 8, 8, colkey=0)
         for ent in self.entities:
             ent.draw(offset)
         for proj in self.projectiles:
@@ -154,9 +160,35 @@ class Map:
                     break
         return Vec2(_x, _y)
 
-    def reveal_path(self) -> None:
-        """Show the breadcrumbs, e.g. when the snake triggers a mechanism."""
+    def reveal_path(self, origin: Vec2 | None = None) -> None:
+        """Show the breadcrumbs. Without an origin all at once; with one (e.g. where a firefly was eaten) one by one,
+        nearest first by walking distance through the corridors, so they light up along the route."""
         self.path_revealed = True
+        if origin is None:
+            self.crumbs_shown = float(len(self.path))
+            return
+        distance = self.walking_distances(origin)
+        self.path.sort(key=lambda pos: distance.get(self._tile_xy(pos), float("inf")))
+        self.crumbs_shown = 0.0
+
+    def _tile_xy(self, pos: Vec2) -> tuple[int, int]:
+        return int(pos.x) // 8, (int(pos.y) - self.game.cfg.header.h) // 8
+
+    def walking_distances(self, origin: Vec2) -> dict[tuple[int, int], int]:
+        """Steps from `origin` to every floor tile reachable from it (breadth first, through non-wall tiles)."""
+        tilemap = pyxel.tilemaps[self.cfg.tm]
+        width, height = self.cfg.width // 8, self.cfg.height // 8
+        start = self._tile_xy(origin)
+        distance = {start: 0}
+        queue = deque([start])
+        while queue:
+            x, y = queue.popleft()
+            for nxt in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+                inside = 0 <= nxt[0] < width and 0 <= nxt[1] < height
+                if inside and nxt not in distance and tilemap.pget(*nxt) not in WALL_TILES:
+                    distance[nxt] = distance[x, y] + 1
+                    queue.append(nxt)
+        return distance
 
     def tile_at(self, pos: Vec2) -> tuple[int, int]:
         """Sprite tile shown at a world position."""
