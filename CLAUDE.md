@@ -8,6 +8,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Pyxel is pinned to exactly `2.9.9` (uploaded 2026-08-12). In October 2026 the upstream author's GitHub account (`kitao`) was suspended after his token was abused in the "GhostAction" attacks, and the pin keeps out any release published during that time. Don't widen it until the account is back and new releases can be checked against the upstream repo. Until then, github.com/kitao/pyxel returns 404, and the docs are mirrored at kitao.dev/pyxel.
 
+**Never call `pyxel.playm`.** In Pyxel 2.9.9 it can deadlock with the SDL audio thread: it holds the channels lock while waiting for SDL's audio lock, and the audio callback holds SDL's lock while waiting for the channels lock. The game froze on a music change (reproduced and confirmed from a core dump). `SoundManager.play()` starts each channel with `pyxel.play(ch, sounds, loop=True)` instead, which survived 100k+ rapid switches. `test_game_code_never_calls_playm` guards this. After upgrading Pyxel, rerun `tools/audio_stress.py ... playm` to see whether the bug is gone. Headless Pyxel runs no audio thread, so audio deadlocks only show with the real SDL drivers (`SDL_VIDEODRIVER=offscreen SDL_AUDIODRIVER=dummy` avoids a window and sound).
+
 ## Commands
 
 ```bash
@@ -18,6 +20,8 @@ snake-quest --level maze --preview maze.png   # render a whole level (walls, ent
 python tools/draft_maze.py src/snake_quest/resources/garden.pyxres --level src/snake_quest/levels/maze.yaml \
     --src-tm 2 --dst-tm 3 --seed 7    # regenerate the maze draft around the path tiles (see the script's docstring)
 python tools/compose_theme.py src/snake_quest/resources/garden.pyxres   # rewrite the menu theme from its text score
+SDL_VIDEODRIVER=offscreen SDL_AUDIODRIVER=dummy timeout -s KILL 90 \
+    python tools/audio_stress.py src/snake_quest/resources/garden.pyxres game 60   # audio deadlock check
 pytest                                # run all tests
 pytest tests/test_map.py::test_new_pos_is_free   # run a single test
 ruff check . && ruff format --check .            # lint + format check

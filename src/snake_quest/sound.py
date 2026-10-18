@@ -11,8 +11,15 @@ class SoundManager:
         pyxel.stop()
 
     def play(self, music: int | None = None):
-        if self.music and music is not None:
-            pyxel.playm(music, loop=True)
+        """Loop a music. Each channel is started with pyxel.play() instead of playm: in Pyxel 2.9.9 playm can
+        deadlock with the audio thread (it waits for SDL's audio lock while holding the channels lock that the audio
+        callback needs), which froze the game. Check again with tools/audio_stress.py before using playm."""
+        if not self.music or music is None:
+            return
+        for channel, seq in enumerate(pyxel.musics[music].seqs):
+            sounds = list(seq)
+            if sounds:  # an empty music (e.g. the level music slot) makes no audio calls at all
+                pyxel.play(channel, sounds, loop=True)
 
     def fail(self):
         if self.effects:
