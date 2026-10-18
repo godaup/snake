@@ -1,4 +1,3 @@
-import pytest
 import pyxel
 
 from widget import TEXT_LINE_SPACING, WIDGET_MARGIN, Button, ImgInfo, LifeBar, Widget
@@ -46,7 +45,17 @@ def test_button_without_input_does_not_click():
     assert clicks == []
 
 
-@pytest.mark.xfail(strict=True, raises=TypeError, reason="bug: LifeBar calls super(LifeBar) instead of super()")
-def test_life_bar():
+def test_life_bar_fills_proportionally():
+    pyxel.cls(0)
     bar = LifeBar(x=0, y=0, h=4, w=20, bg=1, fg=8, val=0.5)
     bar.draw()
+    assert pyxel.pget(5, 1) == 8
+    assert pyxel.pget(15, 1) == 1
+
+
+def test_disabled_life_bar_draws_nothing():
+    pyxel.cls(0)
+    bar = LifeBar(x=0, y=0, h=4, w=20, bg=1, fg=8, val=0.5)
+    bar.enabled = False
+    bar.draw()
+    assert pyxel.pget(5, 1) == 0

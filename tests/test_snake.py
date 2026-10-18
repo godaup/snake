@@ -62,13 +62,20 @@ def test_grows_one_segment_per_spawn_delay():
     assert snake.grow == 1
 
 
-@pytest.mark.xfail(strict=True, reason="bug: grow is never reset after shrinking, so the snake shrinks every frame")
-def test_negative_grow_shrinks_once():
+def test_negative_grow_shrinks_every_frame():
     snake = straight_snake(10)
     snake.grow = -2
     snake.update(dt=DT, map=None)
-    snake.update(dt=DT, map=None)
     assert len(snake) == 8
+    snake.update(dt=DT, map=None)
+    assert len(snake) == 6
+
+
+def test_shrinking_below_zero_length_kills():
+    snake = straight_snake(3)
+    snake.grow = -4
+    with pytest.raises(RuntimeError, match="Dead"):
+        snake.update(dt=DT, map=None)
 
 
 def test_self_intersect():

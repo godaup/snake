@@ -104,12 +104,14 @@ class Widget:
 
 class LifeBar(Widget):
     def __init__(self, x: int, y: int, h: int, w: int, bg: int, fg: int, border: int | None = None, val: float = 1.0):
-        super(LifeBar).__init__(x=x, y=y, h=h, w=w, bg=bg, border=border, text=None, img=None)
+        super().__init__(x=x, y=y, h=h, w=w, bg=bg, border=border, text=None, img=None)
         self.val = val
         self.fg = fg
 
     def draw(self):
-        super(LifeBar).draw()
+        if not self.enabled:
+            return
+        super().draw()
         pyxel.rect(self.x, self.y, self.w * self.val, self.h, self.fg)
 
 

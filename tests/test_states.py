@@ -62,7 +62,6 @@ def test_sound_manager_respects_music_setting(monkeypatch):
     assert played == [1]
 
 
-@pytest.mark.xfail(strict=True, reason="bug: SoundManager.play skips music id 0, the id RunningStateHandler uses")
 def test_sound_manager_plays_music_zero(monkeypatch):
     played = []
     monkeypatch.setattr(pyxel, "playm", lambda msc, loop=None: played.append(msc))

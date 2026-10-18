@@ -11,7 +11,7 @@ class SoundManager:
         pyxel.stop()
 
     def play(self, music: int | None = None):
-        if self.music and music:
+        if self.music and music is not None:
             pyxel.playm(music, loop=True)
 
     def fail(self):

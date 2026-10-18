@@ -38,7 +38,9 @@ def test_level_timers(path: Path):
             assert isinstance(timer.callback.value, int), name
 
 
-@pytest.mark.xfail(strict=True, reason="bug: Game.level_up increments by 1, but levels jump from 3 to 9")
+@pytest.mark.xfail(
+    strict=True, reason="levels 4-8 not designed yet; Game.level_up increments by 1, so winning level 3 crashes"
+)
 def test_levels_are_consecutive():
     numbers = sorted(int(p.stem) for p in LEVEL_FILES if p.stem.isdigit())
     assert numbers == list(range(1, len(numbers) + 1))
