@@ -8,8 +8,13 @@ if TYPE_CHECKING:
 from snake_quest.snake import Snake
 from snake_quest.utils import Vec2
 
-CAM_CENTER_SIZE_X = 140
-CAM_CENTER_SIZE_Y = 80
+
+def _follow(screen: float, world: float, target: float) -> float:
+    """Offset that centres `target` on a screen axis of length `screen`, without showing anything beyond the map
+    (length `world`); a map smaller than the screen is centred."""
+    if world <= screen:
+        return (screen - world) / 2
+    return min(0.0, max(screen - world, screen / 2 - target))
 
 
 class Cam:
@@ -20,15 +25,12 @@ class Cam:
         self.offset: Vec2 = Vec2(0, 0)
 
     def update(self):
-        left_border = CAM_CENTER_SIZE_X
-        right_border = self.map.cfg.width - CAM_CENTER_SIZE_X
-        top_border = CAM_CENTER_SIZE_Y + self.game.cfg.header.h
-        bottom_border = self.map.cfg.height + self.game.cfg.header.h - CAM_CENTER_SIZE_Y
-        perspective_pos_x = min(max(left_border, int(self.snake.head.pos.x)), right_border)
-        perspective_pos_y = min(max(top_border, int(self.snake.head.pos.y)), bottom_border)
-        # set default such that snake head is at the center
-        self.offset.x = self.game.cfg.width / 2 - perspective_pos_x
-        self.offset.y = self.game.cfg.area.h / 2 - perspective_pos_y + self.game.cfg.header.h
+        """Keep the snake head centred, clamped to the map edges. World y includes the header, so the vertical axis
+        is computed in map coordinates (head y minus header)."""
+        header = self.game.cfg.header.h
+        head = self.snake.head.pos
+        self.offset.x = _follow(self.game.cfg.width, self.map.cfg.width, head.x)
+        self.offset.y = _follow(self.game.cfg.area.h, self.map.cfg.height, head.y - header)
 
     def draw(self):
         self.map.draw(self.offset)

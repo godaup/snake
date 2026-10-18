@@ -27,6 +27,14 @@ class Goal(ABC):
     def describe(self) -> str:
         """Short text for the level intro / HUD."""
 
+    @abstractmethod
+    def status(self, map: "Map", snake: "Snake") -> str:
+        """Current state in a few characters for the footer, e.g. 'SCORE 23/100'."""
+
+    def progress(self, map: "Map", snake: "Snake") -> float | None:
+        """How far along the goal is, 0..1, or None when there is nothing to measure (e.g. finding the exit)."""
+        return None
+
 
 class ScoreGoal(Goal):
     """`score: N`: gain N points in this level."""
@@ -43,6 +51,12 @@ class ScoreGoal(Goal):
     def describe(self):
         return f"Score {self.value} points"
 
+    def status(self, map, snake):
+        return f"SCORE {max(map.game.score - self.score_before, 0)}/{self.value}"
+
+    def progress(self, map, snake):
+        return _fraction(map.game.score - self.score_before, self.value)
+
 
 class LengthGoal(Goal):
     """`length: N`: be at least N segments long."""
@@ -54,6 +68,12 @@ class LengthGoal(Goal):
 
     def describe(self):
         return f"Grow to length {self.value}"
+
+    def status(self, map, snake):
+        return f"LENGTH {len(snake)}/{self.value}"
+
+    def progress(self, map, snake):
+        return _fraction(len(snake), self.value)
 
 
 class ExitGoal(Goal):
@@ -69,6 +89,9 @@ class ExitGoal(Goal):
 
     def describe(self):
         return "Find the exit"
+
+    def status(self, map, snake):
+        return "FIND THE EXIT"
 
 
 class SurviveGoal(Goal):
@@ -89,6 +112,13 @@ class SurviveGoal(Goal):
     def describe(self):
         return f"Survive {self.value} seconds"
 
+    def status(self, map, snake):
+        left = max(self.value - self.elapsed.total_seconds(), 0)
+        return f"SURVIVE {left:.0f}s"
+
+    def progress(self, map, snake):
+        return _fraction(self.elapsed.total_seconds(), self.value)
+
 
 class DefeatGoal(Goal):
     """`defeat: N`: kill N entities (eating does not count)."""
@@ -100,6 +130,12 @@ class DefeatGoal(Goal):
 
     def describe(self):
         return f"Defeat {self.value} enemies"
+
+    def status(self, map, snake):
+        return f"DEFEAT {map.defeated}/{self.value}"
+
+    def progress(self, map, snake):
+        return _fraction(map.defeated, self.value)
 
 
 class HoldLengthGoal(Goal):
@@ -120,6 +156,12 @@ class HoldLengthGoal(Goal):
     def describe(self):
         return f"Stay {self.value['length']} long for {self.value['seconds']} seconds"
 
+    def status(self, map, snake):
+        return f"HOLD {self.value['length']}+ {self.held.total_seconds():.0f}/{self.value['seconds']}s"
+
+    def progress(self, map, snake):
+        return _fraction(self.held.total_seconds(), self.value["seconds"])
+
 
 class CollectAllGoal(Goal):
     """`collect_all: <entity name>`: no entity of that kind is left on the map."""
@@ -129,12 +171,35 @@ class CollectAllGoal(Goal):
     def __init__(self, value, map):
         super().__init__(value, map)
         self.entity_cls = ENTITY_NAMES[value]
+        self.seen: set = set()  # every matching entity so far, so later spawns count towards the total
+        self.counts(map)
+
+    def counts(self, map) -> tuple[int, int]:
+        """(collected, total) so far."""
+        alive = [ent for ent in map.entities if isinstance(ent, self.entity_cls) and ent.alive]
+        self.seen.update(alive)
+        return len(self.seen) - len(alive), len(self.seen)
+
+    def remaining(self, map) -> int:
+        collected, total = self.counts(map)
+        return total - collected
 
     def done(self, map, snake):
-        return not any(isinstance(ent, self.entity_cls) and ent.alive for ent in map.entities)
+        return self.remaining(map) == 0
 
     def describe(self):
         return f"Collect every {self.value}"
+
+    def status(self, map, snake):
+        collected, total = self.counts(map)
+        return f"{self.value.upper()} {collected}/{total}"
+
+    def progress(self, map, snake):
+        return _fraction(*self.counts(map))
+
+
+def _fraction(value: float, target: float) -> float:
+    return 1.0 if target <= 0 else min(max(value / target, 0.0), 1.0)
 
 
 GOALS: dict[str, type[Goal]] = {

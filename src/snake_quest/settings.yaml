@@ -9,7 +9,7 @@ header:
   border: null
 footer:
   h: 10
-  bg: 2
+  bg: 1
   border: null
 area:
   h: 192

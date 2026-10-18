@@ -117,8 +117,38 @@ def test_unknown_goal_type(map):
     ],
     ids=lambda cfg: next(iter(cfg)),
 )
-def test_every_goal_has_a_description(map, cfg):
-    assert only_goal(cfg, map).describe()
+def test_every_goal_has_a_description_and_status(map, cfg):
+    goal = only_goal(cfg, map)
+    assert goal.describe()
+    status = goal.status(map, snake_of_length(1))
+    assert status and len(status) <= 20  # fits a footer slot
+    progress = goal.progress(map, snake_of_length(1))
+    assert progress is None or 0 <= progress <= 1
+
+
+def test_progress_values(map):
+    score = only_goal({"score": 4}, map)
+    map.game.score = 11
+    assert (score.status(map, None), score.progress(map, None)) == ("SCORE 1/4", 0.25)
+    map.game.score = 99
+    assert score.progress(map, None) == 1  # clamped
+
+    assert only_goal({"exit": [0, 2]}, map).progress(map, None) is None
+
+    survive = only_goal({"survive": 4}, map)
+    survive.update(map, None, SECOND)
+    assert (survive.status(map, None), survive.progress(map, None)) == ("SURVIVE 3s", 0.25)
+
+
+def test_collect_all_counts_collected_and_new_spawns(map):
+    goldens = [GoldenApple.at_pos(Vec2(i * 8, 0)) for i in range(4)]
+    map.entities = list(goldens)
+    goal = only_goal({"collect_all": "golden"}, map)
+    goldens[0].alive = False
+    assert goal.status(map, None) == "GOLDEN 1/4"
+    map.entities += [GoldenApple.at_pos(Vec2(64, 0)), GoldenApple.at_pos(Vec2(72, 0))]  # a timer spawned two
+    assert goal.status(map, None) == "GOLDEN 1/6"  # the eaten one still counts as collected
+    assert goal.progress(map, None) == 1 / 6
 
 
 def test_every_registered_goal_is_tested():

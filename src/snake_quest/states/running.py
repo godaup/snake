@@ -3,18 +3,15 @@ from typing import TYPE_CHECKING
 import pyxel
 
 from snake_quest.cam import Cam
+from snake_quest.hud import Hud
 from snake_quest.map import Map
 from snake_quest.palettes import palette
 from snake_quest.snake import Snake
 from snake_quest.states import StateID
 from snake_quest.states.abstract import GameStateHandler
-from snake_quest.widget import WIDGET_MARGIN, Widget
 
 if TYPE_CHECKING:
     from snake_quest.game import Game
-
-COL_SCORE = 6
-COL_SCORE_BACKGROUND = 5
 
 TURN_SPEED = 9
 SNAKE_SIZE = 2
@@ -26,27 +23,8 @@ class RunningStateHandler(GameStateHandler):
         self.map = Map(level=game.campaign.level(game.level_counter), game=self.game)
         self.snake = Snake(pos=self.map.start, orient=45, size=SNAKE_SIZE, colors=palette(game.profile.palette))
         self.cam = Cam(snake=self.snake, map=self.map, game=self.game)
-        self.score_board = Widget(
-            x=0, y=0, w=len(self.get_score_text()) * pyxel.FONT_WIDTH + 2 * WIDGET_MARGIN, bg=10, text_col=12
-        )
-        self.header.add_sub_widget(self.score_board)
-        self.level_widget = Widget(
-            x=(self.game.cfg.width + len(self.get_level_text())) / 2,
-            y=0,
-            w=len(self.get_level_text()) * pyxel.FONT_WIDTH + 2 * WIDGET_MARGIN,
-            bg=10,
-            text_col=12,
-        )
-        self.header.add_sub_widget(self.level_widget)
+        self.hud = Hud(game=self.game, level_map=self.map, snake=self.snake)
         self.countdown = True
-
-    def get_score_text(self):
-        return f"Score: {self.game.score:04}"
-
-    def get_level_text(self):
-        return f"Level: {self.game.level_counter}"
-        # p = self.snake.get_collision_points()[0]
-        # return f"{pyxel.tilemap(0).pget(pyxel.mouse_x / 8, (pyxel.mouse_y - self.header.h) / 8)}"
 
     @staticmethod
     def is_visible() -> bool:
@@ -68,9 +46,6 @@ class RunningStateHandler(GameStateHandler):
         self.snake.update(dt=self.game.dt, map=self.map)
         if self.snake.self_intersect():
             self.game.change_state(state=StateID.DEATH)
-        # update widgets
-        self.score_board.text = [self.get_score_text()]
-        self.level_widget.text = [self.get_level_text()]
         # calc offset
         self.cam.update()
         # update entities and timers and projectiles
@@ -91,5 +66,4 @@ class RunningStateHandler(GameStateHandler):
         pyxel.cls(self.game.cfg.area.bg)
         # draw game with offset
         self.cam.draw()
-        self.header.draw()
-        self.footer.draw()
+        self.hud.draw()

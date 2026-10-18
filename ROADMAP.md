@@ -80,7 +80,8 @@ home, explode, lifetime), weapon pickups and switching, and ammo/cooldown in the
 - [ ] Entity and tile registries by name (replace the hard-coded lists in `entity.py` / `map.py`), new tile types
       (exit, portal, hazard)
 - [ ] Level intro (title, goal) and level-complete screen
-- [ ] Footer HUD: timer, health/hunger, ammo, boss bar (`LifeBar`)
+- [x] Header and footer HUD: level and title, score, best score, length; per-goal status and progress bars (timer, counters)
+- [ ] HUD for mechanics still to come: health/hunger, ammo, boss bar
 - [ ] Sound effects on events (eat, hit, death, win)
 - [ ] Input layer: steering through a controller interface instead of `pyxel.btn`, so tests, bots and the rival snake
       can play
