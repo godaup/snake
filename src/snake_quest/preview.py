@@ -8,9 +8,11 @@ import pyxel
 
 from snake_quest.campaign import Level
 from snake_quest.game import SETTINGS
-from snake_quest.map import PATH_TILE, Map
+from snake_quest.map import Map
 
 COL_START = 7
+# path tiles are drawn as bold markers: the in-game breadcrumb (a 2x2 dot) is invisible at whole-level scale
+COL_PATH, COL_PATH_RING = 10, 9
 
 
 class _PreviewGame:
@@ -33,7 +35,8 @@ def render(level: Level, filename: Path, scale: int = 2) -> None:
     img.cls(game.cfg.area.bg)
     img.bltm(0, 0, level_map.cfg.tm, 0, 0, level_map.cfg.width, level_map.cfg.height)
     for pos in level_map.path:
-        img.blt(pos.x, pos.y - header, 0, PATH_TILE[0] * 8, PATH_TILE[1] * 8, 8, 8, colkey=0)
+        img.circ(pos.x + 4, pos.y - header + 4, 2, COL_PATH)
+        img.circb(pos.x + 4, pos.y - header + 4, 4, COL_PATH_RING)
     for ent in level_map.entities:
         img.blt(ent.pos.x, ent.pos.y - header, ent.img_b, ent.img_x, ent.img_y, ent.w, ent.h, colkey=0)
     start_x, start_y = level_map.start.x, level_map.start.y - header
