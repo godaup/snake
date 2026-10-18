@@ -28,6 +28,7 @@ timers:
     callback:
       type: spawn
       entity: speed
+      max: 3  # don't pile up
 
 goal:
   score: 25

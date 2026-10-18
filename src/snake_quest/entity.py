@@ -106,6 +106,16 @@ class Firefly(Entity):
     _img_y = 0
     NOTICE = 48  # px: closer than this, the firefly drifts towards the snake's head
     SPEED = 1.5  # px per frame
+    LIGHT_SECONDS = 20.0  # how long the breadcrumbs shine before fading out
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.phase = pyxel.rndf(0, 360)  # so fireflies don't hover in sync
+
+    def draw(self, offset: "Vec2"):
+        """Hover gently up and down (drawing only: the position used for catching stays put)."""
+        bob = Vec2(0, round(pyxel.sin(pyxel.frame_count * 6 + self.phase) * 2))
+        super().draw(offset + bob)
 
     def update(self, snake: "Snake", map: "Map"):
         """Fly towards a snake passing nearby, so crossing its corridor is enough to catch it."""
@@ -115,7 +125,7 @@ class Firefly(Entity):
             self.pos = self.pos + to_head * (min(self.SPEED, distance) / distance)
 
     def on_intersect(self, snake: "Snake", map: "Map"):
-        map.reveal_path(origin=snake.head.pos)
+        map.reveal_path(origin=snake.head.pos, seconds=self.LIGHT_SECONDS)
         self.alive = False
 
 

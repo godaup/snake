@@ -6,6 +6,40 @@ start:
   x: 150
   y: 100
 
+timers:
+  # fireflies light the breadcrumbs for ~20 s; one sits right after the start, these are spread over the maze
+  fireflies:  # fire_n repeats after the first: 6 at the start
+    duration: 0
+    frequency: 0.05
+    fire_n: 5
+    callback:
+      type: spawn
+      entity: firefly
+  more_fireflies:
+    duration: 30
+    frequency: 30
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: firefly
+      max: 8
+  # lots of speed apples: faster is harder in narrow corridors
+  speed_apples:  # 15 at the start
+    duration: 0
+    frequency: 0.05
+    fire_n: 14
+    callback:
+      type: spawn
+      entity: speed
+  more_speed_apples:
+    duration: 10
+    frequency: 10
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: speed
+      max: 15
+
 goal:
   # eat every golden apple at the end of the pathway
   collect_all: golden

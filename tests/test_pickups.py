@@ -140,3 +140,75 @@ def test_no_closed_floor_pockets(assets, game, level):
         if tilemap.pget(x, y) not in WALL_TILES and (x, y) not in reachable
     ]
     assert pockets == []
+
+
+def eat_firefly(level_map):
+    firefly = next(ent for ent in level_map.entities if isinstance(ent, Firefly))
+    snake = Snake(pos=firefly.pos + Vec2(4, 4), orient=0, size=2)
+    firefly.on_intersect(snake=snake, map=level_map)
+    return snake
+
+
+def test_firefly_light_fades_after_about_twenty_seconds(assets, game):
+    level_map = maze(game)
+    snake = eat_firefly(level_map)
+    game.dt = SECOND
+    for _ in range(int(Firefly.LIGHT_SECONDS)):
+        level_map.update(snake=snake)
+    assert level_map.path_revealed
+    assert level_map.crumbs_alpha() == 1  # still fully lit after ~20 s
+    level_map.update(snake=snake)
+    assert 0 < level_map.crumbs_alpha() < 1  # fading
+    for _ in range(3):
+        level_map.update(snake=snake)
+    assert not level_map.path_revealed  # gone
+
+
+def test_another_firefly_relights_the_path(assets, game):
+    level_map = maze(game)
+    snake = eat_firefly(level_map)
+    game.dt = SECOND
+    for _ in range(21):
+        level_map.update(snake=snake)
+    assert level_map.crumbs_alpha() < 1
+    Firefly.at_pos(snake.head.pos).on_intersect(snake=snake, map=level_map)
+    assert level_map.crumbs_alpha() == 1
+    assert level_map.crumbs_shown == 0  # lights up again from the new spot
+
+
+def test_untimed_reveal_stays(assets, game):
+    level_map = maze(game)
+    level_map.reveal_path()
+    game.dt = 100 * SECOND
+    level_map.update(snake=Snake(pos=level_map.start, orient=0, size=2))
+    assert level_map.path_revealed and level_map.crumbs_alpha() == 1
+
+
+def test_spawn_cap(assets, game):
+    level_map = maze(game)
+    level_map.entities = [e for e in level_map.entities if not isinstance(e, SpeedApple)]
+    spawn = level_map.create_callback({"type": "spawn", "entity": "speed", "max": 2})
+    snake = Snake(pos=level_map.start, orient=0, size=2)
+    for _ in range(5):
+        spawn(map=level_map, snake=snake)
+    assert sum(isinstance(e, SpeedApple) for e in level_map.entities) == 2
+
+
+def test_maze_is_full_of_fireflies_and_speed_apples(assets, game):
+    level_map = maze(game)
+    # a snake off the map, so no firefly flies to it and nothing gets eaten while counting
+    snake = Snake(pos=Vec2(-500, -500), orient=0, size=2)
+    game.dt = datetime.timedelta(seconds=1 / 24)
+    for _ in range(48):  # the start-up timers fire within the first frames
+        level_map.update(snake=snake)
+    fireflies = sum(isinstance(e, Firefly) for e in level_map.entities)
+    speed_apples = sum(isinstance(e, SpeedApple) for e in level_map.entities)
+    assert fireflies == 7  # the one after the start plus six spread out
+    assert speed_apples == 15
+
+
+def test_fireflies_hover_without_moving():
+    firefly = Firefly.at_pos(Vec2(40, 40))
+    pyxel.cls(0)
+    firefly.draw(Vec2(0, 0))
+    assert firefly.pos == Vec2(40, 40)  # bobbing is drawing only

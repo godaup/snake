@@ -29,6 +29,7 @@ FLOOR_TILES = frozenset({EMPTY_TILE} | DECOR_TILES)
 # level design helper marking the intended route (e.g. through the maze); hidden until revealed
 PATH_TILE = (3, 0)
 CRUMBS_PER_SECOND = 6  # how fast a firefly lights the breadcrumbs
+CRUMBS_FADE = 3.0  # seconds a timed reveal takes to fade out at its end
 
 
 class Map:
@@ -47,6 +48,7 @@ class Map:
         self.path: list[Vec2] = []
         self.path_revealed = False
         self.crumbs_shown = 0.0  # how many breadcrumbs are visible, grows while revealing
+        self.reveal_left: float | None = None  # seconds until a timed reveal is gone; None: shown for good
         # iterate over tilemap
         for tile_x in range(self.cfg.width // 8):
             for tile_y in range(self.cfg.height // 8):
@@ -115,6 +117,11 @@ class Map:
         # light up breadcrumbs one after another
         if self.path_revealed and self.crumbs_shown < len(self.path):
             self.crumbs_shown += self.game.dt.total_seconds() * CRUMBS_PER_SECOND
+        if self.path_revealed and self.reveal_left is not None:
+            self.reveal_left -= self.game.dt.total_seconds()
+            if self.reveal_left <= 0:
+                self.path_revealed = False
+                self.reveal_left = None
         # update time based goals
         for goal in self.goals:
             goal.update(map=self, snake=snake, dt=self.game.dt)
@@ -130,8 +137,12 @@ class Map:
             h=self.game.cfg.area.h,
         )
         shown = len(self.path) if self.game.cfg.debug else int(self.crumbs_shown) if self.path_revealed else 0
+        alpha = self.crumbs_alpha()
+        if alpha < 1:
+            pyxel.dither(alpha)
         for pos in self.path[:shown]:
             pyxel.blt(pos.x + offset.x, pos.y + offset.y, 0, PATH_TILE[0] * 8, PATH_TILE[1] * 8, 8, 8, colkey=0)
+        pyxel.dither(1.0)
         for ent in self.entities:
             ent.draw(offset)
         for proj in self.projectiles:
@@ -160,10 +171,18 @@ class Map:
                     break
         return Vec2(_x, _y)
 
-    def reveal_path(self, origin: Vec2 | None = None) -> None:
+    def crumbs_alpha(self) -> float:
+        """1 while the breadcrumbs shine, falling to 0 during the last CRUMBS_FADE seconds of a timed reveal."""
+        if self.game.cfg.debug or self.reveal_left is None:
+            return 1.0
+        return max(0.0, min(1.0, self.reveal_left / CRUMBS_FADE))
+
+    def reveal_path(self, origin: Vec2 | None = None, seconds: float | None = None) -> None:
         """Show the breadcrumbs. Without an origin all at once; with one (e.g. where a firefly was eaten) one by one,
         nearest first by walking distance through the corridors, so they light up along the route."""
         self.path_revealed = True
+        # visible for `seconds`, then fading out over CRUMBS_FADE; a new reveal restarts the clock
+        self.reveal_left = None if seconds is None else seconds + CRUMBS_FADE
         if origin is None:
             self.crumbs_shown = float(len(self.path))
             return
@@ -225,6 +244,10 @@ class Map:
                 else:
                     new_pos: Vec2 = map.new_pos(snake=snake)
                 ent_cls: Entity = ENTITY_NAMES[description["entity"]]
+                # optional cap: don't add more while `max` of them are on the map already
+                limit = description.get("max")
+                if limit is not None and sum(isinstance(e, ent_cls) and e.alive for e in map.entities) >= limit:
+                    return
                 map.entities.append(ent_cls.at_pos(new_pos))
 
             return callback

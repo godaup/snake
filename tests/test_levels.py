@@ -40,6 +40,7 @@ def test_level_timers(path: Path):
         assert timer.callback.type in ("spawn", "grow"), name
         if timer.callback.type == "spawn":
             assert timer.callback.entity in ENTITY_NAMES, name
+            assert timer.callback.get("max", 1) >= 1, name
         else:
             assert isinstance(timer.callback.value, int), name
 
