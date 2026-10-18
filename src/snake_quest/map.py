@@ -6,13 +6,13 @@ from typing import TYPE_CHECKING, Optional
 import omegaconf
 import pyxel
 
-from entity import ALL_ENTITIES, Apple, Enemy, Entity, GoldenApple
-from timers import Timer
-from utils import Vec2
+from snake_quest.entity import ALL_ENTITIES, Apple, Enemy, Entity, GoldenApple
+from snake_quest.timers import Timer
+from snake_quest.utils import Vec2
 
 if TYPE_CHECKING:
-    from main import Game
-    from snake import Projectile, Snake
+    from snake_quest.game import Game
+    from snake_quest.snake import Projectile, Snake
 
 
 class Map:

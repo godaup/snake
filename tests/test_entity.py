@@ -2,9 +2,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from entity import ALL_ENTITIES, Apple, Enemy, Entity, GoldenApple
-from snake import Snake
-from utils import Vec2
+from snake_quest.entity import ALL_ENTITIES, Apple, Enemy, Entity, GoldenApple
+from snake_quest.snake import Snake
+from snake_quest.utils import Vec2
 
 
 @pytest.fixture

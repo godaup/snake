@@ -1,2 +1,0 @@
-pyxel==2.9.9
-omegaconf==2.4.0

@@ -6,30 +6,35 @@ from pathlib import Path
 import omegaconf
 import pyxel
 
-from sound import SoundManager
-from states import StateID
-from states.abstract import GameStateHandler
-from states.countdown import CountdownHandler
-from states.death import DeathStateHandler
-from states.menu import MenuStateHandler
-from states.pause import PauseStateHandler
-from states.running import RunningStateHandler
+from snake_quest.sound import SoundManager
+from snake_quest.states import StateID
+from snake_quest.states.abstract import GameStateHandler
+from snake_quest.states.countdown import CountdownHandler
+from snake_quest.states.death import DeathStateHandler
+from snake_quest.states.menu import MenuStateHandler
+from snake_quest.states.pause import PauseStateHandler
+from snake_quest.states.running import RunningStateHandler
 
 ASSETS = Path(__file__).parent / "assets.pyxres"
+SETTINGS = Path(__file__).parent / "settings.yaml"
 
 
 class Game:
-    def __init__(self):
-        """define variables and start, inital values are likely overwritten immediately in start"""
+    def __init__(self, overrides: dict | None = None, start_level: int = 1):
+        """define variables and start, inital values are likely overwritten immediately in start
+
+        overrides are merged over settings.yaml, e.g. {"music": False}
+        """
+        self.overrides: dict = overrides or {}
+        self.start_level: int = start_level
         self.next_stateID: StateID = StateID.MENU
         self.cfg: omegaconf.DictConfig = omegaconf.DictConfig({})
         self.sm: SoundManager = SoundManager()
         self.stateID: StateID = StateID.MENU
-        from states.abstract import GameStateHandler
 
         self._state_handlers: dict[StateID, GameStateHandler] = {}
         self.score = 0
-        self.level_counter: int = 1
+        self.level_counter: int = start_level
         self.initialized: bool = False
         self.dt: datetime.timedelta = datetime.timedelta(seconds=1)
         self._ref_time: datetime.datetime = datetime.datetime.now()
@@ -45,7 +50,7 @@ class Game:
         pyxel.init(
             width=self.cfg.width,
             height=self.cfg.header.h + self.cfg.area.h + self.cfg.footer.h,
-            title="Snake",
+            title="Snake Quest",
             fps=self.cfg.fps,
             display_scale=self.cfg.scale,
         )
@@ -67,8 +72,8 @@ class Game:
         return self._state_handlers[self.stateID]
 
     def reload_settings(self) -> None:
-        """Load settings from yaml file."""
-        self.cfg = omegaconf.OmegaConf.load(Path(__file__).parent / "settings.yaml")
+        """Load settings from yaml file and apply overrides."""
+        self.cfg = omegaconf.OmegaConf.merge(omegaconf.OmegaConf.load(SETTINGS), self.overrides)
 
     def change_state(self, state: StateID) -> None:
         """Updates state and mouse visibility."""
@@ -100,7 +105,7 @@ class Game:
 
     def restart(self):
         self.score = 0
-        self.level_counter = 1
+        self.level_counter = self.start_level
         pyxel.load(filename=str(ASSETS))
         self._state_handlers[StateID.RUNNING] = RunningStateHandler(self)
         self.change_state(state=StateID.RUNNING)
@@ -109,7 +114,3 @@ class Game:
         self.level_counter += 1
         # start a new running handler
         self._state_handlers[StateID.RUNNING] = RunningStateHandler(self)
-
-
-if __name__ == "__main__":
-    Game()

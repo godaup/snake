@@ -2,16 +2,15 @@ from typing import TYPE_CHECKING
 
 import pyxel
 
-from cam import Cam
-from map import Map
-from snake import Snake
-from states import StateID
-from widget import WIDGET_MARGIN, Widget
-
-from .abstract import GameStateHandler
+from snake_quest.cam import Cam
+from snake_quest.map import Map
+from snake_quest.snake import Snake
+from snake_quest.states import StateID
+from snake_quest.states.abstract import GameStateHandler
+from snake_quest.widget import WIDGET_MARGIN, Widget
 
 if TYPE_CHECKING:
-    from main import Game
+    from snake_quest.game import Game
 
 COL_SCORE = 6
 COL_SCORE_BACKGROUND = 5

@@ -4,28 +4,30 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-A snake game built on [Pyxel](https://github.com/kitao/pyxel) (retro game engine, Pyxel 2.x API) with OmegaConf for YAML config. Dependencies are pinned in `requirements.txt` / `requirements-dev.txt`; `pyproject.toml` only holds ruff and pytest config.
+**Snake Quest**: a level-based snake game built on [Pyxel](https://github.com/kitao/pyxel) (retro game engine, Pyxel 2.x API) with OmegaConf for YAML config. It's distributed as `snake-quest` (the name `snake` is taken on PyPI). The code lives in `src/snake_quest/`, and everything is configured in `pyproject.toml`: hatchling build, dependencies, the `dev` dependency group, the `snake-quest` console script, ruff and pytest. Game data (`settings.yaml`, `levels/`, `assets.pyxres`) is package data next to the code and is located via `Path(__file__).parent`. Module imports are absolute (`from snake_quest.map import Map`).
 
 ## Commands
 
 ```bash
-pip install -r requirements-dev.txt   # runtime + pytest + ruff (Linux also needs the system SDL2 library)
-python main.py                        # run the game
-pyxel edit assets.pyxres              # edit sprites, tilemaps (level layouts), sounds and music
+pip install -e . --group dev          # editable install + pytest + ruff (pip >= 25.1; Linux also needs system SDL2)
+snake-quest                           # run the game (or python -m snake_quest); --level N --scale N --mute --debug
+pyxel edit src/snake_quest/assets.pyxres   # edit sprites, tilemaps (level layouts), sounds and music
 pytest                                # run all tests
 pytest tests/test_map.py::test_new_pos_is_free   # run a single test
-ruff check . && ruff format --check .            # lint + format check (CI runs both plus pytest)
+ruff check . && ruff format --check .            # lint + format check
 ```
 
-Set `debug: True` in `settings.yaml` to draw the snake's collision points and head center.
+CI (`.github/workflows/ci.yml`) runs lint, format check and pytest. It then builds the wheel and runs `snake-quest --version` from a fresh venv, which catches package data or entry points missing from the build. `levels/_temp.yaml` is a scratch level and is excluded from builds.
 
 ## Tests
 
-Tests that need Pyxel (`Map`, state handlers, widgets) rely on the session fixture in `tests/conftest.py`, which calls `pyxel.init(..., headless=True)` once. Request the `assets` fixture to get freshly loaded tilemaps (Map mutates them). `main.Game` cannot be built in tests because it enters `pyxel.run`; use the `game` fixture (`FakeGame`) instead, which records `change_state` calls in `requested_states`. Known bugs are kept as `xfail(strict=True)` tests, so fixing one makes that test fail until the marker is removed.
+Tests run against the installed package, so do the editable install first. Tests that need Pyxel (`Map`, state handlers, widgets) rely on the session fixture in `tests/conftest.py`, which calls `pyxel.init(..., headless=True)` once. Request the `assets` fixture to get freshly loaded tilemaps (Map mutates them). `Game` cannot be built in tests because it enters `pyxel.run`; use the `game` fixture (`FakeGame`) instead, which records `change_state` calls in `requested_states`. Known bugs are kept as `xfail(strict=True)` tests, so fixing one makes that test fail until the marker is removed.
 
 ## Architecture
 
-**Game loop and state machine (`main.py`, `states/`).** `Game` owns the global config (`settings.yaml`), score, level counter, `SoundManager` and one `GameStateHandler` per `StateID`. `pyxel.run(update, draw)` calls the current handler's `update`/`draw`. `change_state()` stops music, sets mouse visibility and starts the new state's music (`is_visible()`, `get_music()`), but only stores `next_stateID`. The switch happens at the end of `draw()`, so the old state finishes its frame first. Handlers are created once in `Game.start()`, except `RunningStateHandler`, which `restart()` and `level_up()` replace with a fresh instance (and with it a fresh `Map`, `Snake` and `Cam`). Overlay states (pause, death, countdown) do not `cls`, so they draw on top of the last running frame. On its first update a new `RunningStateHandler` switches to `COUNTDOWN`, which switches back to `RUNNING` after 3 seconds.
+**Entry point (`cli.py`).** `main()` parses arguments, turns them into a dict of overrides that `Game(overrides=..., start_level=...)` merges over `settings.yaml` in `reload_settings()`, and only then imports `game`, so `--help` and `--version` don't touch Pyxel. New command-line options should become settings overrides the same way.
+
+**Game loop and state machine (`game.py`, `states/`).** `Game` owns the global config (`settings.yaml`), score, level counter, `SoundManager` and one `GameStateHandler` per `StateID`. `pyxel.run(update, draw)` calls the current handler's `update`/`draw`. `change_state()` stops music, sets mouse visibility and starts the new state's music (`is_visible()`, `get_music()`), but only stores `next_stateID`. The switch happens at the end of `draw()`, so the old state finishes its frame first. Handlers are created once in `Game.start()`, except `RunningStateHandler`, which `restart()` and `level_up()` replace with a fresh instance (and with it a fresh `Map`, `Snake` and `Cam`). Overlay states (pause, death, countdown) do not `cls`, so they draw on top of the last running frame. On its first update a new `RunningStateHandler` switches to `COUNTDOWN`, which switches back to `RUNNING` after 3 seconds.
 
 **Time.** Movement-independent timing uses wall-clock `datetime` deltas (`game.dt`, set each update), not frame counts: snake growth delay, `Timer`, enemy behavior and weapon cooldown all work this way.
 

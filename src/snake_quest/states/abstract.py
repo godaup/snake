@@ -3,10 +3,10 @@ from typing import TYPE_CHECKING
 
 import pyxel
 
-from widget import Widget
+from snake_quest.widget import Widget
 
 if TYPE_CHECKING:
-    from main import Game
+    from snake_quest.game import Game
 
 
 class GameStateHandler(ABC):

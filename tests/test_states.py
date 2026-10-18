@@ -3,13 +3,13 @@ import datetime
 import pytest
 import pyxel
 
-import sound
-from states import StateID
-from states.countdown import CountdownHandler
-from states.death import DeathStateHandler
-from states.menu import MenuStateHandler
-from states.pause import PauseStateHandler
-from states.running import RunningStateHandler
+from snake_quest import sound
+from snake_quest.states import StateID
+from snake_quest.states.countdown import CountdownHandler
+from snake_quest.states.death import DeathStateHandler
+from snake_quest.states.menu import MenuStateHandler
+from snake_quest.states.pause import PauseStateHandler
+from snake_quest.states.running import RunningStateHandler
 
 
 @pytest.mark.parametrize(

@@ -1,8 +1,7 @@
 import pyxel
 
-from widget import TEXT_LINE_SPACING, WIDGET_MARGIN, Widget
-
-from .abstract import GameStateHandler
+from snake_quest.states.abstract import GameStateHandler
+from snake_quest.widget import TEXT_LINE_SPACING, WIDGET_MARGIN, Widget
 
 COL_TEXT_DEATH = 0
 COL_DEATH = 8

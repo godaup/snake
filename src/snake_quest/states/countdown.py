@@ -1,8 +1,8 @@
 import datetime
 
-from states import StateID
-from states.abstract import GameStateHandler
-from widget import ImgInfo, Widget
+from snake_quest.states import StateID
+from snake_quest.states.abstract import GameStateHandler
+from snake_quest.widget import ImgInfo, Widget
 
 COL_TEXT_COUNTDOWN = 0
 COL_COUNTDOWN = 8

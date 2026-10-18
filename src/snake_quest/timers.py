@@ -3,8 +3,8 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from map import Map
-    from snake import Snake
+    from snake_quest.map import Map
+    from snake_quest.snake import Snake
 
 
 class Timer:

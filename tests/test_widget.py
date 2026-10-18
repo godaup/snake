@@ -1,6 +1,6 @@
 import pyxel
 
-from widget import TEXT_LINE_SPACING, WIDGET_MARGIN, Button, ImgInfo, LifeBar, Widget
+from snake_quest.widget import TEXT_LINE_SPACING, WIDGET_MARGIN, Button, ImgInfo, LifeBar, Widget
 
 
 def test_size_from_text():

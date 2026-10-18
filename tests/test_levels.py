@@ -5,9 +5,9 @@ from pathlib import Path
 import omegaconf
 import pytest
 
-from .conftest import ROOT
+from .conftest import PACKAGE_DIR
 
-LEVEL_FILES = sorted((ROOT / "levels").glob("*.yaml"))
+LEVEL_FILES = sorted((PACKAGE_DIR / "levels").glob("*.yaml"))
 TILEMAP_SIZE = 256 * 8  # pyxel tilemaps are 256x256 tiles of 8px
 
 

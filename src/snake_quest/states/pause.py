@@ -2,13 +2,12 @@ from typing import TYPE_CHECKING
 
 import pyxel
 
-from states import StateID
-from widget import WIDGET_MARGIN, Widget
-
-from .abstract import GameStateHandler
+from snake_quest.states import StateID
+from snake_quest.states.abstract import GameStateHandler
+from snake_quest.widget import WIDGET_MARGIN, Widget
 
 if TYPE_CHECKING:
-    from main import Game
+    from snake_quest.game import Game
 
 
 class PauseStateHandler(GameStateHandler):

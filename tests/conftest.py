@@ -5,14 +5,16 @@ import omegaconf
 import pytest
 import pyxel
 
-ROOT = Path(__file__).resolve().parent.parent
+import snake_quest
+
+PACKAGE_DIR = Path(snake_quest.__file__).parent
 
 
 class FakeGame:
     """Stand-in for main.Game, which cannot be constructed in tests because it enters pyxel.run."""
 
     def __init__(self):
-        self.cfg = omegaconf.OmegaConf.load(ROOT / "settings.yaml")
+        self.cfg = omegaconf.OmegaConf.load(PACKAGE_DIR / "settings.yaml")
         self.score = 0
         self.level_counter = 1
         self.dt = datetime.timedelta(seconds=1 / self.cfg.fps)
@@ -28,14 +30,14 @@ class FakeGame:
 
 @pytest.fixture(scope="session", autouse=True)
 def pyxel_headless():
-    cfg = omegaconf.OmegaConf.load(ROOT / "settings.yaml")
+    cfg = omegaconf.OmegaConf.load(PACKAGE_DIR / "settings.yaml")
     pyxel.init(cfg.width, cfg.header.h + cfg.area.h + cfg.footer.h, title="Snake tests", headless=True)
 
 
 @pytest.fixture
 def assets():
     """Reload resources for every test: Map erases entity tiles from the in-memory tilemaps."""
-    pyxel.load(str(ROOT / "assets.pyxres"))
+    pyxel.load(str(PACKAGE_DIR / "assets.pyxres"))
     pyxel.rseed(0)
 
 

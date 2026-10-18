@@ -1,6 +1,6 @@
 import pytest
 
-from utils import Vec2
+from snake_quest.utils import Vec2
 
 
 def test_add_and_sub():

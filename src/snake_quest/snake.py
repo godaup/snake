@@ -5,10 +5,10 @@ from typing import TYPE_CHECKING
 
 import pyxel
 
-from utils import Vec2
+from snake_quest.utils import Vec2
 
 if TYPE_CHECKING:
-    from map import Map
+    from snake_quest.map import Map
 
 BODY_COLS = (11, 11, 4, 3, 3)
 COL_HEAD = 7

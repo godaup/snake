@@ -3,10 +3,10 @@ from typing import TYPE_CHECKING
 import pyxel
 
 if TYPE_CHECKING:
-    from main import Game
-    from map import Map
-from snake import Snake
-from utils import Vec2
+    from snake_quest.game import Game
+    from snake_quest.map import Map
+from snake_quest.snake import Snake
+from snake_quest.utils import Vec2
 
 CAM_CENTER_SIZE_X = 140
 CAM_CENTER_SIZE_Y = 80

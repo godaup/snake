@@ -2,12 +2,12 @@ from typing import TYPE_CHECKING
 
 import pyxel
 
-from states import StateID
-from states.abstract import GameStateHandler
-from widget import WIDGET_MARGIN, Button, ImgInfo
+from snake_quest.states import StateID
+from snake_quest.states.abstract import GameStateHandler
+from snake_quest.widget import WIDGET_MARGIN, Button, ImgInfo
 
 if TYPE_CHECKING:
-    from main import Game
+    from snake_quest.game import Game
 
 
 class MenuStateHandler(GameStateHandler):

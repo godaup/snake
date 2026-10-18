@@ -1,4 +1,44 @@
-# Tool configuration only; dependencies are pinned in requirements.txt / requirements-dev.txt.
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "snake-quest"
+version = "0.1.0"
+description = "A level-based snake game built with Pyxel"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Patrick Godau" }]
+requires-python = ">=3.10"
+dependencies = [
+    "pyxel>=2.9.9,<3",
+    "omegaconf>=2.4,<3",
+]
+keywords = ["game", "snake", "pyxel", "retro"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "Topic :: Games/Entertainment :: Arcade",
+]
+
+[project.urls]
+Repository = "https://github.com/godaup/snake"
+
+[project.scripts]
+snake-quest = "snake_quest.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "ruff==0.17.1",
+]
+
+[tool.hatch.build]
+exclude = ["src/snake_quest/levels/_temp.yaml"] # scratch level, not shipped
+
+[tool.hatch.build.targets.sdist]
+include = ["src", "tests", "README.md", "LICENSE"]
 
 [tool.ruff]
 line-length = 120
@@ -21,5 +61,4 @@ ignore = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["."]
 filterwarnings = ["error"]

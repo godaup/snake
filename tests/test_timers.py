@@ -1,7 +1,7 @@
 import datetime
 from types import SimpleNamespace
 
-from timers import Timer
+from snake_quest.timers import Timer
 
 SECOND = datetime.timedelta(seconds=1)
 

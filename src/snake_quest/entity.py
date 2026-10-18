@@ -3,12 +3,12 @@ from typing import TYPE_CHECKING
 
 import pyxel
 
-from utils import Vec2
-from widget import WIDGET_MARGIN, Widget
+from snake_quest.utils import Vec2
+from snake_quest.widget import WIDGET_MARGIN, Widget
 
 if TYPE_CHECKING:
-    from map import Map
-    from snake import Snake
+    from snake_quest.map import Map
+    from snake_quest.snake import Snake
 
 
 class Entity:

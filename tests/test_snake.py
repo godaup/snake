@@ -2,8 +2,8 @@ import datetime
 
 import pytest
 
-from snake import INIT_SPEED, MAX_SPEED, MIN_SPEED, SPAWN_DELAY, Snake, SnakeSeg
-from utils import Vec2
+from snake_quest.snake import INIT_SPEED, MAX_SPEED, MIN_SPEED, SPAWN_DELAY, Snake, SnakeSeg
+from snake_quest.utils import Vec2
 
 DT = datetime.timedelta(seconds=1 / 24)
 

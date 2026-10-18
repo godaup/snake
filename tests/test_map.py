@@ -3,15 +3,15 @@ import datetime
 import pytest
 import pyxel
 
-from entity import ALL_ENTITIES, Apple, Enemy, GoldenApple
-from map import Map
-from snake import Snake
-from timers import Timer
-from utils import Vec2
+from snake_quest.entity import ALL_ENTITIES, Apple, Enemy, GoldenApple
+from snake_quest.map import Map
+from snake_quest.snake import Snake
+from snake_quest.timers import Timer
+from snake_quest.utils import Vec2
 
-from .conftest import ROOT
+from .conftest import PACKAGE_DIR
 
-LEVELS = sorted(int(p.stem) for p in (ROOT / "levels").glob("*.yaml") if p.stem.isdigit())
+LEVELS = sorted(int(p.stem) for p in (PACKAGE_DIR / "levels").glob("*.yaml") if p.stem.isdigit())
 
 
 @pytest.fixture
