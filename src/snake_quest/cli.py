@@ -1,6 +1,7 @@
 """Command line entry point (`snake-quest` / `python -m snake_quest`)."""
 
 import argparse
+from pathlib import Path
 
 from snake_quest import __version__
 from snake_quest.campaign import load_campaign
@@ -24,7 +25,13 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--scale", type=int, help="window scale factor (default from settings.yaml)")
     parser.add_argument("--mute", action="store_true", help="disable music and sound effects")
-    parser.add_argument("--debug", action="store_true", help="draw collision points")
+    parser.add_argument("--debug", action="store_true", help="draw collision points and the hidden path")
+    parser.add_argument(
+        "--preview",
+        metavar="PNG",
+        type=lambda value: Path(value).resolve(),  # before pyxel.init() changes the working directory
+        help="render the --level to an image instead of playing",
+    )
     return parser
 
 
@@ -43,7 +50,22 @@ def settings_overrides(args: argparse.Namespace) -> dict:
 
 def main(argv: list[str] | None = None) -> None:
     args = build_parser().parse_args(argv)
+    if args.preview:
+        preview(load_campaign().level(args.level), args.preview)
+        return
     # imported late so that --help and --version work without initializing pyxel
     from snake_quest.game import Game
 
     Game(overrides=settings_overrides(args), start_level=args.level)
+
+
+def preview(level, filename: Path) -> None:
+    import pyxel
+
+    from snake_quest.campaign import load_campaign
+    from snake_quest.preview import render
+
+    pyxel.init(16, 16, headless=True)
+    load_campaign().load_sprites()
+    render(level, filename)
+    print(f"{level.number} {level.name}: {filename}")

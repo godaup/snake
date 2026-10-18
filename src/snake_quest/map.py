@@ -17,7 +17,14 @@ if TYPE_CHECKING:
 
 # sprite tile coordinates (image bank 0) with a fixed meaning in every tilemap
 EMPTY_TILE = (0, 0)
+# the wall tile level designers paint with; replaced by a hedge variant when the map loads
 WALL_TILE = (0, 3)
+# hedge variant for each combination of wall neighbours: tile (mask, 8) with mask bits N=1, E=2, S=4, W=8
+WALL_VARIANT_ROW = 8
+WALL_TILES = frozenset({WALL_TILE} | {(mask, WALL_VARIANT_ROW) for mask in range(16)})
+# floor decorations (grass, flowers, stones): drawn, but walkable and free for spawning
+DECOR_TILES = frozenset((k, 9) for k in range(6))
+FLOOR_TILES = frozenset({EMPTY_TILE} | DECOR_TILES)
 # level design helper marking the intended route (e.g. through the maze); hidden until revealed
 PATH_TILE = (3, 0)
 
@@ -41,7 +48,7 @@ class Map:
         for tile_x in range(self.cfg.width // 8):
             for tile_y in range(self.cfg.height // 8):
                 img_x, img_y = pyxel.tilemaps[self.cfg.tm].pget(tile_x, tile_y)
-                if (img_x, img_y) in (EMPTY_TILE, WALL_TILE):
+                if (img_x, img_y) in FLOOR_TILES or (img_x, img_y) in WALL_TILES:
                     continue
                 if (img_x, img_y) == PATH_TILE:
                     self.path.append(Vec2(x=tile_x * 8, y=tile_y * 8 + self.game.cfg.header.h))
@@ -55,6 +62,7 @@ class Map:
                         # remove entity from 'background'
                         pyxel.tilemaps[self.cfg.tm].pset(tile_x, tile_y, EMPTY_TILE)
                         # print(f'found {e_cls.__name__} at {tile_x=}, {tile_y=}')
+        self._autotile_walls()
         # create timers by rules
         if "timers" in self.cfg:
             for v in self.cfg.timers.values():
@@ -132,7 +140,7 @@ class Map:
             _y = pyxel.rndi(0, self.cfg.height - h) + self.game.cfg.header.h
             for pos in [Vec2(_x, _y), Vec2(_x + w, _y), Vec2(_x, _y + h), Vec2(_x + w, _y + h)]:
                 # no walls at the for corners
-                if self.tile_at(pos) != EMPTY_TILE:
+                if self.tile_at(pos) not in FLOOR_TILES:
                     invalid = True
                     break
                 # no other entities
@@ -155,7 +163,25 @@ class Map:
         return pyxel.tilemaps[self.cfg.tm].pget(pos.x // 8, (pos.y - self.game.cfg.header.h) // 8)
 
     def check_on_wall(self, pos: Vec2) -> bool:
-        return self.tile_at(pos) == WALL_TILE
+        return self.tile_at(pos) in WALL_TILES
+
+    def _autotile_walls(self) -> None:
+        """Replace every wall tile with the hedge variant matching its wall neighbours (outside the map counts
+        as wall, so borders stay closed)."""
+        tilemap = pyxel.tilemaps[self.cfg.tm]
+        width, height = self.cfg.width // 8, self.cfg.height // 8
+
+        def is_wall(x: int, y: int) -> bool:
+            return not (0 <= x < width and 0 <= y < height) or tilemap.pget(x, y) in WALL_TILES
+
+        variants = {}
+        for y in range(height):
+            for x in range(width):
+                if tilemap.pget(x, y) in WALL_TILES:
+                    mask = is_wall(x, y - 1) | is_wall(x + 1, y) << 1 | is_wall(x, y + 1) << 2 | is_wall(x - 1, y) << 3
+                    variants[x, y] = (mask, WALL_VARIANT_ROW)
+        for (x, y), tile in variants.items():
+            tilemap.pset(x, y, tile)
 
     def create_callback(self, description: dict) -> Callable[["Map", "Snake"], None]:
         if description["type"] == "spawn":

@@ -3,6 +3,7 @@ from types import SimpleNamespace
 import pytest
 
 from snake_quest.entity import ALL_ENTITIES, Apple, Enemy, Entity, GoldenApple
+from snake_quest.map import FLOOR_TILES, PATH_TILE, WALL_TILES
 from snake_quest.snake import Snake
 from snake_quest.utils import Vec2
 
@@ -73,5 +74,5 @@ def test_enemy_speeds_up_snake_and_costs_score(map, snake):
 def test_entity_sprites_are_unique():
     sprites = [(cls._img_x, cls._img_y) for cls in ALL_ENTITIES]
     assert len(sprites) == len(set(sprites))
-    # (0, 0) is the empty tile and (0, 3) the wall tile, see Map
-    assert not {(0, 0), (0, 3)} & set(sprites)
+    # entity sprites must not collide with tiles that have a fixed meaning, see Map
+    assert not (FLOOR_TILES | WALL_TILES | {PATH_TILE}) & set(sprites)

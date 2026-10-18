@@ -6,7 +6,7 @@ import pyxel
 from snake_quest.campaign import load_campaign
 from snake_quest.entity import Apple, Enemy, GoldenApple
 from snake_quest.goals import load_goals
-from snake_quest.map import EMPTY_TILE, WALL_TILE, Map
+from snake_quest.map import DECOR_TILES, FLOOR_TILES, WALL_TILE, WALL_TILES, WALL_VARIANT_ROW, Map
 from snake_quest.snake import Snake
 from snake_quest.timers import Timer
 from snake_quest.utils import Vec2
@@ -28,14 +28,15 @@ def test_level_loads(assets, game, level):
 
 @pytest.mark.parametrize("level", LEVELS, ids=lambda lv: lv.name)
 def test_only_floor_and_walls_remain_after_loading(assets, game, level):
-    """Entity and path tiles are lifted out of the tilemap; anything else left over is a stray tile."""
+    """Entity and path tiles are lifted out of the tilemap and walls become hedge variants; anything else left over
+    is a stray tile."""
     level_map = Map(level=level, game=game)
     tilemap = pyxel.tilemaps[level_map.cfg.tm]
     leftovers = {
         (tile_x, tile_y): tilemap.pget(tile_x, tile_y)
         for tile_x in range(level_map.cfg.width // 8)
         for tile_y in range(level_map.cfg.height // 8)
-        if tilemap.pget(tile_x, tile_y) not in (EMPTY_TILE, WALL_TILE)
+        if tilemap.pget(tile_x, tile_y) not in FLOOR_TILES | WALL_TILES - {WALL_TILE}
     }
     assert leftovers == {}
 
@@ -89,7 +90,12 @@ def reachable_tiles(level_map, game) -> set[tuple[int, int]]:
     while todo:
         x, y = todo.pop()
         for nxt in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
-            if 0 <= nxt[0] < width and 0 <= nxt[1] < height and nxt not in seen and tilemap.pget(*nxt) != WALL_TILE:
+            if (
+                0 <= nxt[0] < width
+                and 0 <= nxt[1] < height
+                and nxt not in seen
+                and tilemap.pget(*nxt) not in WALL_TILES
+            ):
                 seen.add(nxt)
                 todo.append(nxt)
     return seen
@@ -114,7 +120,7 @@ def test_new_pos_is_free(level_map, game):
     for _ in range(50):
         pos = level_map.new_pos(snake=snake)
         for corner in [pos, pos + Vec2(8, 0), pos + Vec2(0, 8), pos + Vec2(8, 8)]:
-            assert tilemap.pget(corner.x // 8, (corner.y - game.cfg.header.h) // 8) == (0, 0)
+            assert tilemap.pget(corner.x // 8, (corner.y - game.cfg.header.h) // 8) in FLOOR_TILES
             assert not snake.covers(corner)
             assert not any(ent.covers(corner) for ent in level_map.entities)
 
@@ -125,7 +131,7 @@ def test_check_on_wall(level_map, game):
         (x, y)
         for x in range(level_map.cfg.width // 8)
         for y in range(level_map.cfg.height // 8)
-        if tilemap.pget(x, y) == (0, 3)
+        if tilemap.pget(x, y) in WALL_TILES
     )
     assert level_map.check_on_wall(Vec2(wall[0] * 8 + 4, wall[1] * 8 + 4 + game.cfg.header.h))
 
@@ -214,3 +220,43 @@ def test_goals_are_updated_with_frame_time(level_map, game):
     assert not level_map.check_win(snake=snake)
     level_map.update(snake=snake)
     assert level_map.check_win(snake=snake)
+
+
+def variant_mask(tile):
+    assert tile[1] == WALL_VARIANT_ROW
+    return tile[0]
+
+
+def test_walls_become_hedge_variants_matching_their_neighbours(level_map):
+    tilemap = pyxel.tilemaps[level_map.cfg.tm]
+    # an isolated vertical wall of three tiles in open floor
+    x, y = 10, 10
+    assert all(tilemap.pget(x + dx, y + dy) in FLOOR_TILES for dx in (-1, 0, 1) for dy in range(-1, 4))
+    for dy in range(3):
+        tilemap.pset(x, y + dy, WALL_TILE)
+    level_map._autotile_walls()
+    north, south = 1, 4
+    assert variant_mask(tilemap.pget(x, y)) == south
+    assert variant_mask(tilemap.pget(x, y + 1)) == north | south
+    assert variant_mask(tilemap.pget(x, y + 2)) == north
+    assert level_map.check_on_wall(Vec2(x * 8 + 4, (y + 1) * 8 + 4 + level_map.game.cfg.header.h))
+
+
+def test_map_border_counts_as_wall(level_map):
+    tilemap = pyxel.tilemaps[level_map.cfg.tm]
+    assert variant_mask(tilemap.pget(0, 0)) == 15  # corner: outside the map is wall on two sides
+    assert variant_mask(tilemap.pget(10, 0)) == 1 | 2 | 8  # top border: open only to the south
+
+
+def test_decorations_are_walkable_and_free_for_spawning(level_map):
+    tilemap = pyxel.tilemaps[level_map.cfg.tm]
+    decor = sorted(DECOR_TILES)[0]
+    for x in range(1, level_map.cfg.width // 8 - 1):
+        for y in range(1, level_map.cfg.height // 8 - 1):
+            if tilemap.pget(x, y) in FLOOR_TILES:
+                tilemap.pset(x, y, decor)
+    pos = Vec2(12 * 8 + 4, 12 * 8 + 4 + level_map.game.cfg.header.h)
+    assert level_map.tile_at(pos) == decor
+    assert not level_map.check_on_wall(pos)
+    # with every floor tile decorated, spawning must still find a place
+    level_map.new_pos()
