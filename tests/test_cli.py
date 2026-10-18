@@ -46,7 +46,7 @@ def test_level_up_advances_to_next_level(monkeypatch):
     instance.level_up()
     assert instance.level_counter == 2
     assert instance._state_handlers[game.StateID.RUNNING] == "fresh handler"
-    assert instance.requested_states == []
+    assert instance.requested_states == [game.StateID.RUNNING]  # the new level opens with its mission
 
 
 def test_level_up_after_last_level_wins(monkeypatch):

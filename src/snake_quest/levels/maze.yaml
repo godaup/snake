@@ -11,3 +11,5 @@ goal:
   collect_all: golden
 
 title: The Maze
+intro:
+  - "Somewhere in this maze lies a golden treasure."

@@ -11,3 +11,5 @@ class StateID(Enum):
     HIGHSCORES = 6
     CREDITS = 7
     CUSTOMIZE = 8
+    MISSION = 9
+    LEVEL_COMPLETE = 10

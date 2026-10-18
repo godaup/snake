@@ -23,6 +23,10 @@ def test_level_schema(path: Path):
     # an empty goal would win the level on the first frame
     assert cfg.goal
     assert set(cfg.goal) <= set(GOALS)
+    # shown on the mission screen and in the header (scratch levels starting with "_" may skip it)
+    assert cfg.get("title") or path.stem.startswith("_")
+    for line in cfg.get("intro", []):
+        assert isinstance(line, str) and len(line) <= 52, "intro lines must fit the mission panel"
 
 
 @pytest.mark.parametrize("path", LEVEL_FILES, ids=lambda p: p.name)

@@ -26,6 +26,7 @@ class FakeGame:
         self.profile = Profile()  # no path: never written to disk
         self.backdrop = Backdrop(self)
         self.restarts = 0
+        self._running = None
         self.level_ups = 0
 
     def change_state(self, state):
@@ -36,6 +37,15 @@ class FakeGame:
 
     def restart(self):
         self.restarts += 1
+
+    @property
+    def running_handler(self):
+        """Like Game.running_handler; built on first use (needs the `assets` fixture)."""
+        if self._running is None:
+            from snake_quest.states.running import RunningStateHandler
+
+            self._running = RunningStateHandler(self)
+        return self._running
 
 
 @pytest.fixture(scope="session", autouse=True)

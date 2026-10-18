@@ -153,3 +153,18 @@ def test_collect_all_counts_collected_and_new_spawns(map):
 
 def test_every_registered_goal_is_tested():
     assert set(GOALS) == {"score", "length", "exit", "survive", "defeat", "hold_length", "collect_all"}
+
+
+@pytest.mark.parametrize(
+    ("cfg", "text"),
+    [
+        ({"score": 1}, "Score 1 point"),
+        ({"score": 5}, "Score 5 points"),
+        ({"survive": 1}, "Survive 1 second"),
+        ({"defeat": 1}, "Defeat 1 enemy"),
+        ({"defeat": 3}, "Defeat 3 enemies"),
+        ({"hold_length": {"length": 9, "seconds": 1}}, "Stay 9 long for 1 second"),
+    ],
+)
+def test_descriptions_use_singular_and_plural(map, cfg, text):
+    assert only_goal(cfg, map).describe() == text

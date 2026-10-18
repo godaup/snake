@@ -49,7 +49,7 @@ class ScoreGoal(Goal):
         return map.game.score - self.score_before >= self.value
 
     def describe(self):
-        return f"Score {self.value} points"
+        return f"Score {_count(self.value, 'point')}"
 
     def status(self, map, snake):
         return f"SCORE {max(map.game.score - self.score_before, 0)}/{self.value}"
@@ -110,7 +110,7 @@ class SurviveGoal(Goal):
         return self.elapsed >= datetime.timedelta(seconds=self.value)
 
     def describe(self):
-        return f"Survive {self.value} seconds"
+        return f"Survive {_count(self.value, 'second')}"
 
     def status(self, map, snake):
         left = max(self.value - self.elapsed.total_seconds(), 0)
@@ -129,7 +129,7 @@ class DefeatGoal(Goal):
         return map.defeated >= self.value
 
     def describe(self):
-        return f"Defeat {self.value} enemies"
+        return f"Defeat {_count(self.value, 'enemy', 'enemies')}"
 
     def status(self, map, snake):
         return f"DEFEAT {map.defeated}/{self.value}"
@@ -154,7 +154,7 @@ class HoldLengthGoal(Goal):
         return self.held >= datetime.timedelta(seconds=self.value["seconds"])
 
     def describe(self):
-        return f"Stay {self.value['length']} long for {self.value['seconds']} seconds"
+        return f"Stay {self.value['length']} long for {_count(self.value['seconds'], 'second')}"
 
     def status(self, map, snake):
         return f"HOLD {self.value['length']}+ {self.held.total_seconds():.0f}/{self.value['seconds']}s"
@@ -196,6 +196,11 @@ class CollectAllGoal(Goal):
 
     def progress(self, map, snake):
         return _fraction(*self.counts(map))
+
+
+def _count(n, singular: str, plural: str | None = None) -> str:
+    """'1 point', '3 points'."""
+    return f"{n} {singular if n == 1 else plural or singular + 's'}"
 
 
 def _fraction(value: float, target: float) -> float:

@@ -79,7 +79,7 @@ home, explode, lifetime), weapon pickups and switching, and ammo/cooldown in the
 - [x] Goal types beyond `score` / `length`: `exit`, `survive`, `defeat`, `hold_length`, `collect_all`
 - [ ] Entity and tile registries by name (replace the hard-coded lists in `entity.py` / `map.py`), new tile types
       (exit, portal, hazard)
-- [ ] Level intro (title, goal) and level-complete screen
+- [x] Level intro (mission briefing), countdown and level-complete screen
 - [x] Header and footer HUD: level and title, score, best score, length; per-goal status and progress bars (timer, counters)
 - [ ] HUD for mechanics still to come: health/hunger, ammo, boss bar
 - [ ] Sound effects on events (eat, hit, death, win)

@@ -31,25 +31,35 @@ def test_handlers_construct_update_and_draw(assets, game, handler_cls):
     handler.draw()
 
 
-def test_running_requests_countdown_once(assets, game):
+def test_running_shows_mission_once(assets, game):
     handler = RunningStateHandler(game)
     handler.update()
     handler.update()
-    assert game.requested_states == [StateID.COUNTDOWN]
+    assert game.requested_states == [StateID.MISSION]
 
 
-def test_countdown_resumes_running_after_three_seconds(game):
-    game.dt = datetime.timedelta(seconds=0.75)
+def test_countdown_counts_down_then_go_then_running(game):
+    game.dt = datetime.timedelta(seconds=0.5)
     handler = CountdownHandler(game)
-    shown = []
-    for _ in range(3):
+    handler.on_enter()
+    shown = [handler.label()]
+    for _ in range(7):
         handler.update()
-        shown.append(handler.wdg.img)
-    assert shown == [handler.img_3, handler.img_2, handler.img_1]
+        shown.append(handler.label())
+    assert shown == ["3", "3", "2", "2", "1", "1", "GO!", "GO!"]
     assert game.requested_states == []
     handler.update()
     assert game.requested_states == [StateID.RUNNING]
-    assert not handler.wdg.enabled
+
+
+def test_countdown_pulses_from_big_to_normal(game):
+    handler = CountdownHandler(game)
+    handler.on_enter()
+    big = handler.scale()
+    game.dt = datetime.timedelta(seconds=0.9)
+    handler.update()
+    assert handler.label() == "3"
+    assert handler.scale() < big
 
 
 def test_center_text(game):

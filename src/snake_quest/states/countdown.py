@@ -1,47 +1,50 @@
-import datetime
+"""3 - 2 - 1 - GO! over the dimmed level, each number pulsing from big to normal size."""
 
+import math
+
+from snake_quest.hud import BigText
 from snake_quest.states import StateID
-from snake_quest.states.abstract import GameStateHandler
-from snake_quest.widget import ImgInfo, Widget
+from snake_quest.states.overlay import OverlayStateHandler
 
-COL_TEXT_COUNTDOWN = 0
-COL_COUNTDOWN = 8
-COUNTDOWN_SIZE = 38
+COUNT_FROM = 3
+GO_SECONDS = 0.6
+COLORS = {3: 8, 2: 9, 1: 10}
+COL_GO = 11
+SCALE_MIN, SCALE_PULSE = 4, 3
 
 
-class CountdownHandler(GameStateHandler):
+class CountdownHandler(OverlayStateHandler):
     def __init__(self, game):
         super().__init__(game=game)
-        self.remaining = None
-        self.img_1 = ImgInfo(nr=1, u=0, v=0, h=32, w=32, collkey=0)
-        self.img_2 = ImgInfo(nr=1, u=0, v=40, h=32, w=32, collkey=0)
-        self.img_3 = ImgInfo(nr=1, u=0, v=80, h=32, w=32, collkey=0)
-        self.wdg = Widget(
-            x=(self.game.cfg.width - COUNTDOWN_SIZE) // 2,
-            y=self.game.cfg.area.h // 2 + self.game.cfg.header.h + COUNTDOWN_SIZE // 2,
-            w=COUNTDOWN_SIZE,
-            h=COUNTDOWN_SIZE,
-            img=self.img_3,
-            bg=COL_COUNTDOWN,
-            border=None,
-        )
+        self.text = BigText(scale=SCALE_MIN)
+        self.remaining = float(COUNT_FROM)
 
-    def update(self) -> None:
-        if self.remaining is None:
-            self.remaining = datetime.timedelta(seconds=3)
-            self.wdg.enabled = True
-        self.remaining -= self.game.dt
-        if self.remaining.seconds + 1 in [1, 2, 3]:
-            self.wdg.img = {3: self.img_3, 2: self.img_2, 1: self.img_1}[self.remaining.seconds + 1]
-        if self.remaining <= datetime.timedelta(0):
-            self.wdg.enabled = False
-            self.remaining = None
-            self.game.change_state(StateID.RUNNING)
+    def on_enter(self) -> None:
+        self.remaining = float(COUNT_FROM)
 
     @staticmethod
     def is_visible() -> bool:
         return False
 
-    def draw(self) -> None:
-        """Draw a widget with some text information."""
-        self.wdg.draw()
+    def label(self) -> str:
+        return str(math.ceil(self.remaining)) if self.remaining > 0 else "GO!"
+
+    def scale(self) -> float:
+        """Each number starts big and shrinks during its second; GO! shrinks over its own short time."""
+        if self.remaining > 0:
+            within = self.remaining - math.floor(self.remaining) or 1.0  # 1 at the start of a second, towards 0
+        else:
+            within = 1 + self.remaining / GO_SECONDS
+        return SCALE_MIN + SCALE_PULSE * max(within, 0)
+
+    def update(self) -> None:
+        self.remaining -= self.game.dt.total_seconds()
+        if self.remaining <= -GO_SECONDS:
+            self.game.change_state(StateID.RUNNING)
+
+    def draw_overlay(self) -> None:
+        label = self.label()
+        col = COLORS.get(math.ceil(self.remaining), COL_GO) if self.remaining > 0 else COL_GO
+        center_x = self.game.cfg.width / 2
+        self.text.draw(center_x + 2, self.area_center_y + 2, label, 0, scale=self.scale())  # shadow
+        self.text.draw(center_x, self.area_center_y, label, col, scale=self.scale())

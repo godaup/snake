@@ -30,7 +30,8 @@ class BigText:
         self.text = None
         self.image = None
 
-    def draw(self, center_x: float, center_y: float, text: str, col: int) -> None:
+    def draw(self, center_x: float, center_y: float, text: str, col: int, scale: float | None = None) -> None:
+        """Draw centred at (center_x, center_y); `scale` overrides the default, e.g. for a pulsing countdown."""
         if text != self.text:
             self.text = text
             self.image = pyxel.Image(len(text) * pyxel.FONT_WIDTH, pyxel.FONT_HEIGHT)
@@ -38,7 +39,8 @@ class BigText:
             self.image.text(0, 0, text, 7)
         w, h = self.image.width, self.image.height
         pyxel.pal(7, col)
-        pyxel.blt(center_x - w / 2, center_y - h / 2, self.image, 0, 0, w, h, colkey=0, scale=self.scale)
+        scale = self.scale if scale is None else scale
+        pyxel.blt(center_x - w / 2, center_y - h / 2, self.image, 0, 0, w, h, colkey=0, scale=scale)
         pyxel.pal()
 
     @property

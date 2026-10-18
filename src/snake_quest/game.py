@@ -16,8 +16,10 @@ from snake_quest.states.credits import CreditsStateHandler
 from snake_quest.states.customize import CustomizeStateHandler
 from snake_quest.states.death import DeathStateHandler
 from snake_quest.states.highscores import HighscoresStateHandler
+from snake_quest.states.level_complete import LevelCompleteStateHandler
 from snake_quest.states.menu import MenuStateHandler
 from snake_quest.states.menu_common import Backdrop
+from snake_quest.states.mission import MissionStateHandler
 from snake_quest.states.pause import PauseStateHandler
 from snake_quest.states.running import RunningStateHandler
 from snake_quest.states.victory import VictoryStateHandler
@@ -80,6 +82,8 @@ class Game:
             StateID.HIGHSCORES: HighscoresStateHandler(self),
             StateID.CREDITS: CreditsStateHandler(self),
             StateID.CUSTOMIZE: CustomizeStateHandler(self),
+            StateID.MISSION: MissionStateHandler(self),
+            StateID.LEVEL_COMPLETE: LevelCompleteStateHandler(self),
         }
         self.change_state(StateID.MENU)
         pyxel.run(self.update, self.draw)
@@ -87,6 +91,11 @@ class Game:
     @property
     def handler(self) -> "GameStateHandler":
         return self._state_handlers[self.stateID]
+
+    @property
+    def running_handler(self) -> "RunningStateHandler":
+        """The current level, also drawn underneath the overlays (mission, countdown, level complete)."""
+        return self._state_handlers[StateID.RUNNING]
 
     def reload_settings(self) -> None:
         """Load settings from yaml file and apply overrides."""
@@ -130,9 +139,10 @@ class Game:
         self.change_state(state=StateID.RUNNING)
 
     def level_up(self):
+        """Go on from the level complete screen: the next level (it opens with its mission) or the victory screen."""
         if self.level_counter == len(self.campaign):
             self.change_state(StateID.VICTORY)
             return
         self.level_counter += 1
-        # start a new running handler
         self._state_handlers[StateID.RUNNING] = RunningStateHandler(self)
+        self.change_state(StateID.RUNNING)
