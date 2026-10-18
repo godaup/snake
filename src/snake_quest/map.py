@@ -18,6 +18,8 @@ if TYPE_CHECKING:
 # sprite tile coordinates (image bank 0) with a fixed meaning in every tilemap
 EMPTY_TILE = (0, 0)
 WALL_TILE = (0, 3)
+# level design helper marking the intended route (e.g. through the maze); hidden until revealed
+PATH_TILE = (3, 0)
 
 
 class Map:
@@ -32,11 +34,18 @@ class Map:
         self.timers: list[Timer] = []
         # create initial game objects
         self.entities: list[Entity] = []
+        # world positions of path tiles, drawn as breadcrumbs once revealed
+        self.path: list[Vec2] = []
+        self.path_revealed = False
         # iterate over tilemap
         for tile_x in range(self.cfg.width // 8):
             for tile_y in range(self.cfg.height // 8):
                 img_x, img_y = pyxel.tilemaps[self.cfg.tm].pget(tile_x, tile_y)
                 if (img_x, img_y) in (EMPTY_TILE, WALL_TILE):
+                    continue
+                if (img_x, img_y) == PATH_TILE:
+                    self.path.append(Vec2(x=tile_x * 8, y=tile_y * 8 + self.game.cfg.header.h))
+                    pyxel.tilemaps[self.cfg.tm].pset(tile_x, tile_y, EMPTY_TILE)
                     continue
                 # print(f'at {tile_x=}, {tile_y=} there is {img_x=}, {img_y=}')
                 for e_cls in ALL_ENTITIES:
@@ -106,6 +115,9 @@ class Map:
             w=self.game.cfg.width,
             h=self.game.cfg.area.h,
         )
+        if self.path_revealed or self.game.cfg.debug:
+            for pos in self.path:
+                pyxel.blt(pos.x + offset.x, pos.y + offset.y, 0, PATH_TILE[0] * 8, PATH_TILE[1] * 8, 8, 8, colkey=0)
         for ent in self.entities:
             ent.draw(offset)
         for proj in self.projectiles:
@@ -133,6 +145,10 @@ class Map:
                     invalid = True
                     break
         return Vec2(_x, _y)
+
+    def reveal_path(self) -> None:
+        """Show the breadcrumbs, e.g. when the snake triggers a mechanism."""
+        self.path_revealed = True
 
     def tile_at(self, pos: Vec2) -> tuple[int, int]:
         """Sprite tile shown at a world position."""

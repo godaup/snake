@@ -88,7 +88,7 @@ home, explode, lifetime), weapon pickups and switching, and ammo/cooldown in the
 
 ### M1: Arc 1
 
-Portal tiles, exit tile in the maze, rebalanced goals, darkness rendering (light radius), boss framework (boss bar,
+Portal tiles, exit tile in the maze, a trigger in the maze that reveals the hidden path tiles as breadcrumbs (`Map.reveal_path()` exists), rebalanced goals, darkness rendering (light radius), boss framework (boss bar,
 phases) and The Hunger.
 
 ### M2: Arc 2

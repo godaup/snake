@@ -4,9 +4,9 @@ import pytest
 import pyxel
 
 from snake_quest.campaign import load_campaign
-from snake_quest.entity import ALL_ENTITIES, Apple, Enemy, GoldenApple
+from snake_quest.entity import Apple, Enemy, GoldenApple
 from snake_quest.goals import load_goals
-from snake_quest.map import Map
+from snake_quest.map import EMPTY_TILE, WALL_TILE, Map
 from snake_quest.snake import Snake
 from snake_quest.timers import Timer
 from snake_quest.utils import Vec2
@@ -27,13 +27,48 @@ def test_level_loads(assets, game, level):
 
 
 @pytest.mark.parametrize("level", LEVELS, ids=lambda lv: lv.name)
-def test_entity_tiles_are_moved_out_of_tilemap(assets, game, level):
+def test_only_floor_and_walls_remain_after_loading(assets, game, level):
+    """Entity and path tiles are lifted out of the tilemap; anything else left over is a stray tile."""
     level_map = Map(level=level, game=game)
     tilemap = pyxel.tilemaps[level_map.cfg.tm]
-    sprites = {(cls._img_x, cls._img_y) for cls in ALL_ENTITIES}
-    for tile_x in range(level_map.cfg.width // 8):
-        for tile_y in range(level_map.cfg.height // 8):
-            assert tilemap.pget(tile_x, tile_y) not in sprites
+    leftovers = {
+        (tile_x, tile_y): tilemap.pget(tile_x, tile_y)
+        for tile_x in range(level_map.cfg.width // 8)
+        for tile_y in range(level_map.cfg.height // 8)
+        if tilemap.pget(tile_x, tile_y) not in (EMPTY_TILE, WALL_TILE)
+    }
+    assert leftovers == {}
+
+
+def maze_map(game):
+    return Map(level=CAMPAIGN.level(CAMPAIGN.resolve("maze")), game=game)
+
+
+def test_maze_path_is_collected_and_hidden(assets, game):
+    level_map = maze_map(game)
+    assert len(level_map.path) == 72
+    assert not level_map.path_revealed
+
+
+def breadcrumb_drawn(level_map, game) -> bool:
+    """Draw the map with the first path tile at screen position (100, 100) and look for any non-floor pixel."""
+    crumb = level_map.path[0]
+    offset = Vec2(100 - crumb.x, 100 - crumb.y)
+    pyxel.cls(0)
+    level_map.draw(offset)
+    return any(pyxel.pget(100 + x, 100 + y) != game.cfg.area.bg for y in range(8) for x in range(8))
+
+
+def test_path_is_drawn_only_when_revealed(assets, game):
+    level_map = maze_map(game)
+    assert not breadcrumb_drawn(level_map, game)
+    level_map.reveal_path()
+    assert breadcrumb_drawn(level_map, game)
+
+
+def test_debug_shows_path(assets, game):
+    game.cfg.debug = True
+    assert breadcrumb_drawn(maze_map(game), game)
 
 
 def test_new_pos_is_free(level_map, game):
