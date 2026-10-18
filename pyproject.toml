@@ -12,7 +12,7 @@ license-files = ["LICENSE"]
 authors = [{ name = "Patrick Godau" }]
 requires-python = ">=3.10"
 dependencies = [
-    "pyxel>=2.9.9,<3",
+    "pyxel==2.9.9", # pinned while the upstream GitHub account is suspended (Oct 2026), see CLAUDE.md
     "omegaconf>=2.4,<3",
 ]
 keywords = ["game", "snake", "pyxel", "retro"]

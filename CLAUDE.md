@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Snake Quest**: a level-based snake game built on [Pyxel](https://github.com/kitao/pyxel) (retro game engine, Pyxel 2.x API) with OmegaConf for YAML config. It's distributed as `snake-quest` (the name `snake` is taken on PyPI). The code lives in `src/snake_quest/`, and everything is configured in `pyproject.toml`: hatchling build, dependencies, the `dev` dependency group, the `snake-quest` console script, ruff and pytest. Game data (`settings.yaml`, `levels/`, `assets.pyxres`) is package data next to the code and is located via `Path(__file__).parent`. Module imports are absolute (`from snake_quest.map import Map`).
 
+Pyxel is pinned to exactly `2.9.9` (uploaded 2026-08-12). In October 2026 the upstream author's GitHub account (`kitao`) was suspended after his token was abused in the "GhostAction" attacks, and the pin keeps out any release published during that time. Don't widen it until the account is back and new releases can be checked against the upstream repo. Until then, github.com/kitao/pyxel returns 404, and the docs are mirrored at kitao.dev/pyxel.
+
 ## Commands
 
 ```bash
