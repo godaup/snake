@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-**Snake Quest**: a level-based snake game built on [Pyxel](https://github.com/kitao/pyxel) (retro game engine, Pyxel 2.x API) with OmegaConf for YAML config. It's distributed as `snake-quest` (the name `snake` is taken on PyPI). The code lives in `src/snake_quest/`, and everything is configured in `pyproject.toml`: hatchling build, dependencies, the `dev` dependency group, the `snake-quest` console script, ruff and pytest. Game data (`settings.yaml`, `levels/`, `assets.pyxres`) is package data next to the code and is located via `Path(__file__).parent`. Module imports are absolute (`from snake_quest.map import Map`).
+**Snake Quest**: a level-based snake game built on [Pyxel](https://github.com/kitao/pyxel) (retro game engine, Pyxel 2.x API) with OmegaConf for YAML config. It's distributed as `snake-quest` (the name `snake` is taken on PyPI). The code lives in `src/snake_quest/`, and everything is configured in `pyproject.toml`: hatchling build, dependencies, the `dev` dependency group, the `snake-quest` console script, ruff and pytest. Game data (`settings.yaml`, `levels/`, `resources/*.pyxres`) is package data next to the code and is located via `Path(__file__).parent`. Module imports are absolute (`from snake_quest.map import Map`). `ROADMAP.md` holds the plan (20 levels in 4 arcs, milestones M0–M5): tick its checkboxes when a milestone item is done.
 
 Pyxel is pinned to exactly `2.9.9` (uploaded 2026-08-12). In October 2026 the upstream author's GitHub account (`kitao`) was suspended after his token was abused in the "GhostAction" attacks, and the pin keeps out any release published during that time. Don't widen it until the account is back and new releases can be checked against the upstream repo. Until then, github.com/kitao/pyxel returns 404, and the docs are mirrored at kitao.dev/pyxel.
 
@@ -13,7 +13,7 @@ Pyxel is pinned to exactly `2.9.9` (uploaded 2026-08-12). In October 2026 the up
 ```bash
 pip install -e . --group dev          # editable install + pytest + ruff (pip >= 25.1; Linux also needs system SDL2)
 snake-quest                           # run the game (or python -m snake_quest); --level N --scale N --mute --debug
-pyxel edit src/snake_quest/assets.pyxres   # edit sprites, tilemaps (level layouts), sounds and music
+pyxel edit src/snake_quest/resources/garden.pyxres   # edit sprites, sounds and arc 1 tilemaps (level layouts)
 pytest                                # run all tests
 pytest tests/test_map.py::test_new_pos_is_free   # run a single test
 ruff check . && ruff format --check .            # lint + format check
@@ -35,12 +35,14 @@ Tests run against the installed package, so do the editable install first. Tests
 
 **Screen layout and coordinates.** The window is `header + area + footer` tall (`settings.yaml`). World coordinates include the header height in y: entity/snake positions are offset by `cfg.header.h`, and tilemap lookups subtract it again (`(pos.y - header.h) // 8`). `Cam` computes a draw `offset` that keeps the snake head centered, clamped to the map borders. Every `draw(offset)` in the world adds it.
 
-**Levels (`map.py`, `levels/<n>.yaml`).** `Map(level=game.level_counter)` loads `levels/{n}.yaml`:
-- `tm`: index of the Pyxel tilemap in `assets.pyxres` holding the layout; `width`/`height` in pixels; `start` position.
+**Campaign (`campaign.py`, `levels/campaign.yaml`).** The campaign lists arcs in order. Each arc has a name, a `resources` `.pyxres` file in `resources/` and its levels by file name. `game.level_counter` is the 1-based number in the whole campaign. `campaign.level(n)` returns a `Level` (name, arc, path, resource file). `--level` accepts a number or a name. Images, sounds and music come only from the top-level `sprites` file, loaded once in `Game.start()`. Every `Map` calls `level.load_tilemaps()`, which loads only the tilemaps of its arc's file, so each level starts from fresh tilemaps. `pyxel.load` replaces the `Tilemap` objects, so never keep a reference to `pyxel.tilemaps[i]` across a load. Winning the last level shows `VictoryStateHandler`. A level file that is not in the campaign fails the tests, unless its name starts with `_` (scratch levels, excluded from builds).
+
+**Levels (`map.py`, `levels/<name>.yaml`).** `Map(level=campaign.level(n))` loads the level file:
+- `tm`: index (0–7) of the Pyxel tilemap in the arc's resource file holding the layout; `width`/`height` in pixels; `start` position.
 - `goal`: win conditions, all of which must hold: `score` (counted from the level's start score) and/or `length` (segments).
 - `timers`: named entries with `duration`, `frequency` (0 = fire once), `fire_n` (0 = unlimited) and a `callback` of `type: spawn` (`entity: apple|golden|enemy`, optional `pos`) or `type: grow` (`value`). They are turned into closures by `Map.create_callback`.
 
-Tile semantics are hardcoded: tile `(0,0)` is empty and tile `(0,3)` is a wall (`check_on_wall`). Any other tile that matches an entity class's `_img_x/_img_y` (8px-tile coordinates in image bank 0) is spawned as that entity, and the tile is erased from the tilemap at load time. That changes the tilemap in memory, which is why `restart()` calls `pyxel.load` again. Level numbers must be consecutive (`level_up` increments by 1). Only 1–3 and 9 exist, plus a scratch `_temp.yaml`, so winning level 3 crashes (see `tests/test_levels.py`).
+Tile semantics are hardcoded: tile `(0,0)` is empty and tile `(0,3)` is a wall (`check_on_wall`). Any other tile that matches an entity class's `_img_x/_img_y` (8px-tile coordinates in image bank 0) is spawned as that entity, and the tile is erased from the tilemap at load time. That changes the tilemap in memory, which is why every `Map` reloads its tilemaps.
 
 **Entities (`entity.py`).** Subclass `Entity`, set `_img_x/_img_y` to the sprite tile and override `on_intersect` (snake head touches it), `update` and optionally `hit`. Then add the class to `ALL_ENTITIES` so the tilemap can place it, and to the name dict in `Map.create_callback` so timers can spawn it. Entities are removed by setting `alive = False`. `Map.update` drops dead entities, timers and projectiles at the start of the next update.
 

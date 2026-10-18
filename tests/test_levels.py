@@ -5,9 +5,9 @@ from pathlib import Path
 import omegaconf
 import pytest
 
-from .conftest import PACKAGE_DIR
+from snake_quest.campaign import CAMPAIGN_FILE, LEVELS_DIR, load_campaign
 
-LEVEL_FILES = sorted((PACKAGE_DIR / "levels").glob("*.yaml"))
+LEVEL_FILES = sorted(p for p in LEVELS_DIR.glob("*.yaml") if p != CAMPAIGN_FILE)
 TILEMAP_SIZE = 256 * 8  # pyxel tilemaps are 256x256 tiles of 8px
 
 
@@ -38,9 +38,32 @@ def test_level_timers(path: Path):
             assert isinstance(timer.callback.value, int), name
 
 
-@pytest.mark.xfail(
-    strict=True, reason="levels 4-8 not designed yet; Game.level_up increments by 1, so winning level 3 crashes"
-)
-def test_levels_are_consecutive():
-    numbers = sorted(int(p.stem) for p in LEVEL_FILES if p.stem.isdigit())
-    assert numbers == list(range(1, len(numbers) + 1))
+def test_campaign_references_existing_files():
+    campaign = load_campaign()
+    assert campaign.sprites.is_file()
+    for level in campaign.levels:
+        assert level.path.is_file(), level.name
+        assert level.resources.is_file(), level.name
+
+
+def test_campaign_levels_are_unique_and_numbered():
+    levels = load_campaign().levels
+    assert len({level.name for level in levels}) == len(levels)
+    assert [level.number for level in levels] == list(range(1, len(levels) + 1))
+
+
+def test_every_level_file_is_in_the_campaign():
+    """Level files outside the campaign are dead weight, except scratch files starting with '_'."""
+    in_campaign = {level.name for level in load_campaign().levels}
+    on_disk = {p.stem for p in LEVEL_FILES if not p.stem.startswith("_")}
+    assert on_disk == in_campaign
+
+
+def test_resolve_by_number_and_name():
+    campaign = load_campaign()
+    assert campaign.resolve("1") == 1
+    assert campaign.resolve("maze") == campaign.levels[[lv.name for lv in campaign.levels].index("maze")].number
+    with pytest.raises(KeyError):
+        campaign.resolve("nope")
+    with pytest.raises(IndexError):
+        campaign.resolve(str(len(campaign) + 1))

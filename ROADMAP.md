@@ -72,9 +72,9 @@ home, explode, lifetime), weapon pickups and switching, and ammo/cooldown in the
 
 ### M0: Foundations
 
-- [ ] Campaign file: levels are referenced by name and ordered per arc in `levels/campaign.yaml` (fixes the crash
+- [x] Campaign file: levels are referenced by name and ordered per arc in `levels/campaign.yaml` (fixes the crash
       after the last level)
-- [ ] One `.pyxres` per arc: shared sprites and sounds from one file, tilemaps from the arc's file, reloaded for each
+- [x] One `.pyxres` per arc: shared sprites and sounds from one file, tilemaps from the arc's file, reloaded for each
       level
 - [ ] Goal types beyond `score` / `length`: `exit`, `survive`, `defeat`, `hold_length`, `collect_all`
 - [ ] Entity and tile registries by name (replace the hard-coded lists in `entity.py` / `map.py`), new tile types

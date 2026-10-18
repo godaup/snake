@@ -6,16 +6,18 @@ import pytest
 import pyxel
 
 import snake_quest
+from snake_quest.campaign import load_campaign
 
 PACKAGE_DIR = Path(snake_quest.__file__).parent
 
 
 class FakeGame:
-    """Stand-in for main.Game, which cannot be constructed in tests because it enters pyxel.run."""
+    """Stand-in for game.Game, which cannot be constructed in tests because it enters pyxel.run."""
 
     def __init__(self):
         self.cfg = omegaconf.OmegaConf.load(PACKAGE_DIR / "settings.yaml")
         self.score = 0
+        self.campaign = load_campaign()
         self.level_counter = 1
         self.dt = datetime.timedelta(seconds=1 / self.cfg.fps)
         self.requested_states = []
@@ -36,8 +38,8 @@ def pyxel_headless():
 
 @pytest.fixture
 def assets():
-    """Reload resources for every test: Map erases entity tiles from the in-memory tilemaps."""
-    pyxel.load(str(PACKAGE_DIR / "assets.pyxres"))
+    """Shared sprites and sounds; every Map loads fresh tilemaps for its own level."""
+    load_campaign().load_sprites()
     pyxel.rseed(0)
 
 

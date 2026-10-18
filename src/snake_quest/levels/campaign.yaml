@@ -1,0 +1,9 @@
+# Order of play, see ROADMAP.md. Levels are referenced by the name of their file in this directory.
+# Every level of an arc takes its tilemaps from the arc's resource file (in ../resources/).
+# Images, sounds and music always come from the shared `sprites` file; images in arc files are ignored.
+sprites: garden.pyxres
+
+arcs:
+  - name: The Garden
+    resources: garden.pyxres
+    levels: [classic, maneuver, maze, yummy]

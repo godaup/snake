@@ -22,7 +22,7 @@ SNAKE_SIZE = 2
 class RunningStateHandler(GameStateHandler):
     def __init__(self, game: "Game"):
         super().__init__(game=game)
-        self.map = Map(level=game.level_counter, game=self.game)
+        self.map = Map(level=game.campaign.level(game.level_counter), game=self.game)
         self.snake = Snake(pos=self.map.start, orient=45, size=SNAKE_SIZE)
         self.cam = Cam(snake=self.snake, map=self.map, game=self.game)
         self.score_board = Widget(

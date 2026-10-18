@@ -7,3 +7,4 @@ class StateID(Enum):
     RUNNING = 2
     DEATH = 3
     COUNTDOWN = 4
+    VICTORY = 5

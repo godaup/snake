@@ -8,9 +8,12 @@ COL_DEATH = 8
 
 
 class DeathStateHandler(GameStateHandler):
+    TITLE = "GAME OVER"
+    BG = COL_DEATH
+
     def __init__(self, game):
         super().__init__(game=game)
-        text = ["GAME OVER", "(Q)UIT", "(R)ESTART"]
+        text = [self.TITLE, "(Q)UIT", "(R)ESTART"]
         self.wdg = Widget(
             x=min([self.center_text(line) for line in text]) - WIDGET_MARGIN,
             y=self.game.cfg.area.h // 2
@@ -18,7 +21,7 @@ class DeathStateHandler(GameStateHandler):
             + (pyxel.FONT_HEIGHT + TEXT_LINE_SPACING) * (-len(text) // 2),
             w=max(len(line) for line in text) * pyxel.FONT_WIDTH + 2 * WIDGET_MARGIN,
             h=None,
-            bg=COL_DEATH,
+            bg=self.BG,
             border=None,
             text=text,
             text_col=COL_TEXT_DEATH,

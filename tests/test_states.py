@@ -10,10 +10,19 @@ from snake_quest.states.death import DeathStateHandler
 from snake_quest.states.menu import MenuStateHandler
 from snake_quest.states.pause import PauseStateHandler
 from snake_quest.states.running import RunningStateHandler
+from snake_quest.states.victory import VictoryStateHandler
 
 
 @pytest.mark.parametrize(
-    "handler_cls", [MenuStateHandler, PauseStateHandler, RunningStateHandler, DeathStateHandler, CountdownHandler]
+    "handler_cls",
+    [
+        MenuStateHandler,
+        PauseStateHandler,
+        RunningStateHandler,
+        DeathStateHandler,
+        CountdownHandler,
+        VictoryStateHandler,
+    ],
 )
 def test_handlers_construct_update_and_draw(assets, game, handler_cls):
     handler = handler_cls(game)

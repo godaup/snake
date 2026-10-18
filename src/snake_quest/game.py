@@ -6,6 +6,7 @@ from pathlib import Path
 import omegaconf
 import pyxel
 
+from snake_quest.campaign import load_campaign
 from snake_quest.sound import SoundManager
 from snake_quest.states import StateID
 from snake_quest.states.abstract import GameStateHandler
@@ -14,8 +15,8 @@ from snake_quest.states.death import DeathStateHandler
 from snake_quest.states.menu import MenuStateHandler
 from snake_quest.states.pause import PauseStateHandler
 from snake_quest.states.running import RunningStateHandler
+from snake_quest.states.victory import VictoryStateHandler
 
-ASSETS = Path(__file__).parent / "assets.pyxres"
 SETTINGS = Path(__file__).parent / "settings.yaml"
 
 
@@ -27,6 +28,7 @@ class Game:
         """
         self.overrides: dict = overrides or {}
         self.start_level: int = start_level
+        self.campaign = load_campaign()
         self.next_stateID: StateID = StateID.MENU
         self.cfg: omegaconf.DictConfig = omegaconf.DictConfig({})
         self.sm: SoundManager = SoundManager()
@@ -55,7 +57,7 @@ class Game:
             display_scale=self.cfg.scale,
         )
         self.initialized = True
-        pyxel.load(filename=str(ASSETS))
+        self.campaign.load_sprites()
         self.stateID = StateID.DEATH
         self._state_handlers: dict[StateID, GameStateHandler] = {
             StateID.MENU: MenuStateHandler(self),
@@ -63,6 +65,7 @@ class Game:
             StateID.RUNNING: RunningStateHandler(self),
             StateID.DEATH: DeathStateHandler(self),
             StateID.COUNTDOWN: CountdownHandler(self),
+            StateID.VICTORY: VictoryStateHandler(self),
         }
         self.change_state(StateID.MENU)
         pyxel.run(self.update, self.draw)
@@ -106,11 +109,13 @@ class Game:
     def restart(self):
         self.score = 0
         self.level_counter = self.start_level
-        pyxel.load(filename=str(ASSETS))
         self._state_handlers[StateID.RUNNING] = RunningStateHandler(self)
         self.change_state(state=StateID.RUNNING)
 
     def level_up(self):
+        if self.level_counter == len(self.campaign):
+            self.change_state(StateID.VICTORY)
+            return
         self.level_counter += 1
         # start a new running handler
         self._state_handlers[StateID.RUNNING] = RunningStateHandler(self)

@@ -1,22 +1,26 @@
 """Command line entry point (`snake-quest` / `python -m snake_quest`)."""
 
 import argparse
-from pathlib import Path
 
 from snake_quest import __version__
+from snake_quest.campaign import load_campaign
 
-LEVELS_DIR = Path(__file__).parent / "levels"
 
-
-def available_levels() -> list[int]:
-    return sorted(int(p.stem) for p in LEVELS_DIR.glob("*.yaml") if p.stem.isdigit())
+def level_number(value: str) -> int:
+    """argparse type: a level given by campaign number or name."""
+    campaign = load_campaign()
+    try:
+        return campaign.resolve(value)
+    except (IndexError, KeyError) as e:
+        names = ", ".join(f"{level.number}={level.name}" for level in campaign.levels)
+        raise argparse.ArgumentTypeError(f"{e.args[0]} (choose from {names})") from None
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="snake-quest", description="A level-based snake game built with Pyxel.")
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     parser.add_argument(
-        "--level", type=int, default=1, choices=available_levels(), help="level to start (and restart) at"
+        "--level", type=level_number, default=1, help="level to start (and restart) at, by number or name"
     )
     parser.add_argument("--scale", type=int, help="window scale factor (default from settings.yaml)")
     parser.add_argument("--mute", action="store_true", help="disable music and sound effects")

@@ -20,12 +20,9 @@ Controls: arrow keys (or gamepad D-pad) to steer, `P` to play/pause, `R` to rest
 pip install -e . --group dev   # needs pip >= 25.1
 pytest
 ruff check . && ruff format --check .
-pyxel edit src/snake_quest/assets.pyxres
+pyxel edit src/snake_quest/resources/garden.pyxres
 ```
 
-## Todo
+## Roadmap
 
-- more entities
-- footer usage (health bar?)
-- larger maps
-- sounds
+20 levels in 4 story arcs, each level with its own twist: see [ROADMAP.md](ROADMAP.md).

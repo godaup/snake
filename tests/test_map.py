@@ -3,29 +3,29 @@ import datetime
 import pytest
 import pyxel
 
+from snake_quest.campaign import load_campaign
 from snake_quest.entity import ALL_ENTITIES, Apple, Enemy, GoldenApple
 from snake_quest.map import Map
 from snake_quest.snake import Snake
 from snake_quest.timers import Timer
 from snake_quest.utils import Vec2
 
-from .conftest import PACKAGE_DIR
-
-LEVELS = sorted(int(p.stem) for p in (PACKAGE_DIR / "levels").glob("*.yaml") if p.stem.isdigit())
+CAMPAIGN = load_campaign()
+LEVELS = CAMPAIGN.levels
 
 
 @pytest.fixture
 def level_map(assets, game):
-    return Map(level=1, game=game)
+    return Map(level=CAMPAIGN.level(1), game=game)
 
 
-@pytest.mark.parametrize("level", LEVELS)
+@pytest.mark.parametrize("level", LEVELS, ids=lambda lv: lv.name)
 def test_level_loads(assets, game, level):
     level_map = Map(level=level, game=game)
     assert not level_map.check_on_wall(level_map.start)
 
 
-@pytest.mark.parametrize("level", LEVELS)
+@pytest.mark.parametrize("level", LEVELS, ids=lambda lv: lv.name)
 def test_entity_tiles_are_moved_out_of_tilemap(assets, game, level):
     level_map = Map(level=level, game=game)
     tilemap = pyxel.tilemaps[level_map.cfg.tm]
@@ -96,7 +96,7 @@ def test_dead_entities_are_removed_on_update(level_map):
 
 def test_check_win_counts_score_from_level_start(assets, game):
     game.score = 50
-    level_map = Map(level=1, game=game)
+    level_map = Map(level=CAMPAIGN.level(1), game=game)
     snake = Snake(pos=level_map.start, orient=0, size=2)
     goal = level_map.cfg.goal.score
     game.score = 50 + goal - 1
@@ -111,3 +111,13 @@ def test_check_win_length_goal(level_map):
     assert not level_map.check_win(snake=snake)
     snake.segs *= 3
     assert level_map.check_win(snake=snake)
+
+
+def test_each_map_gets_fresh_tilemaps(assets, game):
+    level = CAMPAIGN.level(1)
+    tm = Map(level=level, game=game).cfg.tm
+    original = pyxel.tilemaps[tm].pget(0, 0)
+    pyxel.tilemaps[tm].pset(0, 0, (5, 5))  # e.g. left over from a previous run of the level
+    Map(level=level, game=game)
+    # look the tilemap up again: pyxel.load replaces the Tilemap objects
+    assert pyxel.tilemaps[tm].pget(0, 0) == original

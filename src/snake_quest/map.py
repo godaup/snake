@@ -1,11 +1,11 @@
 import datetime
 from collections.abc import Callable
-from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
 import omegaconf
 import pyxel
 
+from snake_quest.campaign import Level
 from snake_quest.entity import ALL_ENTITIES, Apple, Enemy, Entity, GoldenApple
 from snake_quest.timers import Timer
 from snake_quest.utils import Vec2
@@ -16,8 +16,11 @@ if TYPE_CHECKING:
 
 
 class Map:
-    def __init__(self, level: int, game: "Game"):
-        self.cfg = omegaconf.OmegaConf.load(Path(__file__).parent / "levels" / f"{level}.yaml")
+    def __init__(self, level: Level, game: "Game"):
+        self.level = level
+        self.cfg = omegaconf.OmegaConf.load(level.path)
+        # fresh tilemaps for every level: entity tiles are erased from them below
+        level.load_tilemaps()
 
         self.start = Vec2(self.cfg.start.x, self.cfg.start.y)
         self.game = game
