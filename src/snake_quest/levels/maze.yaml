@@ -1,4 +1,4 @@
-tm: 2
+tm: 3  # draft from tools/draft_maze.py; the original layout is still in tilemap 2
 width: 1408
 height: 640
 
