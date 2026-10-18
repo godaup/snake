@@ -7,17 +7,24 @@ import omegaconf
 import pyxel
 
 from snake_quest.campaign import load_campaign
+from snake_quest.profile import Profile
 from snake_quest.sound import SoundManager
 from snake_quest.states import StateID
 from snake_quest.states.abstract import GameStateHandler
 from snake_quest.states.countdown import CountdownHandler
+from snake_quest.states.credits import CreditsStateHandler
+from snake_quest.states.customize import CustomizeStateHandler
 from snake_quest.states.death import DeathStateHandler
+from snake_quest.states.highscores import HighscoresStateHandler
 from snake_quest.states.menu import MenuStateHandler
+from snake_quest.states.menu_common import Backdrop
 from snake_quest.states.pause import PauseStateHandler
 from snake_quest.states.running import RunningStateHandler
 from snake_quest.states.victory import VictoryStateHandler
 
 SETTINGS = Path(__file__).parent / "settings.yaml"
+# vendor and app name for pyxel.user_data_dir(), where the profile (highscores, palette) is saved
+USER_DATA = ("godaup", "snake-quest")
 
 
 class Game:
@@ -33,6 +40,7 @@ class Game:
         self.cfg: omegaconf.DictConfig = omegaconf.DictConfig({})
         self.sm: SoundManager = SoundManager()
         self.stateID: StateID = StateID.MENU
+        self.music: int | None = None  # what is playing now
 
         self._state_handlers: dict[StateID, GameStateHandler] = {}
         self.score = 0
@@ -55,9 +63,12 @@ class Game:
             title="Snake Quest",
             fps=self.cfg.fps,
             display_scale=self.cfg.scale,
+            quit_key=pyxel.KEY_NONE,  # ESC pauses and goes back in menus; quitting is in the menus
         )
         self.initialized = True
         self.campaign.load_sprites()
+        self.profile = Profile.load(Path(pyxel.user_data_dir(*USER_DATA)) / "profile.json")
+        self.backdrop = Backdrop(self)
         self.stateID = StateID.DEATH
         self._state_handlers: dict[StateID, GameStateHandler] = {
             StateID.MENU: MenuStateHandler(self),
@@ -66,6 +77,9 @@ class Game:
             StateID.DEATH: DeathStateHandler(self),
             StateID.COUNTDOWN: CountdownHandler(self),
             StateID.VICTORY: VictoryStateHandler(self),
+            StateID.HIGHSCORES: HighscoresStateHandler(self),
+            StateID.CREDITS: CreditsStateHandler(self),
+            StateID.CUSTOMIZE: CustomizeStateHandler(self),
         }
         self.change_state(StateID.MENU)
         pyxel.run(self.update, self.draw)
@@ -79,14 +93,17 @@ class Game:
         self.cfg = omegaconf.OmegaConf.merge(omegaconf.OmegaConf.load(SETTINGS), self.overrides)
 
     def change_state(self, state: StateID) -> None:
-        """Updates state and mouse visibility."""
+        """Updates state, mouse visibility and music, and tells the new state it is entered."""
         assert isinstance(state, StateID)
-        # stop music
-        self.sm.interrupt()
-        # set mouse visibility
-        pyxel.mouse(visible=self._state_handlers[state].is_visible())
-        # play new music
-        self.sm.play(music=self._state_handlers[state].get_music())
+        handler = self._state_handlers[state]
+        pyxel.mouse(visible=handler.is_visible())
+        # switch music only if the new state wants a different one, so menu screens share the theme
+        music = handler.get_music()
+        if music != self.music:
+            self.sm.interrupt()
+            self.sm.play(music=music)
+            self.music = music
+        handler.on_enter()
         # do not set stateID directly, we want update to be performed first on the new handler
         self.next_stateID = state
 

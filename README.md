@@ -12,7 +12,9 @@ snake-quest               # or: python -m snake_quest
 Options: `--level N` to start (and restart) at a level, `--scale N` for the window size, `--mute`, `--debug`, `--version`.
 On Linux, Pyxel needs the system SDL2 library (e.g. `apt install libsdl2-2.0-0`).
 
-Controls: arrow keys (or gamepad D-pad) to steer, `P` to play/pause, `R` to restart and `Q` to quit after a game over.
+Controls: arrow keys (or gamepad D-pad) to steer, `P` or `Esc` to pause (`Esc` again returns to the menu), and `R` restart / `M` menu / `Q` quit after a game over. Menus: arrow keys + `Enter`, or the mouse; `Esc` goes back.
+
+The main menu has highscores, a snake colour picker and credits. Highscores and the chosen colours are saved in `~/.pyxel/godaup/snake-quest/profile.json` (Pyxel's per-user data folder on your system).
 
 ## Development
 

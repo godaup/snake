@@ -7,6 +7,8 @@ import pyxel
 
 import snake_quest
 from snake_quest.campaign import load_campaign
+from snake_quest.profile import Profile
+from snake_quest.states.menu_common import Backdrop
 
 PACKAGE_DIR = Path(snake_quest.__file__).parent
 
@@ -21,6 +23,9 @@ class FakeGame:
         self.level_counter = 1
         self.dt = datetime.timedelta(seconds=1 / self.cfg.fps)
         self.requested_states = []
+        self.profile = Profile()  # no path: never written to disk
+        self.backdrop = Backdrop(self)
+        self.restarts = 0
         self.level_ups = 0
 
     def change_state(self, state):
@@ -28,6 +33,9 @@ class FakeGame:
 
     def level_up(self):
         self.level_ups += 1
+
+    def restart(self):
+        self.restarts += 1
 
 
 @pytest.fixture(scope="session", autouse=True)

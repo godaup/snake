@@ -1,5 +1,6 @@
 import pyxel
 
+from snake_quest.states import StateID
 from snake_quest.states.abstract import GameStateHandler
 from snake_quest.widget import TEXT_LINE_SPACING, WIDGET_MARGIN, Widget
 
@@ -13,8 +14,19 @@ class DeathStateHandler(GameStateHandler):
 
     def __init__(self, game):
         super().__init__(game=game)
-        text = [self.TITLE, "(Q)UIT", "(R)ESTART"]
-        self.wdg = Widget(
+        self.rank: int | None = None
+        self.wdg = self.build_widget([self.TITLE, "(R)ESTART", "(M)ENU", "(Q)UIT"])
+
+    def on_enter(self) -> None:
+        """Record the score and show it, with the highscore rank if it made the table."""
+        self.rank = self.game.profile.add_highscore(self.game.score, self.game.level_counter)
+        lines = [self.TITLE, f"SCORE {self.game.score}"]
+        if self.rank:
+            lines.append(f"NEW HIGHSCORE #{self.rank}!")
+        self.wdg = self.build_widget([*lines, "", "(R)ESTART", "(M)ENU", "(Q)UIT"])
+
+    def build_widget(self, text: list[str]) -> Widget:
+        return Widget(
             x=min([self.center_text(line) for line in text]) - WIDGET_MARGIN,
             y=self.game.cfg.area.h // 2
             + self.game.cfg.header.h
@@ -30,6 +42,8 @@ class DeathStateHandler(GameStateHandler):
     def update(self) -> None:
         if pyxel.btnp(pyxel.KEY_R) or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_A):
             self.game.restart()
+        if pyxel.btnp(pyxel.KEY_M) or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_B):
+            self.game.change_state(StateID.MENU)
         if pyxel.btn(pyxel.KEY_Q):
             pyxel.quit()
 

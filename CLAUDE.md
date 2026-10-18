@@ -17,6 +17,7 @@ pyxel edit src/snake_quest/resources/garden.pyxres   # edit sprites, sounds and 
 snake-quest --level maze --preview maze.png   # render a whole level (walls, entities, path, start) to a PNG
 python tools/draft_maze.py src/snake_quest/resources/garden.pyxres --level src/snake_quest/levels/maze.yaml \
     --src-tm 2 --dst-tm 3 --seed 7    # regenerate the maze draft around the path tiles (see the script's docstring)
+python tools/compose_theme.py src/snake_quest/resources/garden.pyxres   # rewrite the menu theme from its text score
 pytest                                # run all tests
 pytest tests/test_map.py::test_new_pos_is_free   # run a single test
 ruff check . && ruff format --check .            # lint + format check
@@ -33,6 +34,10 @@ Tests run against the installed package, so do the editable install first. Tests
 **Entry point (`cli.py`).** `main()` parses arguments, turns them into a dict of overrides that `Game(overrides=..., start_level=...)` merges over `settings.yaml` in `reload_settings()`, and only then imports `game`, so `--help` and `--version` don't touch Pyxel. New command-line options should become settings overrides the same way.
 
 **Game loop and state machine (`game.py`, `states/`).** `Game` owns the global config (`settings.yaml`), score, level counter, `SoundManager` and one `GameStateHandler` per `StateID`. `pyxel.run(update, draw)` calls the current handler's `update`/`draw`. `change_state()` stops music, sets mouse visibility and starts the new state's music (`is_visible()`, `get_music()`), but only stores `next_stateID`. The switch happens at the end of `draw()`, so the old state finishes its frame first. Handlers are created once in `Game.start()`, except `RunningStateHandler`, which `restart()` and `level_up()` replace with a fresh instance (and with it a fresh `Map`, `Snake` and `Cam`). Overlay states (pause, death, countdown) do not `cls`, so they draw on top of the last running frame. On its first update a new `RunningStateHandler` switches to `COUNTDOWN`, which switches back to `RUNNING` after 3 seconds.
+
+**Menus (`states/menu*.py`, `highscores.py`, `customize.py`, `credits.py`).** All menu screens share one `Backdrop` (`game.backdrop`: hedge frame, drifting decorations, a demo snake chasing a figure-eight), so the animation continues across screens. Menu input helpers (`up/down/left/right/confirm/back`) live in `menu_common.py`. `pyxel.init` uses `quit_key=KEY_NONE`: Esc pauses in a level and goes back in menus, and quitting is a menu item. `change_state()` calls the new handler's `on_enter()` hook (e.g. the game over screen records the highscore there) and only restarts music when the new state's `get_music()` differs, so menu screens keep the theme playing. Music 1 (`MENU_MUSIC`) is the theme, written by `tools/compose_theme.py` into sounds 8-11 of `garden.pyxres`. Music 0 is reserved for the levels and still empty, and sounds 0-2 are effects.
+
+**Profile (`profile.py`, `palettes.py`).** `game.profile` holds the snake palette name and the top-10 highscores. It is loaded from `pyxel.user_data_dir(*USER_DATA)/profile.json` in `Game.start()` and saved on changes. A missing or corrupt file gives a fresh profile, never a crash. `Snake(colors=palette(name))` takes its colours from `PALETTES`, and `snake.recolor()` switches them live. In tests, `FakeGame` has an unsaved `Profile()` and its own `Backdrop`.
 
 **Time.** Movement-independent timing uses wall-clock `datetime` deltas (`game.dt`, set each update), not frame counts: snake growth delay, `Timer`, enemy behavior and weapon cooldown all work this way.
 

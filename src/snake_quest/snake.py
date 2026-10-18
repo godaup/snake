@@ -5,13 +5,12 @@ from typing import TYPE_CHECKING
 
 import pyxel
 
+from snake_quest.palettes import DEFAULT_PALETTE, Palette, palette
 from snake_quest.utils import Vec2
 
 if TYPE_CHECKING:
     from snake_quest.map import Map
 
-BODY_COLS = (11, 11, 4, 3, 3)
-COL_HEAD = 7
 MAX_SPEED = 4
 MIN_SPEED = 1
 INIT_SPEED = 1.3
@@ -33,11 +32,12 @@ class SnakeSeg:
 class Snake:
     """Snake class."""
 
-    def __init__(self, pos: Vec2, orient: int, size: int):
+    def __init__(self, pos: Vec2, orient: int, size: int, colors: Palette | None = None):
         self.size: int = size
         self.orient: int = orient
         self._speed: float = INIT_SPEED
-        self.segs: list[SnakeSeg] = [SnakeSeg(pos, self.size, COL_HEAD)]
+        self.colors: Palette = colors or palette(DEFAULT_PALETTE)
+        self.segs: list[SnakeSeg] = [SnakeSeg(pos, self.size, self.colors.head)]
         self.grow: int = 20
         self.delay = datetime.timedelta(seconds=0)
         self.weapon: Weapon | None = None
@@ -56,6 +56,16 @@ class Snake:
     @speed.setter
     def speed(self, val):
         self._speed = max(min(val, MAX_SPEED), MIN_SPEED)
+
+    def body_color(self, index: int) -> int:
+        return self.colors.body[index % len(self.colors.body)]
+
+    def recolor(self, colors: Palette) -> None:
+        """Switch palette, e.g. for the live preview in the customize screen."""
+        self.colors = colors
+        self.head.col = colors.head
+        for index, seg in enumerate(self.segs[1:], start=1):
+            seg.col = self.body_color(index)
 
     def turn(self, val: int):
         self.orient = (self.orient + val) % 360
@@ -82,7 +92,7 @@ class Snake:
             if self.delay < SPAWN_DELAY:
                 self.delay += dt
             else:
-                self.segs.append(SnakeSeg(pos=previous, size=self.size, col=BODY_COLS[len(self) % len(BODY_COLS)]))
+                self.segs.append(SnakeSeg(pos=previous, size=self.size, col=self.body_color(len(self))))
                 self.grow -= 1
                 self.delay = datetime.timedelta(seconds=0)
         # shrink

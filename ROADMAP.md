@@ -106,5 +106,7 @@ Trail walls, mirrored input, Laser and Homing, AI-controlled rival snake (reusin
 
 ### M5: Release
 
-Music, menu with level select, high scores, a winnability test per level (input layer, later `pyxel-mcp` once the
-upstream GitHub account is restored), `snake-quest` 0.x on PyPI.
+- [x] Menu theme song, animated main menu, highscores, snake colour palettes, credits (saved per user)
+- [ ] Level music, level select in the menu, initials for highscores
+- [ ] A winnability test per level (input layer, later `pyxel-mcp` once the upstream GitHub account is restored)
+- [ ] `snake-quest` 0.x on PyPI

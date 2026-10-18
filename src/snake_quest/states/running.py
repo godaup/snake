@@ -4,6 +4,7 @@ import pyxel
 
 from snake_quest.cam import Cam
 from snake_quest.map import Map
+from snake_quest.palettes import palette
 from snake_quest.snake import Snake
 from snake_quest.states import StateID
 from snake_quest.states.abstract import GameStateHandler
@@ -23,7 +24,7 @@ class RunningStateHandler(GameStateHandler):
     def __init__(self, game: "Game"):
         super().__init__(game=game)
         self.map = Map(level=game.campaign.level(game.level_counter), game=self.game)
-        self.snake = Snake(pos=self.map.start, orient=45, size=SNAKE_SIZE)
+        self.snake = Snake(pos=self.map.start, orient=45, size=SNAKE_SIZE, colors=palette(game.profile.palette))
         self.cam = Cam(snake=self.snake, map=self.map, game=self.game)
         self.score_board = Widget(
             x=0, y=0, w=len(self.get_score_text()) * pyxel.FONT_WIDTH + 2 * WIDGET_MARGIN, bg=10, text_col=12
@@ -56,7 +57,7 @@ class RunningStateHandler(GameStateHandler):
 
     def update(self) -> None:
         # pause
-        if pyxel.btnp(pyxel.KEY_P):
+        if pyxel.btnp(pyxel.KEY_P) or pyxel.btnp(pyxel.KEY_ESCAPE) or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_START):
             self.game.change_state(state=StateID.PAUSE)
         # turn
         if pyxel.btn(pyxel.KEY_LEFT) or pyxel.btn(pyxel.GAMEPAD1_BUTTON_DPAD_LEFT):

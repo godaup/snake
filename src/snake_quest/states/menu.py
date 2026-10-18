@@ -1,38 +1,90 @@
+from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 import pyxel
 
+from snake_quest import __version__
 from snake_quest.states import StateID
 from snake_quest.states.abstract import GameStateHandler
-from snake_quest.widget import WIDGET_MARGIN, Button, ImgInfo
+from snake_quest.states.menu_common import (
+    COL_DIM,
+    COL_HIGHLIGHT,
+    COL_TEXT,
+    MENU_MUSIC,
+    Title,
+    centered_text,
+    confirm,
+    down,
+    panel,
+    text_width,
+    up,
+)
 
 if TYPE_CHECKING:
     from snake_quest.game import Game
+
+ITEM_SPACING = 12
+PANEL_W = 100
 
 
 class MenuStateHandler(GameStateHandler):
     def __init__(self, game: "Game"):
         super().__init__(game=game)
-        text = "(P)lay"
-        self.play_btn = Button(
-            x=self.center_text(text=text) - WIDGET_MARGIN,
-            y=(self.game.cfg.area.h / 2 + self.game.cfg.header.h) - WIDGET_MARGIN,
-            text=[text],
-            on_click=self.play_callback,
-            img=ImgInfo(nr=0, u=0, v=48, h=8, w=8, collkey=0),
-            hotkey=pyxel.KEY_P,
-        )
+        self.title = Title("SNAKE QUEST")
+        self.items: list[tuple[str, Callable[[], None]]] = [
+            ("PLAY", self.game.restart),
+            ("HIGHSCORES", lambda: self.game.change_state(StateID.HIGHSCORES)),
+            ("CUSTOMIZE", lambda: self.game.change_state(StateID.CUSTOMIZE)),
+            ("CREDITS", lambda: self.game.change_state(StateID.CREDITS)),
+            ("QUIT", pyxel.quit),
+        ]
+        self.selected = 0
+        self.height = game.cfg.header.h + game.cfg.area.h + game.cfg.footer.h
+        self.items_top = self.height // 2 - 6
 
     @staticmethod
     def is_visible() -> bool:
         return True
 
+    def get_music(self) -> int | None:
+        return MENU_MUSIC
+
+    def item_rect(self, index: int) -> tuple[int, int, int, int]:
+        return (self.game.cfg.width - PANEL_W) // 2 + 4, self.items_top + index * ITEM_SPACING - 2, PANEL_W - 8, 10
+
     def update(self) -> None:
-        self.play_btn.update()
+        self.game.backdrop.update(self.game.dt)
+        if up():
+            self.selected = (self.selected - 1) % len(self.items)
+        if down():
+            self.selected = (self.selected + 1) % len(self.items)
+        # mouse: hovering selects, clicking activates
+        for index in range(len(self.items)):
+            x, y, w, h = self.item_rect(index)
+            if x <= pyxel.mouse_x < x + w and y <= pyxel.mouse_y < y + h:
+                self.selected = index
+                if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
+                    self.items[index][1]()
+                    return
+        if pyxel.btnp(pyxel.KEY_P):  # the old shortcut keeps working
+            self.game.restart()
+        elif confirm():
+            self.items[self.selected][1]()
 
     def draw(self) -> None:
-        pyxel.cls(col=self.game.cfg.area.bg)
-        self.play_btn.draw()
-
-    def play_callback(self):
-        self.game.change_state(StateID.RUNNING)
+        width = self.game.cfg.width
+        self.game.backdrop.draw()
+        self.title.draw(width / 2, 48, self.game.backdrop.t)
+        panel_h = len(self.items) * ITEM_SPACING + 8
+        panel((width - PANEL_W) // 2, self.items_top - 6, PANEL_W, panel_h)
+        for index, (label, _) in enumerate(self.items):
+            y = self.items_top + index * ITEM_SPACING
+            if index == self.selected:
+                x, _, w, _ = self.item_rect(index)
+                pyxel.text(x + 4, y, ">", COL_HIGHLIGHT)
+                pyxel.text(x + w - 8, y, "<", COL_HIGHLIGHT)
+            centered_text(y, label, COL_HIGHLIGHT if index == self.selected else COL_TEXT, width)
+        hint = "ARROWS + ENTER  /  MOUSE"
+        centered_text(self.height - 22, hint, COL_DIM, width)
+        version = f"v{__version__}"
+        pyxel.text(width - text_width(version) - 12, self.height - 22, version, COL_DIM)

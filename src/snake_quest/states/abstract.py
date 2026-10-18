@@ -35,6 +35,9 @@ class GameStateHandler(ABC):
         """whether the mouse is visible in this state"""
         pass
 
+    def on_enter(self) -> None:  # noqa: B027 (optional hook)
+        """Called when the game switches to this state, before its first update."""
+
     def get_music(self) -> int | None:
         """if music should be played return id"""
         return None
