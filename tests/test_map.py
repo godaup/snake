@@ -5,6 +5,7 @@ import pyxel
 
 from snake_quest.campaign import load_campaign
 from snake_quest.entity import ALL_ENTITIES, Apple, Enemy, GoldenApple
+from snake_quest.goals import load_goals
 from snake_quest.map import Map
 from snake_quest.snake import Snake
 from snake_quest.timers import Timer
@@ -106,7 +107,7 @@ def test_check_win_counts_score_from_level_start(assets, game):
 
 
 def test_check_win_length_goal(level_map):
-    level_map.cfg.goal = {"length": 3}
+    level_map.goals = load_goals({"length": 3}, map=level_map)
     snake = Snake(pos=level_map.start, orient=0, size=2)
     assert not level_map.check_win(snake=snake)
     snake.segs *= 3
@@ -121,3 +122,23 @@ def test_each_map_gets_fresh_tilemaps(assets, game):
     Map(level=level, game=game)
     # look the tilemap up again: pyxel.load replaces the Tilemap objects
     assert pyxel.tilemaps[tm].pget(0, 0) == original
+
+
+def test_killed_entities_count_as_defeated(level_map):
+    snake = Snake(pos=level_map.start, orient=0, size=2)
+    shot, eaten = Enemy.at_pos(Vec2(0, 0)), Apple.at_pos(Vec2(8, 8))
+    shot.hit(1)
+    eaten.alive = False
+    level_map.entities += [shot, eaten]
+    level_map.update(snake=snake)
+    assert level_map.defeated == 1
+
+
+def test_goals_are_updated_with_frame_time(level_map, game):
+    level_map.goals = load_goals({"survive": 1}, map=level_map)
+    snake = Snake(pos=level_map.start, orient=0, size=2)
+    game.dt = datetime.timedelta(seconds=0.6)
+    level_map.update(snake=snake)
+    assert not level_map.check_win(snake=snake)
+    level_map.update(snake=snake)
+    assert level_map.check_win(snake=snake)

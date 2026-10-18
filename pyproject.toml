@@ -55,9 +55,6 @@ select = [
     "UP",  # pyupgrade
     "SIM", # flake8-simplify
 ]
-ignore = [
-    "SIM103", # keep one early return per win condition in Map.check_win
-]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

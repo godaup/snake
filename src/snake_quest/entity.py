@@ -23,6 +23,7 @@ class Entity:
         self.w = w
         self.h = h
         self.alive = True
+        self.killed = False  # dead by damage, as opposed to eaten
         self.health = float("inf")
 
     def draw(self, offset: "Vec2"):
@@ -54,6 +55,7 @@ class Entity:
         self.health -= dmg
         if self.health <= 0:
             self.alive = False
+            self.killed = True
 
 
 class Apple(Entity):
@@ -138,3 +140,5 @@ class Enemy(Entity):
 
 
 ALL_ENTITIES = [Enemy, Apple, GoldenApple]
+# names used in level files (timers, goals)
+ENTITY_NAMES = {"enemy": Enemy, "apple": Apple, "golden": GoldenApple}

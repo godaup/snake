@@ -76,7 +76,7 @@ home, explode, lifetime), weapon pickups and switching, and ammo/cooldown in the
       after the last level)
 - [x] One `.pyxres` per arc: shared sprites and sounds from one file, tilemaps from the arc's file, reloaded for each
       level
-- [ ] Goal types beyond `score` / `length`: `exit`, `survive`, `defeat`, `hold_length`, `collect_all`
+- [x] Goal types beyond `score` / `length`: `exit`, `survive`, `defeat`, `hold_length`, `collect_all`
 - [ ] Entity and tile registries by name (replace the hard-coded lists in `entity.py` / `map.py`), new tile types
       (exit, portal, hazard)
 - [ ] Level intro (title, goal) and level-complete screen

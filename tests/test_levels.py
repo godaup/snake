@@ -6,6 +6,7 @@ import omegaconf
 import pytest
 
 from snake_quest.campaign import CAMPAIGN_FILE, LEVELS_DIR, load_campaign
+from snake_quest.goals import GOALS
 
 LEVEL_FILES = sorted(p for p in LEVELS_DIR.glob("*.yaml") if p != CAMPAIGN_FILE)
 TILEMAP_SIZE = 256 * 8  # pyxel tilemaps are 256x256 tiles of 8px
@@ -20,8 +21,8 @@ def test_level_schema(path: Path):
     assert 0 <= cfg.start.x < cfg.width
     assert 0 <= cfg.start.y < cfg.height
     # an empty goal would win the level on the first frame
-    assert set(cfg.goal) & {"score", "length"}
-    assert set(cfg.goal) <= {"score", "length"}
+    assert cfg.goal
+    assert set(cfg.goal) <= set(GOALS)
 
 
 @pytest.mark.parametrize("path", LEVEL_FILES, ids=lambda p: p.name)
