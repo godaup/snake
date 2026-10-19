@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 import pyxel
 
+from snake_quest.controls import Controller
 from snake_quest.palettes import DEFAULT_PALETTE, Palette, palette
 from snake_quest.utils import Vec2
 
@@ -15,6 +16,7 @@ MAX_SPEED = 4
 MIN_SPEED = 1
 INIT_SPEED = 1.3
 SPAWN_DELAY = datetime.timedelta(microseconds=300)
+TURN_SPEED = 9  # degrees per frame at full steering
 
 
 class SnakeSeg:
@@ -32,7 +34,15 @@ class SnakeSeg:
 class Snake:
     """Snake class."""
 
-    def __init__(self, pos: Vec2, orient: int, size: int, colors: Palette | None = None):
+    def __init__(
+        self,
+        pos: Vec2,
+        orient: int,
+        size: int,
+        colors: Palette | None = None,
+        controller: Controller | None = None,
+        turn_speed: int = TURN_SPEED,
+    ):
         self.size: int = size
         self.orient: int = orient
         self._speed: float = INIT_SPEED
@@ -43,6 +53,8 @@ class Snake:
         self.grow: int = 20
         self.delay = datetime.timedelta(seconds=0)
         self.weapon: Weapon | None = None
+        self.controller: Controller = controller or Controller()  # the default one goes straight
+        self.turn_speed = turn_speed
 
     def __len__(self):
         return len(self.segs)
@@ -88,6 +100,8 @@ class Snake:
 
     def update(self, dt: datetime.timedelta, map: "Map"):
         self.boost_left = max(self.boost_left - dt.total_seconds(), 0.0)
+        # steer
+        self.turn(round(self.controller.steer(self, map) * self.turn_speed))
         # move
         previous = None
         for ix, seg in enumerate(self.segs):
@@ -115,8 +129,7 @@ class Snake:
             self.segs = self.segs[: self.grow]
         # fire
         if self.weapon:
-            print("A")
-            self.weapon.update(map=map)
+            self.weapon.update(map=map, fire=self.controller.fire(self, map))
 
     def cut(self, n: int) -> bool:
         """Lose `n` segments from the tail; False (and nothing cut) when the snake isn't longer than that."""
@@ -190,8 +203,8 @@ class Weapon:
         self.delay = delay
         self._last_time = datetime.datetime.now()
 
-    def update(self, map: "Map"):
-        if pyxel.btnp(pyxel.KEY_SPACE) and datetime.datetime.now() - self._last_time > self.delay:
+    def update(self, map: "Map", fire: bool):
+        if fire and datetime.datetime.now() - self._last_time > self.delay:
             self._last_time = datetime.datetime.now()
             projectiles = self.next_pattern()
             map.projectiles.extend(projectiles)

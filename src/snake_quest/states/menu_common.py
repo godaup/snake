@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 import pyxel
 
+from snake_quest.controls import ChaseController
 from snake_quest.palettes import palette
 from snake_quest.snake import Snake
 from snake_quest.tiles import DECOR_TILES, WALL_VARIANT_ROW
@@ -122,7 +123,13 @@ class Backdrop:
         rng = random.Random(seed)
         self.drifters = [Drifter(rng, self.width, self.height) for _ in range(28)]
         self.t = 0.0
-        self.snake = Snake(pos=Vec2(self.width / 2, self.height * 0.75), orient=0, size=2)
+        self.snake = Snake(
+            pos=Vec2(self.width / 2, self.height * 0.75),
+            orient=0,
+            size=2,
+            controller=ChaseController(lambda snake, map: self.target()),
+            turn_speed=DEMO_TURN_SPEED,
+        )
         self.snake.grow = 36
         self.recolor()
 
@@ -141,10 +148,6 @@ class Backdrop:
         self.t += seconds
         for drifter in self.drifters:
             drifter.update(seconds)
-        to_target = self.target() - self.snake.head.pos
-        wanted = pyxel.atan2(to_target.y, to_target.x)
-        diff = (wanted - self.snake.orient + 180) % 360 - 180
-        self.snake.turn(int(max(-DEMO_TURN_SPEED, min(DEMO_TURN_SPEED, diff))))
         self.snake.update(dt=dt, map=None)
 
     def draw(self) -> None:

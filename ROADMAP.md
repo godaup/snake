@@ -83,7 +83,7 @@ home, explode, lifetime), weapon pickups and switching, and ammo/cooldown in the
 - [x] Header and footer HUD: level and title, score, best score, length; per-goal status and progress bars (timer, counters)
 - [ ] HUD for mechanics still to come: health/hunger, ammo, boss bar
 - [x] Sound effects on events (eat, hit, death, win)
-- [ ] Input layer: steering through a controller interface instead of `pyxel.btn`, so tests, bots and the rival snake
+- [x] Input layer: steering through a controller interface instead of `pyxel.btn`, so tests, bots and the rival snake
       can play
 - [ ] Debug overlay (mouse → tile coordinates) and removal of leftovers (dead code, unused settings, debug prints)
 
