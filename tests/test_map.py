@@ -192,9 +192,10 @@ def test_grow_callback(level_map):
 def test_timer_spawns_through_map_update(level_map, game):
     level_map.entities.clear()
     snake = Snake(pos=level_map.start, orient=0, size=2)
-    game.dt = datetime.timedelta(seconds=1.5)
+    game.dt = datetime.timedelta(seconds=21)  # past the first golden apple's delay
     level_map.update(snake=snake)
     assert any(isinstance(ent, GoldenApple) for ent in level_map.entities)
+    assert any(isinstance(ent, Apple) for ent in level_map.entities)
 
 
 def test_dead_entities_are_removed_on_update(level_map):

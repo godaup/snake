@@ -212,7 +212,7 @@ class Map:
             self._portal_lock = None
         partner = self.portals.get(tile)
         if partner is not None and self._portal_lock is None:
-            snake.head.pos = self._tile_center(partner)
+            snake.head.pos = self.tile_center(partner)
             self._portal_lock = self._head_tile = partner
             self.game.sm.effect("portal")
             return
@@ -220,7 +220,7 @@ class Map:
             self.game.sm.effect("hurt")
             self.snake_killed = not snake.cut(HAZARD_CUT)
 
-    def _tile_center(self, tile: tuple[int, int]) -> Vec2:
+    def tile_center(self, tile: tuple[int, int]) -> Vec2:
         return Vec2(tile[0] * 8 + 4, tile[1] * 8 + 4 + self.game.cfg.header.h)
 
     def crumbs_alpha(self) -> float:

@@ -6,4 +6,4 @@ sprites: garden.pyxres
 arcs:
   - name: The Garden
     resources: garden.pyxres
-    levels: [classic, maneuver, maze, yummy, hunger]
+    levels: [classic, yummy, maneuver, maze, hunger]

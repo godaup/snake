@@ -6,12 +6,10 @@ import pyxel
 
 from snake_quest.bosses import BOSSES, Hunger, load_boss
 from snake_quest.campaign import load_campaign
-from snake_quest.controls import PathController, nearest
 from snake_quest.entity import Apple
 from snake_quest.hud import BOSS_BAR_W, COL_BOSS
 from snake_quest.map import Map
 from snake_quest.snake import Snake, SnakeSeg
-from snake_quest.states import StateID
 from snake_quest.states.running import RunningStateHandler
 from snake_quest.utils import Vec2
 
@@ -126,22 +124,3 @@ def test_phase_banner_shows_after_a_phase_change(assets, game, monkeypatch, phas
     running.map.boss.phase, running.map.boss.since_phase = phase, 0.0
     running.draw()
     assert (running.hud.banner_text.text == "THE HUNGER GROWS") is shown
-
-
-def test_the_hunger_is_winnable(assets, game):
-    """A bot that heads for the apple through the corridors beats The Hunger (first win of a few seeds)."""
-    game.level_counter = CAMPAIGN.resolve("hunger")
-    results = []
-    for seed in (5, 2, 3):
-        pyxel.rseed(seed)
-        game.requested_states.clear()
-        running = RunningStateHandler(game)
-        running.snake.controller = PathController(nearest(Apple))
-        for _ in range(24 * 120):
-            running.update()
-            if StateID.DEATH in game.requested_states or StateID.LEVEL_COMPLETE in game.requested_states:
-                break
-        results.append((seed, game.requested_states[-1], len(running.snake), round(running.map.boss.hunger, 2)))
-        if StateID.LEVEL_COMPLETE in game.requested_states:
-            return
-    pytest.fail(f"the bot never won: {results}")

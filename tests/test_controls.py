@@ -4,8 +4,15 @@ from types import SimpleNamespace
 import pytest
 import pyxel
 
-from snake_quest.controls import ChaseController, Controller, KeyboardController, ScriptedController
-from snake_quest.entity import GoldenApple
+from snake_quest.controls import (
+    ChaseController,
+    Controller,
+    KeyboardController,
+    PathController,
+    ScriptedController,
+    nearest,
+)
+from snake_quest.entity import Apple, GoldenApple
 from snake_quest.snake import Gun, Snake
 from snake_quest.states import StateID
 from snake_quest.states.running import RunningStateHandler
@@ -76,16 +83,10 @@ def test_weapon_fires_only_when_the_controller_says_so():
 
 
 def test_a_bot_can_play_a_level(assets, game):
-    """The running state steers through the snake's controller, so a bot can play: chase the nearest golden apple."""
+    """The running state steers through the snake's controller, so a bot can play: head for the nearest apple."""
     running = RunningStateHandler(game)
-
-    def nearest_golden(snake, map):
-        goldens = [ent for ent in map.entities if isinstance(ent, GoldenApple)]
-        center = Vec2(4, 4)
-        return min((ent.pos + center for ent in goldens), key=lambda p: (p - snake.head.pos).length(), default=None)
-
-    running.snake.controller = ChaseController(nearest_golden)
-    for _ in range(24 * 10):
+    running.snake.controller = PathController(nearest(Apple, GoldenApple))
+    for _ in range(24 * 15):
         running.update()
         assert StateID.DEATH not in game.requested_states
-    assert game.score >= 5
+    assert game.score >= 3

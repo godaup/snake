@@ -32,13 +32,13 @@ def test_best_is_the_better_of_table_and_current_score(assets, game):
 
 def test_footer_has_one_entry_per_goal(assets, game):
     hud = make_hud(game)
-    game.score = 25
-    assert hud.goal_entries() == [("SCORE 25/100", 0.25)]
+    game.score = 5
+    assert hud.goal_entries() == [("SCORE 5/20", 0.25)]
 
 
 def test_draw_fills_header_and_footer(assets, game):
     hud = make_hud(game)
-    game.score = 50  # half way: the bar is partly filled
+    game.score = 10  # half way: the bar is partly filled
     pyxel.cls(0)
     hud.draw()
     header_bg, footer_bg = game.cfg.header.bg, game.cfg.footer.bg

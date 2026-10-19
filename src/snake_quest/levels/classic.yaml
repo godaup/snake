@@ -7,17 +7,26 @@ start:
   y: 100
 
 timers:
-  golden1:
+  apple1:  # one apple at a time: an eaten apple places the next one
     duration: 0
-    frequency: 1
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+  golden1:  # now and then a golden apple (+5 points), never more than one
+    duration: 20
+    frequency: 25
     fire_n: 0
     callback:
       type: spawn
       entity: golden
+      max: 1
 
 goal:
-  score: 100
+  score: 20
 
 title: Classic
 intro:
   - "Eat the apples, don't bite your tail."
+  - "Golden apples are rare, but worth five."

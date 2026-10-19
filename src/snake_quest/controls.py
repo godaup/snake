@@ -81,7 +81,7 @@ class PathController(Controller):
     (ESCAPE frames). Of the rest it takes the one ending closest to the target along the way."""
 
     STEERING = (-1.0, -0.5, 0.0, 0.5, 1.0)
-    ESCAPES = (-1.0, 0.0, 1.0)
+    ESCAPES = (0.0, -1.0, 1.0)
     HORIZON = 16  # frames looked ahead
     ESCAPE = 12  # frames an arc's end must leave room for
     BODY_SKIP = 6  # segments next to the head that can't be bitten
@@ -98,7 +98,35 @@ class PathController(Controller):
         goal_tile = map.tile_xy(goal)
         if goal_tile != self._goal_tile:
             self._goal_tile, self._distance = goal_tile, map.walking_distances(goal)
-        return min(self.STEERING, key=lambda steering: self._cost(snake, map, goal, steering))
+        arcs = {
+            steering: self._arc(snake, map, snake.head.pos, snake.orient, steering, self.HORIZON)
+            for steering in self.STEERING
+        }
+        safe = [steering for steering, (survived, _, _) in arcs.items() if survived == self.HORIZON]
+        if not safe:  # crashing anyway: as late as possible
+            return max(arcs, key=lambda steering: arcs[steering][0])
+
+        def distance(steering: float) -> float:
+            """Walking distance (px) left from where the arc ends."""
+            pos = arcs[steering][1]
+            return self._distance.get(map.tile_xy(pos), len(self._distance)) * 8 + (goal - pos).length()
+
+        # the closest arc that leaves a way out; escape checks are the expensive part, so only until one passes
+        escapes = {}
+        for steering in sorted(safe, key=distance):
+            escapes[steering] = self._escape(snake, map, *arcs[steering][1:])
+            if escapes[steering] == self.ESCAPE:
+                return steering
+        return max(escapes, key=escapes.get)
+
+    def _escape(self, snake: "Snake", map: "Map", pos: Vec2, orient: int) -> int:
+        """Frames the best of a hard turn or a straight line survives from there (at most ESCAPE)."""
+        best = 0
+        for turn in self.ESCAPES:
+            best = max(best, self._arc(snake, map, pos, orient, turn, self.ESCAPE)[0])
+            if best == self.ESCAPE:
+                break
+        return best
 
     def _arc(self, snake: "Snake", map: "Map", pos: Vec2, orient: int, steering: float, frames: int):
         """Follow `steering` for `frames`: (frames survived, end position, end orientation)."""
@@ -110,18 +138,10 @@ class PathController(Controller):
             near_body = frame % 2 == 0 and any((pos - seg.pos).length() < snake.size * 2 for seg in body)
             if map.check_on_wall(p) or map.check_on_wall(q) or near_body:
                 return frame - 1, pos, orient
+            partner = map.portals.get(map.tile_xy(pos))
+            if partner is not None and partner != map.tile_xy(snake.head.pos):  # through the portal, as in the game
+                pos = map.tile_center(partner)
         return frames, pos, orient
-
-    def _cost(self, snake: "Snake", map: "Map", goal: Vec2, steering: float) -> float:
-        """Unsafe arcs cost more the sooner they crash, safe ones the walking distance (in px) left from their end."""
-        survived, pos, orient = self._arc(snake, map, snake.head.pos, snake.orient, steering, self.HORIZON)
-        if survived < self.HORIZON:
-            return 1e6 * (2 * self.HORIZON - survived)
-        escape = max(self._arc(snake, map, pos, orient, turn, self.ESCAPE)[0] for turn in self.ESCAPES)
-        if escape < self.ESCAPE:
-            return 1e6 * (self.ESCAPE - escape)
-        steps = self._distance.get(map.tile_xy(pos), len(self._distance))
-        return steps * 8 + (goal - pos).length()
 
 
 def nearest(*classes: type) -> Callable[["Snake", "Map"], Vec2 | None]:

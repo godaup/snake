@@ -31,8 +31,8 @@ def test_mission_lists_level_intro_and_goals(assets, game):
     content = MissionStateHandler(game).lines()
     assert content["kicker"] == f"LEVEL 1 OF {len(CAMPAIGN)}  -  {CAMPAIGN.level(1).arc.upper()}"
     assert content["title"] == "CLASSIC"
-    assert content["intro"] == ["Eat the apples, don't bite your tail."]
-    assert content["goals"] == ["Score 100 points"]
+    assert content["intro"] == ["Eat the apples, don't bite your tail.", "Golden apples are rare, but worth five."]
+    assert content["goals"] == ["Score 20 points"]
 
 
 def test_running_hands_over_to_level_complete_once(assets, game):
@@ -52,7 +52,7 @@ def test_level_complete_snapshots_stats(assets, game):
     game.score = running.score_at_start + 120
     screen = LevelCompleteStateHandler(game)
     screen.on_enter()
-    assert screen.stats.goals == ["SCORE 120/100"]
+    assert screen.stats.goals == ["SCORE 120/20"]
     assert dict(screen.stat_rows()) == {"TIME": "1:23", "POINTS": "+120", "LENGTH": "1", "SCORE": "00120"}
     assert not screen.stats.last_level
     game.score += 50  # later changes don't alter the shown stats
