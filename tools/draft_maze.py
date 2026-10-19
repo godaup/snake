@@ -28,7 +28,7 @@ import omegaconf
 import pyxel
 
 from snake_quest.entity import ENTITY_TILES, GoldenApple
-from snake_quest.map import DECOR_TILES, EMPTY_TILE, PATH_TILE, WALL_TILE
+from snake_quest.tiles import DECOR_TILES, EMPTY_TILE, PATH_TILE, WALL_TILE
 
 PITCH = 8  # cell size in tiles, including one wall line
 HEADER_H = 20  # world y of the map's top edge, see settings.yaml

@@ -6,9 +6,9 @@ from typing import TYPE_CHECKING
 
 import pyxel
 
-from snake_quest.map import DECOR_TILES, WALL_VARIANT_ROW
 from snake_quest.palettes import palette
 from snake_quest.snake import Snake
+from snake_quest.tiles import DECOR_TILES, WALL_VARIANT_ROW
 from snake_quest.utils import Vec2
 
 if TYPE_CHECKING:

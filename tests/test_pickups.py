@@ -7,8 +7,9 @@ import pyxel
 from snake_quest.campaign import load_campaign
 from snake_quest.entity import ENTITY_NAMES, Firefly, GoldenApple, SpeedApple
 from snake_quest.hud import Hud
-from snake_quest.map import WALL_TILES, Map
+from snake_quest.map import Map
 from snake_quest.snake import INIT_SPEED, MAX_SPEED, Snake
+from snake_quest.tiles import WALL_TILES
 from snake_quest.utils import Vec2
 
 CAMPAIGN = load_campaign()

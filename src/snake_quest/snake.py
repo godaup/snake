@@ -118,6 +118,13 @@ class Snake:
             print("A")
             self.weapon.update(map=map)
 
+    def cut(self, n: int) -> bool:
+        """Lose `n` segments from the tail; False (and nothing cut) when the snake isn't longer than that."""
+        if len(self) <= n:
+            return False
+        self.segs = self.segs[:-n]
+        return True
+
     def self_intersect(self) -> bool:
         if len(self) < 4:
             return False

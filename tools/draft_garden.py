@@ -4,7 +4,7 @@
     python tools/draft_garden.py decorate src/snake_quest/resources/garden.pyxres \\
         --level src/snake_quest/levels/classic.yaml --seed 1
 
-    # generate a natural layout into a free tilemap, keeping the level's entity tiles
+    # generate a natural layout into a free tilemap, keeping the level's entity, portal, exit and hazard tiles
     python tools/draft_garden.py organic src/snake_quest/resources/garden.pyxres \\
         --level src/snake_quest/levels/maneuver.yaml --src-tm 1 --dst-tm 4 --seed 3
 
@@ -23,7 +23,7 @@ import omegaconf
 import pyxel
 
 from snake_quest.entity import ENTITY_TILES
-from snake_quest.map import DECOR_TILES, EMPTY_TILE, WALL_TILE
+from snake_quest.tiles import DECOR_TILES, EMPTY_TILE, EXIT_TILE, HAZARD_TILE, PORTAL_TILES, WALL_TILE
 
 HEADER_H = 20  # world y of the map's top edge, see settings.yaml
 CLEARANCE = 3  # tiles of open floor between obstacles (the snake needs room to turn, also when boosted)
@@ -189,7 +189,8 @@ def main() -> None:
     pyxel.load(str(resources))
     width, height = level.width // 8, level.height // 8
     start = start_tile(level)
-    entity_sprites = set(ENTITY_TILES)
+    # entities and special terrain survive a new layout
+    entity_sprites = set(ENTITY_TILES) | set(PORTAL_TILES) | {EXIT_TILE, HAZARD_TILE}
 
     if args.command == "decorate":
         tilemap = pyxel.tilemaps[level.tm]

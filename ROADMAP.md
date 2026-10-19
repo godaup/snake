@@ -19,7 +19,7 @@ Ground rules:
 | #  | Level              | Twist                                                                                  | Goal                    | Status                        |
 |----|--------------------|----------------------------------------------------------------------------------------|-------------------------|-------------------------------|
 | 1  | Classic            | Plain snake, learn to steer                                                            | score                   | exists (rebalance goal)       |
-| 2  | Maneuver           | Large scrolling map with portals / wrap-around                                         | score                   | exists; portals missing       |
+| 2  | Maneuver           | Large scrolling map with portals / wrap-around                                         | score                   | exists                        |
 | 3  | The Maze           | Navigation: follow the (hidden) pathway to the golden apples at its end               | eat all golden apples   | exists; layout incomplete     |
 | 4  | Yummy              | Feast: food rains, the snake speeds up                                                 | score                   | exists                        |
 | 5  | **Boss: The Hunger** | Starving in the dark: constant shrinking, scarce food, a light radius around the head; the hunger bar is the boss bar | hold length | new                           |
@@ -77,7 +77,7 @@ home, explode, lifetime), weapon pickups and switching, and ammo/cooldown in the
 - [x] One `.pyxres` per arc: shared sprites and sounds from one file, tilemaps from the arc's file, reloaded for each
       level
 - [x] Goal types beyond `score` / `length`: `exit`, `survive`, `defeat`, `hold_length`, `collect_all`
-- [ ] Entity and tile registries by name (replace the hard-coded lists in `entity.py` / `map.py`), new tile types
+- [x] Entity and tile registries by name (replace the hard-coded lists in `entity.py` / `map.py`), new tile types
       (exit, portal, hazard)
 - [x] Level intro (mission briefing), countdown and level-complete screen
 - [x] Header and footer HUD: level and title, score, best score, length; per-goal status and progress bars (timer, counters)
@@ -89,7 +89,7 @@ home, explode, lifetime), weapon pickups and switching, and ammo/cooldown in the
 
 ### M1: Arc 1
 
-Done: complete maze layout around the pathway (tilemap 3), natural Maneuver layout (tilemap 4), floor decorations, the firefly that lights the maze's breadcrumbs, speed apples. Open: portal tiles, playtesting and rebalanced goals, darkness rendering (light radius), boss framework (boss bar,
+Done: complete maze layout around the pathway (tilemap 3), natural Maneuver layout (tilemap 4), floor decorations, the firefly that lights the maze's breadcrumbs, speed apples, portal pairs in Maneuver. Open: playtesting and rebalanced goals, darkness rendering (light radius), boss framework (boss bar,
 phases) and The Hunger.
 
 ### M2: Arc 2

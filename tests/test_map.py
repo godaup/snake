@@ -6,8 +6,9 @@ import pyxel
 from snake_quest.campaign import load_campaign
 from snake_quest.entity import Apple, Enemy, GoldenApple
 from snake_quest.goals import load_goals
-from snake_quest.map import DECOR_TILES, FLOOR_TILES, WALL_TILE, WALL_TILES, WALL_VARIANT_ROW, Map
+from snake_quest.map import Map
 from snake_quest.snake import Snake
+from snake_quest.tiles import DECOR_TILES, FLOOR_TILES, TERRAIN_TILES, WALL_TILE, WALL_TILES, WALL_VARIANT_ROW
 from snake_quest.timers import Timer
 from snake_quest.utils import Vec2
 
@@ -27,7 +28,7 @@ def test_level_loads(assets, game, level):
 
 
 @pytest.mark.parametrize("level", LEVELS, ids=lambda lv: lv.name)
-def test_only_floor_and_walls_remain_after_loading(assets, game, level):
+def test_only_terrain_remains_after_loading(assets, game, level):
     """Entity and path tiles are lifted out of the tilemap and walls become hedge variants; anything else left over
     is a stray tile."""
     level_map = Map(level=level, game=game)
@@ -36,7 +37,7 @@ def test_only_floor_and_walls_remain_after_loading(assets, game, level):
         (tile_x, tile_y): tilemap.pget(tile_x, tile_y)
         for tile_x in range(level_map.cfg.width // 8)
         for tile_y in range(level_map.cfg.height // 8)
-        if tilemap.pget(tile_x, tile_y) not in FLOOR_TILES | WALL_TILES - {WALL_TILE}
+        if tilemap.pget(tile_x, tile_y) not in TERRAIN_TILES
     }
     assert leftovers == {}
 

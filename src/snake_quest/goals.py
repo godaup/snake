@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, ClassVar
 
 from snake_quest.entity import ENTITY_NAMES
+from snake_quest.tiles import EXIT_TILE
 
 if TYPE_CHECKING:
     from snake_quest.map import Map
@@ -77,12 +78,12 @@ class LengthGoal(Goal):
 
 
 class ExitGoal(Goal):
-    """`exit: [x, y]`: reach a tile showing sprite tile (x, y)."""
+    """`exit: true`: reach an exit tile (EXIT_TILE); `exit: [x, y]`: reach a tile showing sprite tile (x, y)."""
 
     key = "exit"
 
     def __init__(self, value, map):
-        super().__init__(tuple(value), map)
+        super().__init__(EXIT_TILE if value is True else tuple(value), map)
 
     def done(self, map, snake):
         return map.tile_at(snake.head.pos) == self.value

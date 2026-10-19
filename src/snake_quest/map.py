@@ -9,6 +9,17 @@ import pyxel
 from snake_quest.campaign import Level
 from snake_quest.entity import ENTITY_NAMES, ENTITY_TILES, Entity
 from snake_quest.goals import Goal, load_goals
+from snake_quest.tiles import (
+    EMPTY_TILE,
+    FLOOR_TILES,
+    HAZARD_CUT,
+    HAZARD_TILE,
+    PATH_TILE,
+    WALL_TILES,
+    WALL_VARIANT_ROW,
+    TileKind,
+    tile_kind,
+)
 from snake_quest.timers import Timer
 from snake_quest.utils import Vec2
 
@@ -16,18 +27,8 @@ if TYPE_CHECKING:
     from snake_quest.game import Game
     from snake_quest.snake import Projectile, Snake
 
-# sprite tile coordinates (image bank 0) with a fixed meaning in every tilemap
-EMPTY_TILE = (0, 0)
-# the wall tile level designers paint with; replaced by a hedge variant when the map loads
-WALL_TILE = (0, 3)
-# hedge variant for each combination of wall neighbours: tile (mask, 8) with mask bits N=1, E=2, S=4, W=8
-WALL_VARIANT_ROW = 8
-WALL_TILES = frozenset({WALL_TILE} | {(mask, WALL_VARIANT_ROW) for mask in range(16)})
-# floor decorations (grass, flowers, stones): drawn, but walkable and free for spawning
-DECOR_TILES = frozenset((k, 9) for k in range(6))
-FLOOR_TILES = frozenset({EMPTY_TILE} | DECOR_TILES)
-# level design helper marking the intended route (e.g. through the maze); hidden until revealed
-PATH_TILE = (3, 0)
+PORTAL_SPIN = 12  # degrees per frame of the sparkle circling each portal
+COL_PORTAL_SPARK = 7
 CRUMBS_PER_SECOND = 6  # how fast a firefly lights the breadcrumbs
 CRUMBS_FADE = 3.0  # seconds a timed reveal takes to fade out at its end
 
@@ -49,13 +50,23 @@ class Map:
         self.path_revealed = False
         self.crumbs_shown = 0.0  # how many breadcrumbs are visible, grows while revealing
         self.reveal_left: float | None = None  # seconds until a timed reveal is gone; None: shown for good
+        # portal tile -> the other portal of its colour (tile coordinates)
+        self.portals: dict[tuple[int, int], tuple[int, int]] = {}
+        portal_colours: dict[tuple[int, int], list[tuple[int, int]]] = {}
+        self._portal_lock: tuple[int, int] | None = None  # portal the head arrived on, inactive until it leaves
+        self._head_tile: tuple[int, int] | None = None
+        self.snake_killed = False  # set when a hazard cuts more than the snake has
         # iterate over tilemap
         for tile_x in range(self.cfg.width // 8):
             for tile_y in range(self.cfg.height // 8):
                 img_x, img_y = pyxel.tilemaps[self.cfg.tm].pget(tile_x, tile_y)
-                if (img_x, img_y) in FLOOR_TILES or (img_x, img_y) in WALL_TILES:
+                kind = tile_kind((img_x, img_y))
+                if kind == TileKind.PORTAL:
+                    portal_colours.setdefault((img_x, img_y), []).append((tile_x, tile_y))
                     continue
-                if (img_x, img_y) == PATH_TILE:
+                if kind not in (None, TileKind.PATH):
+                    continue
+                if kind == TileKind.PATH:
                     self.path.append(Vec2(x=tile_x * 8, y=tile_y * 8 + self.game.cfg.header.h))
                     pyxel.tilemaps[self.cfg.tm].pset(tile_x, tile_y, EMPTY_TILE)
                     continue
@@ -64,6 +75,10 @@ class Map:
                     self.entities.append(e_cls.at_pos(Vec2(x=tile_x * 8, y=tile_y * 8 + self.game.cfg.header.h)))
                     # remove entity from 'background'
                     pyxel.tilemaps[self.cfg.tm].pset(tile_x, tile_y, EMPTY_TILE)
+        for colour, pair in portal_colours.items():
+            if len(pair) != 2:
+                raise ValueError(f"{level.name}: portal tile {colour} appears {len(pair)} times, it needs a pair")
+            self.portals[pair[0]], self.portals[pair[1]] = pair[1], pair[0]
         self._autotile_walls()
         # create timers by rules
         if "timers" in self.cfg:
@@ -97,6 +112,7 @@ class Map:
         deads = [proj for proj in self.projectiles if not proj.alive]
         for dead in deads:
             self.projectiles.remove(dead)
+        self._step_on_tiles(snake)
         # check snake intersections
         p, q = snake.get_collision_points()
         for ent in self.entities:
@@ -133,6 +149,12 @@ class Map:
             w=self.game.cfg.width,
             h=self.game.cfg.area.h,
         )
+        header = self.game.cfg.header.h
+        angle = pyxel.frame_count * PORTAL_SPIN
+        for x, y in self.portals:
+            spark_x = x * 8 + 4 + offset.x + round(pyxel.cos(angle) * 3)
+            spark_y = y * 8 + 4 + header + offset.y + round(pyxel.sin(angle) * 3)
+            pyxel.pset(spark_x, spark_y, COL_PORTAL_SPARK)
         shown = len(self.path) if self.game.cfg.debug else int(self.crumbs_shown) if self.path_revealed else 0
         alpha = self.crumbs_alpha()
         if alpha < 1:
@@ -168,6 +190,24 @@ class Map:
                     break
         return Vec2(_x, _y)
 
+    def _step_on_tiles(self, snake: "Snake") -> None:
+        """Effects of the tile under the snake's head: portals move it to their partner, thorns cut the tail."""
+        tile = self._tile_xy(snake.head.pos)
+        entered = tile != self._head_tile
+        self._head_tile = tile
+        if tile != self._portal_lock:
+            self._portal_lock = None
+        partner = self.portals.get(tile)
+        if partner is not None and self._portal_lock is None:
+            snake.head.pos = self._tile_center(partner)
+            self._portal_lock = self._head_tile = partner
+            return
+        if entered and self.tile_at(snake.head.pos) == HAZARD_TILE and not snake.cut(HAZARD_CUT):
+            self.snake_killed = True
+
+    def _tile_center(self, tile: tuple[int, int]) -> Vec2:
+        return Vec2(tile[0] * 8 + 4, tile[1] * 8 + 4 + self.game.cfg.header.h)
+
     def crumbs_alpha(self) -> float:
         """1 while the breadcrumbs shine, falling to 0 during the last CRUMBS_FADE seconds of a timed reveal."""
         if self.game.cfg.debug or self.reveal_left is None:
@@ -191,7 +231,8 @@ class Map:
         return int(pos.x) // 8, (int(pos.y) - self.game.cfg.header.h) // 8
 
     def walking_distances(self, origin: Vec2) -> dict[tuple[int, int], int]:
-        """Steps from `origin` to every floor tile reachable from it (breadth first, through non-wall tiles)."""
+        """Steps from `origin` to every floor tile reachable from it (breadth first, through non-wall tiles; a portal
+        leads to its partner in one step)."""
         tilemap = pyxel.tilemaps[self.cfg.tm]
         width, height = self.cfg.width // 8, self.cfg.height // 8
         start = self._tile_xy(origin)
@@ -199,7 +240,8 @@ class Map:
         queue = deque([start])
         while queue:
             x, y = queue.popleft()
-            for nxt in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+            portal = [self.portals[x, y]] if (x, y) in self.portals else []
+            for nxt in [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1), *portal]:
                 inside = 0 <= nxt[0] < width and 0 <= nxt[1] < height
                 if inside and nxt not in distance and tilemap.pget(*nxt) not in WALL_TILES:
                     distance[nxt] = distance[x, y] + 1

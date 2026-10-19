@@ -54,9 +54,9 @@ class RunningStateHandler(GameStateHandler):
         self.cam.update()
         # update entities and timers and projectiles
         self.map.update(snake=self.snake)
-        # check wall collisions
+        # check wall collisions (and hazards that cut more than the snake has)
         p, q = self.snake.get_collision_points()
-        if self.map.check_on_wall(p) or self.map.check_on_wall(q):
+        if self.map.snake_killed or self.map.check_on_wall(p) or self.map.check_on_wall(q):
             self.game.change_state(state=StateID.DEATH)
         # check win (once: the state change only takes effect after this frame)
         if not self.won and self.map.check_win(snake=self.snake):
