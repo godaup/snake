@@ -22,7 +22,7 @@ Ground rules:
 | 2  | Maneuver           | Large scrolling map with portals / wrap-around                                         | score                   | exists                        |
 | 3  | The Maze           | Navigation: follow the (hidden) pathway to the golden apples at its end               | eat all golden apples   | exists; layout incomplete     |
 | 4  | Yummy              | Feast: food rains, the snake speeds up                                                 | score                   | exists                        |
-| 5  | **Boss: The Hunger** | Starving in the dark: constant shrinking, scarce food, a light radius around the head; the hunger bar is the boss bar | hold length | new                           |
+| 5  | **Boss: The Hunger** | Starving in the dark: constant shrinking, scarce food, a light radius around the head; the hunger bar is the boss bar | hold length | exists (needs playtesting)    |
 
 ### Arc 2: The Wilds (hunters and prey)
 
@@ -81,7 +81,7 @@ home, explode, lifetime), weapon pickups and switching, and ammo/cooldown in the
       (exit, portal, hazard)
 - [x] Level intro (mission briefing), countdown and level-complete screen
 - [x] Header and footer HUD: level and title, score, best score, length; per-goal status and progress bars (timer, counters)
-- [ ] HUD for mechanics still to come: health/hunger, ammo, boss bar
+- [ ] HUD for mechanics still to come: health, ammo (the boss bar, which shows The Hunger, exists)
 - [x] Sound effects on events (eat, hit, death, win)
 - [x] Input layer: steering through a controller interface instead of `pyxel.btn`, so tests, bots and the rival snake
       can play
@@ -89,8 +89,8 @@ home, explode, lifetime), weapon pickups and switching, and ammo/cooldown in the
 
 ### M1: Arc 1
 
-Done: complete maze layout around the pathway (tilemap 3), natural Maneuver layout (tilemap 4), floor decorations, the firefly that lights the maze's breadcrumbs, speed apples, portal pairs in Maneuver, darkness with a light radius (level option `darkness`). Open: playtesting and rebalanced goals, boss framework (boss bar,
-phases) and The Hunger.
+Done: complete maze layout around the pathway (tilemap 3), natural Maneuver layout (tilemap 4), floor decorations, the firefly that lights the maze's breadcrumbs, speed apples, portal pairs in Maneuver, darkness with a light radius (level option `darkness`), boss framework (`bosses.py`: boss bar, phases, banner) and The
+Hunger (balanced with a bot, see `test_the_hunger_is_winnable`). Open: playtesting and rebalanced goals.
 
 ### M2: Arc 2
 
@@ -109,5 +109,5 @@ Trail walls, mirrored input, Laser and Homing, AI-controlled rival snake (reusin
 
 - [x] Menu theme song, animated main menu, highscores, snake colour palettes, credits (saved per user)
 - [ ] Level music, level select in the menu, initials for highscores
-- [ ] A winnability test per level (input layer, later `pyxel-mcp` once the upstream GitHub account is restored)
+- [ ] A winnability test per level (`PathController` bot; The Hunger has one; input layer, later `pyxel-mcp` once the upstream GitHub account is restored)
 - [ ] `snake-quest` 0.x on PyPI

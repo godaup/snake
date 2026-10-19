@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Optional
 import omegaconf
 import pyxel
 
+from snake_quest.bosses import Boss, load_boss
 from snake_quest.campaign import Level
 from snake_quest.darkness import Darkness
 from snake_quest.entity import ENTITY_NAMES, ENTITY_TILES, Entity
@@ -97,15 +98,19 @@ class Map:
         self.projectiles: list[Projectile] = []
         # entities killed by damage in this level, see DefeatGoal
         self.defeated = 0
+        # entities eaten (removed without being killed), e.g. meals for The Hunger
+        self.eaten = 0
         self.goals: list[Goal] = load_goals(self.cfg.goal, map=self)
         # optional: the play area is dark except around the head and glowing entities
         self.darkness = Darkness(self.cfg.darkness, game) if "darkness" in self.cfg else None
+        self.boss: Boss | None = load_boss(self.cfg.boss, map=self) if "boss" in self.cfg else None
 
     def update(self, snake: "Snake"):
         # remove dead entities
         deads = [ent for ent in self.entities if not ent.alive]
         for dead in deads:
             self.defeated += dead.killed
+            self.eaten += not dead.killed
             self.entities.remove(dead)
         # remove dead timers
         deads = [tmr for tmr in self.timers if not tmr.alive]
@@ -138,6 +143,8 @@ class Map:
             if self.reveal_left <= 0:
                 self.path_revealed = False
                 self.reveal_left = None
+        if self.boss:
+            self.boss.update(map=self, snake=snake, dt=self.game.dt)
         # update time based goals
         for goal in self.goals:
             goal.update(map=self, snake=snake, dt=self.game.dt)

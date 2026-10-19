@@ -1,0 +1,43 @@
+tm: 5  # natural layout from tools/draft_garden.py organic (--src-tm 5 --dst-tm 5 --seed 5)
+width: 480
+height: 320
+
+start:
+  x: 60
+  y: 60
+
+darkness:
+  light: 48  # shrinks with hunger, see boss.light
+
+boss:
+  type: hunger
+  rise: 0.04  # hunger per second
+  meal: 0.5  # hunger an apple takes away
+  starve: 1.5  # segments lost per second when starving
+  light: [48, 20]  # light radius when full, when starving
+  phases:
+    - after: 0
+    - after: 25
+      rise: 0.05
+    - after: 50
+      rise: 0.065
+
+timers:
+  apple1:  # one apple at a time, glowing somewhere in the dark: an eaten apple places the next one
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+
+goal:
+  hold_length:
+    length: 35
+    seconds: 15
+
+title: "Boss: The Hunger"
+intro:
+  - "The lights are out and the Hunger is awake."
+  - "It eats you from the tail. Eat to keep it at bay"
+  - "and stay 35 long until dawn."

@@ -18,6 +18,9 @@ if TYPE_CHECKING:
 COL_BORDER, COL_LABEL, COL_VALUE, COL_ACCENT = 5, 13, 7, 10
 COL_BAR_BG, COL_BAR, COL_BAR_DONE = 5, 11, 10
 COL_BOOST = 12  # same blue as the speed apple
+COL_BOSS, COL_BOSS_BG, COL_BOSS_PANEL = 8, 2, 0
+BOSS_BAR_W = 120
+BANNER_SECONDS = 2.5  # how long a boss's phase message is shown
 SCORE_SCALE = 2
 BAR_H = 4
 MARGIN = 4
@@ -55,6 +58,7 @@ class Hud:
         self.map = level_map
         self.snake = snake
         self.score_text = BigText(SCORE_SCALE)
+        self.banner_text = BigText(SCORE_SCALE)
         self.width = game.cfg.width
         self.header_h = game.cfg.header.h
         self.footer_y = game.cfg.header.h + game.cfg.area.h
@@ -63,6 +67,8 @@ class Hud:
     def draw(self) -> None:
         self.draw_header()
         self.draw_footer()
+        if self.map.boss:
+            self.draw_boss()
 
     # ---- header -------------------------------------------------------------------------------------------------
 
@@ -121,3 +127,23 @@ class Hud:
             bar_y = y + (self.footer_h - BAR_H) // 2 + 1
             pyxel.rect(bar_x, bar_y, bar_w, BAR_H, COL_BAR_BG)
             pyxel.rect(bar_x, bar_y, round(bar_w * progress), BAR_H, COL_BAR_DONE if done else COL_BAR)
+
+    # ---- boss ---------------------------------------------------------------------------------------------------
+
+    def draw_boss(self) -> None:
+        """The boss bar at the top of the play area, and its phase message for a moment when a phase starts."""
+        boss = self.map.boss
+        label = boss.label()
+        label_w = len(label) * pyxel.FONT_WIDTH
+        total_w = label_w + MARGIN + BOSS_BAR_W
+        x, y = (self.width - total_w) // 2, self.header_h + 2
+        pyxel.rect(x - 2, y - 1, total_w + 4, pyxel.FONT_HEIGHT + 2, COL_BOSS_PANEL)
+        pyxel.text(x, y, label, COL_BOSS)
+        bar_x, bar_y = x + label_w + MARGIN, y + (pyxel.FONT_HEIGHT - BAR_H) // 2
+        fill = min(max(boss.bar(self.map, self.snake), 0.0), 1.0)
+        pyxel.rect(bar_x, bar_y, BOSS_BAR_W, BAR_H, COL_BOSS_BG)
+        pyxel.rect(bar_x, bar_y, round(BOSS_BAR_W * fill), BAR_H, COL_BOSS)
+        message = boss.phase_message()
+        if message and boss.phase > 0 and boss.since_phase < BANNER_SECONDS and pyxel.frame_count % 16 < 12:
+            center_y = self.header_h + (self.footer_y - self.header_h) * 0.3
+            self.banner_text.draw(self.width / 2, center_y, message, COL_BOSS)

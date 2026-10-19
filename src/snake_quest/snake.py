@@ -7,7 +7,7 @@ import pyxel
 
 from snake_quest.controls import Controller
 from snake_quest.palettes import DEFAULT_PALETTE, Palette, palette
-from snake_quest.utils import Vec2
+from snake_quest.utils import Vec2, collision_points
 
 if TYPE_CHECKING:
     from snake_quest.map import Map
@@ -147,11 +147,7 @@ class Snake:
         return any([(point - seg.pos).length() < self.size for seg in self.segs])
 
     def get_collision_points(self) -> tuple[Vec2, Vec2]:
-        # horizontal extreme
-        hor = Vec2(x=self.head.pos.x + pyxel.cos(self.orient) * (self.size + 0), y=self.head.pos.y)
-        # vertical extreme
-        ver = Vec2(x=self.head.pos.x, y=self.head.pos.y + pyxel.sin(self.orient) * (self.size + 0))
-        return hor, ver
+        return collision_points(self.head.pos, self.orient, self.size)
 
 
 class Projectile:

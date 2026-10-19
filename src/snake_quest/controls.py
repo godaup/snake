@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Optional
 
 import pyxel
 
-from snake_quest.utils import Vec2
+from snake_quest.utils import Vec2, collision_points
 
 if TYPE_CHECKING:
     from snake_quest.map import Map
@@ -72,3 +72,65 @@ class ChaseController(Controller):
         wanted = pyxel.atan2(to_goal.y, to_goal.x)
         diff = (wanted - snake.orient + 180) % 360 - 180
         return max(-1.0, min(1.0, diff / snake.turn_speed))
+
+
+class PathController(Controller):
+    """A bot that takes the shortest way through the level (walking distances, portals included) to
+    `target(snake, map)`. Every frame it tries a fan of steering values, each held for HORIZON frames, and drops the
+    arcs that run into a wall or its own body, or that end where no hard turn or straight line gets it out again
+    (ESCAPE frames). Of the rest it takes the one ending closest to the target along the way."""
+
+    STEERING = (-1.0, -0.5, 0.0, 0.5, 1.0)
+    ESCAPES = (-1.0, 0.0, 1.0)
+    HORIZON = 16  # frames looked ahead
+    ESCAPE = 12  # frames an arc's end must leave room for
+    BODY_SKIP = 6  # segments next to the head that can't be bitten
+
+    def __init__(self, target: Callable[["Snake", "Map"], Vec2 | None]):
+        self.target = target
+        self._goal_tile: tuple[int, int] | None = None
+        self._distance: dict[tuple[int, int], int] = {}
+
+    def steer(self, snake, map):
+        goal = self.target(snake, map)
+        if goal is None:
+            return 0.0
+        goal_tile = map.tile_xy(goal)
+        if goal_tile != self._goal_tile:
+            self._goal_tile, self._distance = goal_tile, map.walking_distances(goal)
+        return min(self.STEERING, key=lambda steering: self._cost(snake, map, goal, steering))
+
+    def _arc(self, snake: "Snake", map: "Map", pos: Vec2, orient: int, steering: float, frames: int):
+        """Follow `steering` for `frames`: (frames survived, end position, end orientation)."""
+        speed, body = snake.effective_speed, snake.segs[self.BODY_SKIP :: 2]  # segments are ~1.3 px apart
+        for frame in range(1, frames + 1):
+            orient = (orient + round(steering * snake.turn_speed)) % 360
+            pos = Vec2(pos.x + speed * pyxel.cos(orient), pos.y + speed * pyxel.sin(orient))
+            p, q = collision_points(pos, orient, snake.size)
+            near_body = frame % 2 == 0 and any((pos - seg.pos).length() < snake.size * 2 for seg in body)
+            if map.check_on_wall(p) or map.check_on_wall(q) or near_body:
+                return frame - 1, pos, orient
+        return frames, pos, orient
+
+    def _cost(self, snake: "Snake", map: "Map", goal: Vec2, steering: float) -> float:
+        """Unsafe arcs cost more the sooner they crash, safe ones the walking distance (in px) left from their end."""
+        survived, pos, orient = self._arc(snake, map, snake.head.pos, snake.orient, steering, self.HORIZON)
+        if survived < self.HORIZON:
+            return 1e6 * (2 * self.HORIZON - survived)
+        escape = max(self._arc(snake, map, pos, orient, turn, self.ESCAPE)[0] for turn in self.ESCAPES)
+        if escape < self.ESCAPE:
+            return 1e6 * (self.ESCAPE - escape)
+        steps = self._distance.get(map.tile_xy(pos), len(self._distance))
+        return steps * 8 + (goal - pos).length()
+
+
+def nearest(*classes: type) -> Callable[["Snake", "Map"], Vec2 | None]:
+    """Target for a ChaseController or PathController: the centre of the nearest live entity of these classes."""
+
+    def target(snake: "Snake", map: "Map") -> Vec2 | None:
+        centres = [
+            ent.pos + Vec2(ent.w / 2, ent.h / 2) for ent in map.entities if ent.alive and isinstance(ent, classes)
+        ]
+        return min(centres, key=lambda pos: (pos - snake.head.pos).length(), default=None)
+
+    return target
