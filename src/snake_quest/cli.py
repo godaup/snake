@@ -3,7 +3,7 @@
 import argparse
 from pathlib import Path
 
-from snake_quest import __version__
+from snake_quest import __version__, difficulty
 from snake_quest.campaign import load_campaign
 
 
@@ -26,6 +26,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--scale", type=int, help="window scale factor (default from settings.yaml)")
     parser.add_argument("--mute", action="store_true", help="disable music and sound effects")
     parser.add_argument(
+        "--difficulty", choices=difficulty.NAMES, help="play at this difficulty (not saved; default: the menu's)"
+    )
+    parser.add_argument(
         "--debug", action="store_true", help="draw collision points, the hidden path and what is under the mouse"
     )
     parser.add_argument(
@@ -45,6 +48,8 @@ def settings_overrides(args: argparse.Namespace) -> dict:
     if args.mute:
         overrides["music"] = False
         overrides["effects"] = False
+    if args.difficulty:
+        overrides["start_difficulty"] = args.difficulty
     if args.debug:
         overrides["debug"] = True
     return overrides

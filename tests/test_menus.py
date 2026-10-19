@@ -93,16 +93,16 @@ def test_game_over_records_highscore(game):
     game.level_counter = 2
     death.on_enter()
     assert death.rank == 1
-    assert "NEW HIGHSCORE #1!" in death.wdg.text
+    assert "NEW MEDIUM HIGHSCORE #1!" in death.wdg.text
     assert "SCORE 42" in death.wdg.text
-    assert game.profile.highscores[0].score == 42
+    assert game.profile.table("medium")[0].score == 42
 
 
 def test_game_over_without_points_records_nothing(game):
     death = DeathStateHandler(game)
     death.on_enter()
     assert death.rank is None
-    assert game.profile.highscores == []
+    assert game.profile.table("medium") == []
     assert not any("HIGHSCORE" in line for line in death.wdg.text)
 
 

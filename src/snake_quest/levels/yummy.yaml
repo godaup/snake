@@ -23,3 +23,6 @@ title: Yummy
 intro:
   - "A feast! Golden apples everywhere."
   - "Each one makes you much longer: mind your tail."
+
+difficulty:  # the room doesn't grow with the goal: nightmare's scaled 84 points don't fit
+  nightmare: {goal: {score: 72}}

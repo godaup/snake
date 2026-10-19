@@ -14,3 +14,11 @@ area:
   bg: 0
 scale: 4
 debug: False
+# difficulty factors, see difficulty.py (medium is the reference the levels are tuned for)
+difficulty:
+  easy: {speed: 0.85, goals: 0.6, helpful: 0.7, hostile: 1.5, boss: 0.7, light: 1.3}
+  medium: {}
+  hard: {speed: 1.1, goals: 1.2, helpful: 1.15, hostile: 0.8, boss: 1.1, light: 0.9}
+  nightmare: {speed: 1.2, goals: 1.4, helpful: 1.3, hostile: 0.65, boss: 1.2, light: 0.8}
+# play at this difficulty instead of the one chosen in the menu (--difficulty), without saving it
+start_difficulty: null

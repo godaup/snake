@@ -33,7 +33,8 @@ class MissionStateHandler(OverlayStateHandler):
         level_map = self.running.map
         level = level_map.level
         return {
-            "kicker": f"LEVEL {level.number} OF {len(self.game.campaign)}  -  {level.arc.upper()}",
+            "kicker": f"LEVEL {level.number} OF {len(self.game.campaign)}  -  {level.arc.upper()}"
+            f"  -  {self.game.difficulty.label}",
             "title": str(level_map.cfg.get("title", level.name)).upper(),
             "intro": [str(line) for line in level_map.cfg.get("intro", [])],
             "goals": [goal.describe() for goal in level_map.goals],

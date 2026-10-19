@@ -6,7 +6,9 @@ from pathlib import Path
 import omegaconf
 import pyxel
 
+from snake_quest import difficulty
 from snake_quest.campaign import load_campaign
+from snake_quest.difficulty import Difficulty
 from snake_quest.profile import Profile
 from snake_quest.sound import SoundManager
 from snake_quest.states import StateID
@@ -87,6 +89,11 @@ class Game:
         }
         self.change_state(StateID.MENU)
         pyxel.run(self.update, self.draw)
+
+    @property
+    def difficulty(self) -> Difficulty:
+        """The difficulty played: --difficulty for this run, else the one chosen in the menu."""
+        return difficulty.load(self.cfg, self.cfg.get("start_difficulty") or self.profile.difficulty)
 
     @property
     def handler(self) -> "GameStateHandler":

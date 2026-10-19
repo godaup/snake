@@ -6,6 +6,7 @@ import pytest
 import pyxel
 
 import snake_quest
+from snake_quest import difficulty
 from snake_quest.campaign import load_campaign
 from snake_quest.profile import Profile
 from snake_quest.states.menu_common import Backdrop
@@ -45,6 +46,11 @@ class FakeGame:
         self.restarts = 0
         self._running = None
         self.level_ups = 0
+
+    @property
+    def difficulty(self):
+        """Like Game.difficulty: the profile's choice (medium unless a test changes it)."""
+        return difficulty.load(self.cfg, self.cfg.get("start_difficulty") or self.profile.difficulty)
 
     def change_state(self, state):
         self.requested_states.append(state)

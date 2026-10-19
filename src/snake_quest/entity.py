@@ -35,6 +35,7 @@ def register(name: str):
 class Entity:
     name = "entity"  # set by @register
     light = 0  # radius in px it lights up in dark levels (see darkness.py)
+    hostile = False  # bad for the snake: harder difficulties spawn it more often (see difficulty.py)
     _img_x = None
     _img_y = None
 
@@ -169,6 +170,7 @@ class Firefly(Entity):
 class Enemy(Entity):
     _img_x = 3
     _img_y = 1
+    hostile = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

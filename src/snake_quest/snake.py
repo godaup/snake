@@ -42,10 +42,11 @@ class Snake:
         colors: Palette | None = None,
         controller: Controller | None = None,
         turn_speed: int = TURN_SPEED,
+        speed: float = INIT_SPEED,
     ):
         self.size: int = size
         self.orient: int = orient
-        self._speed: float = INIT_SPEED
+        self._speed: float = speed
         self.boost_factor: float = 1.0  # temporary speed factor, see boost()
         self.boost_left: float = 0.0  # seconds
         self.colors: Palette = colors or palette(DEFAULT_PALETTE)

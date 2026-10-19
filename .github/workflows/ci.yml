@@ -23,6 +23,7 @@ jobs:
       - run: ruff check .
       - run: ruff format --check .
       - run: pytest
+      - run: pytest -m slow  # difficulty bands: the bot's win rate per level and difficulty
       # make sure the wheel ships the game data and the console script works outside the source tree
       - run: pip wheel . --no-deps -w dist
       - run: python -m venv /tmp/wheel-env && /tmp/wheel-env/bin/pip install dist/*.whl

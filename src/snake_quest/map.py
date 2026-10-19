@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Optional
 import omegaconf
 import pyxel
 
+from snake_quest import difficulty
 from snake_quest.bosses import Boss, load_boss
 from snake_quest.campaign import Level
 from snake_quest.darkness import Darkness
@@ -38,7 +39,8 @@ CRUMBS_FADE = 3.0  # seconds a timed reveal takes to fade out at its end
 class Map:
     def __init__(self, level: Level, game: "Game"):
         self.level = level
-        self.cfg = omegaconf.OmegaConf.load(level.path)
+        # the level as tuned for medium, scaled for the difficulty played
+        self.cfg = difficulty.apply(omegaconf.OmegaConf.load(level.path), game.difficulty)
         # fresh tilemaps for every level: entity tiles are erased from them below
         level.load_tilemaps()
 

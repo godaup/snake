@@ -8,7 +8,7 @@ from snake_quest.debug import draw_overlay
 from snake_quest.hud import Hud
 from snake_quest.map import Map
 from snake_quest.palettes import palette
-from snake_quest.snake import Snake
+from snake_quest.snake import INIT_SPEED, Snake
 from snake_quest.states import StateID
 from snake_quest.states.abstract import GameStateHandler
 
@@ -28,6 +28,7 @@ class RunningStateHandler(GameStateHandler):
             size=SNAKE_SIZE,
             colors=palette(game.profile.palette),
             controller=KeyboardController(),
+            speed=INIT_SPEED * game.difficulty.speed,
         )
         self.cam = Cam(snake=self.snake, map=self.map, game=self.game)
         self.hud = Hud(game=self.game, level_map=self.map, snake=self.snake)

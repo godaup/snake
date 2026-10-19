@@ -6,6 +6,7 @@ from pathlib import Path
 import omegaconf
 import pyxel
 
+from snake_quest import difficulty
 from snake_quest.campaign import Level
 from snake_quest.game import SETTINGS
 from snake_quest.map import Map
@@ -22,6 +23,7 @@ class _PreviewGame:
         self.cfg = omegaconf.OmegaConf.load(SETTINGS)
         self.score = 0
         self.dt = datetime.timedelta(0)
+        self.difficulty = difficulty.load(self.cfg, difficulty.DEFAULT)
 
 
 def render(level: Level, filename: Path, scale: int = 2) -> None:

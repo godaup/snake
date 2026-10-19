@@ -18,6 +18,10 @@ ROMAN = ["I", "II", "III", "IV", "V"]
 class Boss(ABC):
     key: ClassVar[str]
     title: ClassVar[str]  # upper case, shown on the bar
+    # settings harder difficulties raise (pressure), lower (relief) or apply to light radii, see difficulty.py
+    pressure: ClassVar[tuple[str, ...]] = ()
+    relief: ClassVar[tuple[str, ...]] = ()
+    lights: ClassVar[tuple[str, ...]] = ()
 
     def __init__(self, cfg, map: "Map"):
         self.cfg = cfg
@@ -76,6 +80,9 @@ class Hunger(Boss):
 
     key = "hunger"
     title = "THE HUNGER"
+    pressure = ("rise", "starve")
+    relief = ("meal",)
+    lights = ("light",)
 
     def __init__(self, cfg, map):
         super().__init__(cfg, map)

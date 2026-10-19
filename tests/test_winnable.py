@@ -1,36 +1,39 @@
-"""Every level must be winnable (see ROADMAP.md): a bot plays it through. Rebalancing a level? Run these."""
+"""Every level must be winnable (see ROADMAP.md): a bot plays it through (snake_quest.bot). Rebalancing a level or a
+difficulty? Measure with tools/balance.py and run `pytest -m slow` for the bands."""
 
 import pytest
-import pyxel
 
-from snake_quest.campaign import load_campaign
-from snake_quest.controls import PathController, nearest
-from snake_quest.entity import Apple, GoldenApple
-from snake_quest.states import StateID
-from snake_quest.states.running import RunningStateHandler
+from snake_quest import difficulty
+from snake_quest.bot import LEVELS, play, win_rate
 
-CAMPAIGN = load_campaign()
 SEEDS = (5, 2, 3)  # the first win counts: the bot is good, but not perfect
-# levels the bot can win by eating apples, with the play time it may take (s)
-LEVELS = {"classic": 90, "yummy": 60, "hunger": 150}
+BAND_SEEDS = range(8)
+# win rate of the bot per difficulty (over BAND_SEEDS): easier must be easier, and even nightmare must be winnable
+WIN_RATES = {"easy": (0.75, 1.0), "medium": (0.5, 1.0), "hard": (0.25, 0.9), "nightmare": (0.1, 0.6)}
+SECONDS = 240  # play time after which a run counts as lost
 
 
-@pytest.mark.parametrize(("name", "seconds"), LEVELS.items())
-def test_level_is_winnable(assets, game, name, seconds):
-    """A bot that heads for the nearest apple along the shortest way beats the level."""
-    game.level_counter = CAMPAIGN.resolve(name)
+@pytest.mark.parametrize("name", LEVELS)
+def test_level_is_winnable(assets, game, name):
+    """A bot that heads for the nearest apple along the shortest way beats the level at medium."""
     results = []
     for seed in SEEDS:
-        pyxel.rseed(seed)
-        game.requested_states.clear()
-        game.score = 0
-        running = RunningStateHandler(game)
-        running.snake.controller = PathController(nearest(Apple, GoldenApple))
-        for _ in range(24 * seconds):
-            running.update()
-            if StateID.DEATH in game.requested_states or StateID.LEVEL_COMPLETE in game.requested_states:
-                break
-        if StateID.LEVEL_COMPLETE in game.requested_states:
+        outcome, elapsed = play(game, name, seed, SECONDS)
+        if outcome == "won":
             return
-        results.append((seed, game.requested_states[-1], len(running.snake), round(running.elapsed)))
+        results.append((seed, outcome, round(elapsed)))
     pytest.fail(f"the bot never won {name}: {results}")
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize("name", LEVELS)
+def test_difficulties_keep_their_win_rates(assets, game, name):
+    """Each difficulty lands in its band of bot win rates, and no harder difficulty is won more often."""
+    rates = {}
+    for level in difficulty.NAMES:
+        game.profile.difficulty = level
+        rates[level], _, _ = win_rate(game, name, BAND_SEEDS, SECONDS)
+    for level, (low, high) in WIN_RATES.items():
+        assert low <= rates[level] <= high, (name, rates)
+    ordered = [rates[level] for level in difficulty.NAMES]
+    assert ordered == sorted(ordered, reverse=True), (name, rates)

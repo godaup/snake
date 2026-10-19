@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 
 import pyxel
 
-from snake_quest import __version__
+from snake_quest import __version__, difficulty
 from snake_quest.states import StateID
 from snake_quest.states.abstract import GameStateHandler
 from snake_quest.states.menu_common import (
@@ -15,7 +15,9 @@ from snake_quest.states.menu_common import (
     centered_text,
     confirm,
     down,
+    left,
     panel,
+    right,
     text_width,
     up,
 )
@@ -24,7 +26,8 @@ if TYPE_CHECKING:
     from snake_quest.game import Game
 
 ITEM_SPACING = 12
-PANEL_W = 100
+PANEL_W = 128
+DIFFICULTY_ITEM = 1
 
 
 class MenuStateHandler(GameStateHandler):
@@ -33,6 +36,7 @@ class MenuStateHandler(GameStateHandler):
         self.title = Title("SNAKE QUEST")
         self.items: list[tuple[str, Callable[[], None]]] = [
             ("PLAY", self.game.restart),
+            ("DIFFICULTY", lambda: self.change_difficulty(1)),
             ("HIGHSCORES", lambda: self.game.change_state(StateID.HIGHSCORES)),
             ("CUSTOMIZE", lambda: self.game.change_state(StateID.CUSTOMIZE)),
             ("CREDITS", lambda: self.game.change_state(StateID.CREDITS)),
@@ -48,6 +52,18 @@ class MenuStateHandler(GameStateHandler):
 
     def get_music(self) -> int | None:
         return MENU_MUSIC
+
+    def change_difficulty(self, step: int) -> None:
+        """Choose the next (or previous) difficulty for new games; saved with the profile."""
+        profile = self.game.profile
+        profile.difficulty = difficulty.next_name(profile.difficulty, step)
+        profile.save()
+
+    def label(self, index: int) -> str:
+        label = self.items[index][0]
+        if index == DIFFICULTY_ITEM:
+            return f"{label}  {self.game.profile.difficulty.upper()}"
+        return label
 
     def item_rect(self, index: int) -> tuple[int, int, int, int]:
         return (self.game.cfg.width - PANEL_W) // 2 + 4, self.items_top + index * ITEM_SPACING - 2, PANEL_W - 8, 10
@@ -66,6 +82,8 @@ class MenuStateHandler(GameStateHandler):
                 if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
                     self.items[index][1]()
                     return
+        if self.selected == DIFFICULTY_ITEM and (left() or right()):
+            self.change_difficulty(-1 if left() else 1)
         if pyxel.btnp(pyxel.KEY_P):  # the old shortcut keeps working
             self.game.restart()
         elif confirm():
@@ -77,7 +95,8 @@ class MenuStateHandler(GameStateHandler):
         self.title.draw(width / 2, 48, self.game.backdrop.t)
         panel_h = len(self.items) * ITEM_SPACING + 8
         panel((width - PANEL_W) // 2, self.items_top - 6, PANEL_W, panel_h)
-        for index, (label, _) in enumerate(self.items):
+        for index in range(len(self.items)):
+            label = self.label(index)
             y = self.items_top + index * ITEM_SPACING
             if index == self.selected:
                 x, _, w, _ = self.item_rect(index)

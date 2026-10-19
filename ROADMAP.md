@@ -11,6 +11,8 @@ Ground rules:
 - **One `.pyxres` per arc.** Each arc brings its own tilemaps (Pyxel only has 8 tilemaps of 256×256 tiles per resource
   file); shared sprites and sounds live in one place.
 - **Every level must be winnable**, and a test plays it through to prove it (see M5).
+- **Levels are tuned for Medium.** Easy, Hard and Nightmare scale them (`difficulty.py`); a level overrides values
+  only where scaling isn't enough. The bot's win rate per difficulty must stay in its band (`pytest -m slow`).
 
 ## Campaign
 
@@ -109,6 +111,8 @@ Trail walls, mirrored input, Laser and Homing, AI-controlled rival snake (reusin
 ### M5: Release
 
 - [x] Menu theme song, animated main menu, highscores, snake colour palettes, credits (saved per user)
+- [x] Difficulty setting (Easy, Medium, Hard, Nightmare) chosen in the menu, one highscore table per difficulty,
+      bot-checked win-rate bands (`tools/balance.py`, `tests/test_winnable.py`)
 - [ ] Level music, level select in the menu, initials for highscores
 - [ ] A winnability test per level (`PathController` bot in `tests/test_winnable.py`: Classic, Yummy, The Hunger; input layer, later `pyxel-mcp` once the upstream GitHub account is restored)
 - [ ] `snake-quest` 0.x on PyPI

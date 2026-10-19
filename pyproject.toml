@@ -59,3 +59,6 @@ select = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 filterwarnings = ["error"]
+# the difficulty bands play every level many times (minutes): `pytest -m slow`, run in CI
+markers = ["slow: long bot runs balancing the difficulties"]
+addopts = "-m 'not slow'"
