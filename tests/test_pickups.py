@@ -11,6 +11,7 @@ from snake_quest.map import Map
 from snake_quest.snake import INIT_SPEED, MAX_SPEED, Snake
 from snake_quest.tiles import WALL_TILES
 from snake_quest.utils import Vec2
+from tests.conftest import FakeSounds
 
 CAMPAIGN = load_campaign()
 SECOND = datetime.timedelta(seconds=1)
@@ -23,7 +24,7 @@ def fresh_snake():
 
 
 def fake_map():
-    return SimpleNamespace(game=SimpleNamespace(score=0), entities=[])
+    return SimpleNamespace(game=SimpleNamespace(score=0, sm=FakeSounds()), entities=[])
 
 
 def test_speed_apple_boosts_but_does_not_grow():
@@ -31,6 +32,7 @@ def test_speed_apple_boosts_but_does_not_grow():
     SpeedApple.at_pos(Vec2(0, 0)).on_intersect(snake=snake, map=level_map)
     assert snake.grow == 0
     assert level_map.game.score == 1
+    assert level_map.game.sm.effects_played == ["speed"]
     assert snake.effective_speed == pytest.approx(INIT_SPEED * SpeedApple.BOOST)
     before = snake.head.pos.x
     snake.update(dt=datetime.timedelta(seconds=1 / 24), map=None)

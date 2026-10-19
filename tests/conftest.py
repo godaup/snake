@@ -13,6 +13,22 @@ from snake_quest.states.menu_common import Backdrop
 PACKAGE_DIR = Path(snake_quest.__file__).parent
 
 
+class FakeSounds:
+    """Stand-in for sound.SoundManager that records the effects played."""
+
+    def __init__(self):
+        self.effects_played = []
+
+    def effect(self, name):
+        self.effects_played.append(name)
+
+    def interrupt(self):
+        pass
+
+    def play(self, music=None):
+        pass
+
+
 class FakeGame:
     """Stand-in for game.Game, which cannot be constructed in tests because it enters pyxel.run."""
 
@@ -24,6 +40,7 @@ class FakeGame:
         self.dt = datetime.timedelta(seconds=1 / self.cfg.fps)
         self.requested_states = []
         self.profile = Profile()  # no path: never written to disk
+        self.sm = FakeSounds()
         self.backdrop = Backdrop(self)
         self.restarts = 0
         self._running = None

@@ -6,11 +6,14 @@ from snake_quest.entity import ENTITY_NAMES, ENTITY_TILES, Apple, Enemy, Entity,
 from snake_quest.snake import Snake
 from snake_quest.tiles import TILE_KINDS
 from snake_quest.utils import Vec2
+from tests.conftest import FakeSounds
 
 
 @pytest.fixture
 def map():
-    return SimpleNamespace(game=SimpleNamespace(score=0), entities=[], new_pos=lambda snake=None: Vec2(40, 40))
+    return SimpleNamespace(
+        game=SimpleNamespace(score=0, sm=FakeSounds()), entities=[], new_pos=lambda snake=None: Vec2(40, 40)
+    )
 
 
 @pytest.fixture
@@ -50,6 +53,7 @@ def test_apple_grows_snake_and_respawns(map, snake):
     assert len(map.entities) == 1
     assert isinstance(map.entities[0], Apple)
     assert map.entities[0].pos == Vec2(40, 40)
+    assert map.game.sm.effects_played == ["eat"]
 
 
 def test_golden_apple(map, snake):
@@ -60,6 +64,7 @@ def test_golden_apple(map, snake):
     assert map.game.score == 5
     assert not golden.alive
     assert map.entities == []
+    assert map.game.sm.effects_played == ["golden"]
 
 
 def test_enemy_speeds_up_snake_and_costs_score(map, snake):
@@ -69,6 +74,7 @@ def test_enemy_speeds_up_snake_and_costs_score(map, snake):
     assert snake.speed == pytest.approx(speed * 1.15)
     assert map.game.score == -10
     assert not enemy.alive
+    assert map.game.sm.effects_played == ["hurt"]
 
 
 def test_entity_sprites_are_unique():

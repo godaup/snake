@@ -47,6 +47,7 @@ class LevelCompleteStateHandler(OverlayStateHandler):
             score=self.game.score,
             last_level=self.game.level_counter == len(self.game.campaign),
         )
+        self.game.sm.effect("win")
 
     def update(self) -> None:
         self.t += self.game.dt.total_seconds()

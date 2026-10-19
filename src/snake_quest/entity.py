@@ -87,6 +87,7 @@ class Apple(Entity):
         # update stats
         snake.grow += 5
         map.game.score += 1
+        map.game.sm.effect("eat")
         # generate next apple
         new_pos: Vec2 = map.new_pos(snake=snake)
         map.entities.append(Apple.at_pos(new_pos))
@@ -103,6 +104,7 @@ class GoldenApple(Entity):
         # update stats
         snake.grow += 20
         map.game.score += 5
+        map.game.sm.effect("golden")
         # destroy self
         self.alive = False
 
@@ -119,6 +121,7 @@ class SpeedApple(Entity):
     def on_intersect(self, snake: "Snake", map: "Map"):
         snake.boost(self.BOOST, self.SECONDS)
         map.game.score += 1
+        map.game.sm.effect("speed")
         self.alive = False
 
 
@@ -150,6 +153,7 @@ class Firefly(Entity):
 
     def on_intersect(self, snake: "Snake", map: "Map"):
         map.reveal_path(origin=snake.head.pos, seconds=self.LIGHT_SECONDS)
+        map.game.sm.effect("firefly")
         self.alive = False
 
 
@@ -197,6 +201,7 @@ class Enemy(Entity):
         # update stats
         snake._speed *= 1.15
         map.game.score -= 10
+        map.game.sm.effect("hurt")
         # destroy self
         self.alive = False
 

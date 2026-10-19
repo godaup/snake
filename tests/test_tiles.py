@@ -81,6 +81,7 @@ def test_portal_moves_the_head_to_its_partner_once(maneuver):
     snake = snake_at(maneuver, tile)
     maneuver.update(snake)
     assert snake.head.pos == world(maneuver, partner)
+    assert maneuver.game.sm.effects_played == ["portal"]
     # standing on the arrival portal doesn't send it back
     maneuver.update(snake)
     assert snake.head.pos == world(maneuver, partner)
@@ -118,6 +119,7 @@ def test_hazard_cuts_once_per_tile_entered(maneuver):
     maneuver.update(snake)  # still on the same thorns
     assert len(snake) == HAZARD_CUT + 1
     assert not maneuver.snake_killed
+    assert maneuver.game.sm.effects_played == ["hurt"]
 
 
 def test_hazard_kills_a_short_snake(maneuver):

@@ -20,6 +20,7 @@ class DeathStateHandler(GameStateHandler):
     def on_enter(self) -> None:
         """Record the score and show it, with the highscore rank if it made the table."""
         self.rank = self.game.profile.add_highscore(self.game.score, self.game.level_counter)
+        self.game.sm.effect("death")
         lines = [self.TITLE, f"SCORE {self.game.score}"]
         if self.rank:
             lines.append(f"NEW HIGHSCORE #{self.rank}!")

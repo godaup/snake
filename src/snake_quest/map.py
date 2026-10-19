@@ -201,9 +201,11 @@ class Map:
         if partner is not None and self._portal_lock is None:
             snake.head.pos = self._tile_center(partner)
             self._portal_lock = self._head_tile = partner
+            self.game.sm.effect("portal")
             return
-        if entered and self.tile_at(snake.head.pos) == HAZARD_TILE and not snake.cut(HAZARD_CUT):
-            self.snake_killed = True
+        if entered and self.tile_at(snake.head.pos) == HAZARD_TILE:
+            self.game.sm.effect("hurt")
+            self.snake_killed = not snake.cut(HAZARD_CUT)
 
     def _tile_center(self, tile: tuple[int, int]) -> Vec2:
         return Vec2(tile[0] * 8 + 4, tile[1] * 8 + 4 + self.game.cfg.header.h)
