@@ -20,8 +20,8 @@ Ground rules:
 
 | #  | Level              | Twist                                                                                  | Goal                    | Status                        |
 |----|--------------------|----------------------------------------------------------------------------------------|-------------------------|-------------------------------|
-| 1  | Classic            | Plain snake, learn to steer: one apple at a time, rare golden apples                   | score                   | exists (score 20)             |
-| 2  | Yummy              | Feast in the same small room: golden apples rain, the snake grows fast                 | score                   | exists (score 60)             |
+| 1  | Classic            | Plain snake, learn to steer: one apple at a time                                       | score                   | exists (score 20)             |
+| 2  | Yummy              | Feast in the same small room: golden apples rain, the snake grows fast                 | score                   | score 250: needs playtesting  |
 | 3  | Maneuver           | Large scrolling map with portals / wrap-around                                         | score                   | exists                        |
 | 4  | The Maze           | Navigation: follow the (hidden) pathway to the golden apples at its end               | eat all golden apples   | exists; layout incomplete     |
 | 5  | **Boss: The Hunger** | Starving in the dark: constant shrinking, scarce food, a light radius around the head; the hunger bar is the boss bar | hold length | exists (needs playtesting)    |
@@ -92,8 +92,8 @@ home, explode, lifetime), weapon pickups and switching, and ammo/cooldown in the
 ### M1: Arc 1
 
 Done: complete maze layout around the pathway (tilemap 3), natural Maneuver layout (tilemap 4), floor decorations, the firefly that lights the maze's breadcrumbs, speed apples, portal pairs in Maneuver, darkness with a light radius (level option `darkness`), boss framework (`bosses.py`: boss bar, phases, banner) and The
-Hunger. Classic, Yummy and The Hunger rebalanced after a first playtest (Yummy moved to stage 2) and checked with a bot
-(`tests/test_winnable.py`). Open: more playtesting, winnability tests for Maneuver and The Maze.
+Hunger. Classic, Yummy and The Hunger rebalanced after playtests (Yummy moved to stage 2, golden apples every 3 s, 250 points);
+Classic and The Hunger are checked with a bot (`tests/test_winnable.py`), Yummy's goal is beyond the bot. Open: more playtesting, winnability tests for Maneuver and The Maze.
 
 ### M2: Arc 2
 
@@ -114,5 +114,5 @@ Trail walls, mirrored input, Laser and Homing, AI-controlled rival snake (reusin
 - [x] Difficulty setting (Easy, Medium, Hard, Nightmare) chosen in the menu, one highscore table per difficulty,
       bot-checked win-rate bands (`tools/balance.py`, `tests/test_winnable.py`)
 - [ ] Level music, level select in the menu, initials for highscores
-- [ ] A winnability test per level (`PathController` bot in `tests/test_winnable.py`: Classic, Yummy, The Hunger; input layer, later `pyxel-mcp` once the upstream GitHub account is restored)
+- [ ] A winnability test per level (`PathController` bot in `tests/test_winnable.py`: Classic, The Hunger; input layer, later `pyxel-mcp` once the upstream GitHub account is restored)
 - [ ] `snake-quest` 0.x on PyPI

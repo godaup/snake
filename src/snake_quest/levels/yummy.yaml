@@ -9,7 +9,7 @@ start:
 timers:
   golden1:  # a feast: golden apples keep coming
     duration: 0
-    frequency: 1
+    frequency: 3
     fire_n: 0
     callback:
       type: spawn
@@ -17,12 +17,9 @@ timers:
       max: 12
 
 goal:
-  score: 60
+  score: 250
 
 title: Yummy
 intro:
   - "A feast! Golden apples everywhere."
   - "Each one makes you much longer: mind your tail."
-
-difficulty:  # the room doesn't grow with the goal: nightmare's scaled 84 points don't fit
-  nightmare: {goal: {score: 72}}
