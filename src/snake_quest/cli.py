@@ -25,7 +25,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--scale", type=int, help="window scale factor (default from settings.yaml)")
     parser.add_argument("--mute", action="store_true", help="disable music and sound effects")
-    parser.add_argument("--debug", action="store_true", help="draw collision points and the hidden path")
+    parser.add_argument(
+        "--debug", action="store_true", help="draw collision points, the hidden path and what is under the mouse"
+    )
     parser.add_argument(
         "--preview",
         metavar="PNG",

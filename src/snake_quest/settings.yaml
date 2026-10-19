@@ -6,15 +6,11 @@ width: 320
 header:
   h: 20
   bg: 1
-  border: null
 footer:
   h: 10
   bg: 1
-  border: null
 area:
   h: 192
   bg: 0
-  border: null
 scale: 4
-text: 1
 debug: False

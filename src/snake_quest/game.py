@@ -128,10 +128,6 @@ class Game:
         self.handler.draw()
         self.stateID = self.next_stateID
 
-        # debugging
-        # msg = f"{self.stateID}"
-        # pyxel.text(self.handler.center_text(msg), 1, msg, 6)
-
     def restart(self):
         self.score = 0
         self.level_counter = self.start_level

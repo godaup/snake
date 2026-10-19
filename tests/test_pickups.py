@@ -90,7 +90,7 @@ def test_firefly_lights_breadcrumbs_one_by_one_nearest_first(assets, game):
     firefly.on_intersect(snake=snake, map=level_map)
     assert level_map.path_revealed and level_map.crumbs_shown == 0
     distances = level_map.walking_distances(snake.head.pos)
-    steps = [distances[level_map._tile_xy(pos)] for pos in level_map.path]
+    steps = [distances[level_map.tile_xy(pos)] for pos in level_map.path]
     assert steps == sorted(steps)  # nearest crumb first
     game.dt = SECOND
     level_map.update(snake=snake)
@@ -104,7 +104,7 @@ def test_maze_firefly_is_on_the_way(assets, game):
     (firefly,) = [ent for ent in level_map.entities if isinstance(ent, Firefly)]
     distances = level_map.walking_distances(level_map.start)
     golden_tile = min(
-        (level_map._tile_xy(ent.pos) for ent in level_map.entities if isinstance(ent, GoldenApple)),
+        (level_map.tile_xy(ent.pos) for ent in level_map.entities if isinstance(ent, GoldenApple)),
         key=lambda tile: distances[tile],
     )
     # walk back from the golden apples along decreasing distance: the cells of the shortest route
@@ -114,7 +114,7 @@ def test_maze_firefly_is_on_the_way(assets, game):
         x, y = next(
             n for n in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)) if distances.get(n) == distances[x, y] - 1
         )
-    fx, fy = level_map._tile_xy(firefly.pos)
+    fx, fy = level_map.tile_xy(firefly.pos)
     assert (fx // 8, fy // 8) in route_cells
 
 

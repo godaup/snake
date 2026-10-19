@@ -93,13 +93,6 @@ def test_covers():
     assert not snake.covers(Vec2(100, 110))
 
 
-def test_head_in_box():
-    snake = straight_snake(1, size=2)
-    assert snake.head_in_box(x=95, y=95, h=10, w=10)  # head inside
-    assert snake.head_in_box(x=101, y=90, h=20, w=10)  # box edge within radius
-    assert not snake.head_in_box(x=110, y=110, h=10, w=10)
-
-
 def test_collision_points_are_ahead_of_head():
     snake = straight_snake(1, size=2)
     hor, ver = snake.get_collision_points()

@@ -25,6 +25,7 @@ def register(name: str):
         if name in ENTITY_NAMES or tile in ENTITY_TILES:
             raise ValueError(f"entity {name!r} or its sprite tile {tile} is registered twice")
         ENTITY_NAMES[name] = cls
+        cls.name = name
         ENTITY_TILES[tile] = cls
         return cls
 
@@ -32,6 +33,7 @@ def register(name: str):
 
 
 class Entity:
+    name = "entity"  # set by @register
     _img_x = None
     _img_y = None
 

@@ -4,6 +4,7 @@ import pyxel
 
 from snake_quest.cam import Cam
 from snake_quest.controls import KeyboardController
+from snake_quest.debug import draw_overlay
 from snake_quest.hud import Hud
 from snake_quest.map import Map
 from snake_quest.palettes import palette
@@ -73,3 +74,5 @@ class RunningStateHandler(GameStateHandler):
         # draw game with offset
         self.cam.draw()
         self.hud.draw()
+        if self.game.cfg.debug:
+            draw_overlay(self)

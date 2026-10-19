@@ -146,18 +146,6 @@ class Snake:
     def covers(self, point: Vec2) -> bool:
         return any([(point - seg.pos).length() < self.size for seg in self.segs])
 
-    def head_in_box(self, x, y, h, w) -> bool:
-        if x <= self.head.pos.x <= x + w:
-            return not (self.head.pos.y + self.size < y or self.head.pos.y - self.size > y + h)
-        elif y <= self.head.pos.y <= y + h:
-            return not (self.head.pos.x + self.size < x or self.head.pos.x - self.size > x + w)
-        else:
-            # check all 4 corners
-            for vec in [Vec2(x, y), Vec2(x + w, y), Vec2(x, y + h), Vec2(x + w, y + h)]:
-                if (self.head.pos - vec).length() < self.size:
-                    return True
-        return False
-
     def get_collision_points(self) -> tuple[Vec2, Vec2]:
         # horizontal extreme
         hor = Vec2(x=self.head.pos.x + pyxel.cos(self.orient) * (self.size + 0), y=self.head.pos.y)

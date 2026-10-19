@@ -192,7 +192,7 @@ class Map:
 
     def _step_on_tiles(self, snake: "Snake") -> None:
         """Effects of the tile under the snake's head: portals move it to their partner, thorns cut the tail."""
-        tile = self._tile_xy(snake.head.pos)
+        tile = self.tile_xy(snake.head.pos)
         entered = tile != self._head_tile
         self._head_tile = tile
         if tile != self._portal_lock:
@@ -226,10 +226,10 @@ class Map:
             self.crumbs_shown = float(len(self.path))
             return
         distance = self.walking_distances(origin)
-        self.path.sort(key=lambda pos: distance.get(self._tile_xy(pos), float("inf")))
+        self.path.sort(key=lambda pos: distance.get(self.tile_xy(pos), float("inf")))
         self.crumbs_shown = 0.0
 
-    def _tile_xy(self, pos: Vec2) -> tuple[int, int]:
+    def tile_xy(self, pos: Vec2) -> tuple[int, int]:
         return int(pos.x) // 8, (int(pos.y) - self.game.cfg.header.h) // 8
 
     def walking_distances(self, origin: Vec2) -> dict[tuple[int, int], int]:
@@ -237,7 +237,7 @@ class Map:
         leads to its partner in one step)."""
         tilemap = pyxel.tilemaps[self.cfg.tm]
         width, height = self.cfg.width // 8, self.cfg.height // 8
-        start = self._tile_xy(origin)
+        start = self.tile_xy(origin)
         distance = {start: 0}
         queue = deque([start])
         while queue:

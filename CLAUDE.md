@@ -14,7 +14,7 @@ Pyxel is pinned to exactly `2.9.9` (uploaded 2026-08-12). In October 2026 the up
 
 ```bash
 pip install -e . --group dev          # editable install + pytest + ruff (pip >= 25.1; Linux also needs system SDL2)
-snake-quest                           # run the game (or python -m snake_quest); --level N --scale N --mute --debug
+snake-quest                           # run the game (or python -m snake_quest); --level N --scale N --mute --debug (collision points, hidden path, tile under the mouse)
 pyxel edit src/snake_quest/resources/garden.pyxres   # edit sprites, sounds and arc 1 tilemaps (level layouts)
 snake-quest --level maze --preview maze.png   # render a whole level (walls, entities, path, start) to a PNG
 python tools/draft_garden.py decorate|organic ...   # decorate a level's floor / generate a natural layout
@@ -49,7 +49,7 @@ Tests run against the installed package, so do the editable install first. Tests
 
 **Screen layout and coordinates.** The window is `header + area + footer` tall (`settings.yaml`). World coordinates include the header height in y: entity/snake positions are offset by `cfg.header.h`, and tilemap lookups subtract it again (`(pos.y - header.h) // 8`). `Cam` computes a draw `offset` that keeps the snake head centred, clamped so nothing beyond the map edges is shown; maps smaller than the play area are centred (`cam._follow`). Every `draw(offset)` in the world adds it.
 
-**HUD (`hud.py`).** `RunningStateHandler` draws the map through `Cam`, then `Hud.draw()` on top of it. The header shows the level number and title, the score (big digits, `BigText`), the best score and the snake length. The footer has one slot per goal: `goal.status()` plus a progress bar when `goal.progress()` is not None. The `header`/`footer` widgets of `GameStateHandler` are no longer drawn by the running state.
+**HUD (`hud.py`).** `RunningStateHandler` draws the map through `Cam`, then `Hud.draw()` on top of it. The header shows the level number and title, the score (big digits, `BigText`), the best score and the snake length. The footer has one slot per goal: `goal.status()` plus a progress bar when `goal.progress()` is not None. With `--debug` it also draws `debug.draw_overlay()`: a crosshair at the mouse (the cursor is hidden while playing), the tile under it outlined, and a label with its tile coordinates, kind (or the registered `name` of the entity there), sprite tile and map position, for level design.
 
 **Campaign (`campaign.py`, `levels/campaign.yaml`).** The campaign lists arcs in order. Each arc has a name, a `resources` `.pyxres` file in `resources/` and its levels by file name. `game.level_counter` is the 1-based number in the whole campaign. `campaign.level(n)` returns a `Level` (name, arc, path, resource file). `--level` accepts a number or a name. Images, sounds and music come only from the top-level `sprites` file, loaded once in `Game.start()`. Every `Map` calls `level.load_tilemaps()`, which loads only the tilemaps of its arc's file, so each level starts from fresh tilemaps. `pyxel.load` replaces the `Tilemap` objects, so never keep a reference to `pyxel.tilemaps[i]` across a load. `pyxel.init()` changes the process's working directory to the directory of the module that calls it, so resolve user-given paths before calling it (as `--preview` does). Winning the last level shows `VictoryStateHandler`. A level file that is not in the campaign fails the tests, unless its name starts with `_` (scratch levels, excluded from builds).
 

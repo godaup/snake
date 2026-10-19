@@ -85,7 +85,7 @@ home, explode, lifetime), weapon pickups and switching, and ammo/cooldown in the
 - [x] Sound effects on events (eat, hit, death, win)
 - [x] Input layer: steering through a controller interface instead of `pyxel.btn`, so tests, bots and the rival snake
       can play
-- [ ] Debug overlay (mouse → tile coordinates) and removal of leftovers (dead code, unused settings, debug prints)
+- [x] Debug overlay (mouse → tile coordinates) and removal of leftovers (dead code, unused settings, debug prints)
 
 ### M1: Arc 1
 
