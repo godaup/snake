@@ -31,7 +31,7 @@ def test_mission_lists_level_intro_and_goals(assets, game):
     content = MissionStateHandler(game).lines()
     assert content["kicker"] == f"LEVEL 1 OF {len(CAMPAIGN)}  -  {CAMPAIGN.level(1).arc.upper()}  -  MEDIUM"
     assert content["title"] == "CLASSIC"
-    assert content["intro"] == ["Eat the apples, don't bite your tail.", "Golden apples are rare, but worth five."]
+    assert content["intro"] == ["Eat the apples, don't bite your tail."]
     assert content["goals"] == ["Score 20 points"]
 
 
