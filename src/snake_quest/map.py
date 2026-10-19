@@ -7,6 +7,7 @@ import omegaconf
 import pyxel
 
 from snake_quest.campaign import Level
+from snake_quest.darkness import Darkness
 from snake_quest.entity import ENTITY_NAMES, ENTITY_TILES, Entity
 from snake_quest.goals import Goal, load_goals
 from snake_quest.tiles import (
@@ -97,6 +98,8 @@ class Map:
         # entities killed by damage in this level, see DefeatGoal
         self.defeated = 0
         self.goals: list[Goal] = load_goals(self.cfg.goal, map=self)
+        # optional: the play area is dark except around the head and glowing entities
+        self.darkness = Darkness(self.cfg.darkness, game) if "darkness" in self.cfg else None
 
     def update(self, snake: "Snake"):
         # remove dead entities
@@ -140,6 +143,8 @@ class Map:
             goal.update(map=self, snake=snake, dt=self.game.dt)
 
     def draw(self, offset: Vec2):
+        if self.darkness and not self.game.cfg.debug:
+            pyxel.pal(0, self.darkness.floor)
         pyxel.bltm(
             x=0,
             y=self.game.cfg.header.h,
@@ -149,6 +154,7 @@ class Map:
             w=self.game.cfg.width,
             h=self.game.cfg.area.h,
         )
+        pyxel.pal()
         header = self.game.cfg.header.h
         angle = pyxel.frame_count * PORTAL_SPIN
         for x, y in self.portals:

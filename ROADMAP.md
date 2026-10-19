@@ -89,7 +89,7 @@ home, explode, lifetime), weapon pickups and switching, and ammo/cooldown in the
 
 ### M1: Arc 1
 
-Done: complete maze layout around the pathway (tilemap 3), natural Maneuver layout (tilemap 4), floor decorations, the firefly that lights the maze's breadcrumbs, speed apples, portal pairs in Maneuver. Open: playtesting and rebalanced goals, darkness rendering (light radius), boss framework (boss bar,
+Done: complete maze layout around the pathway (tilemap 3), natural Maneuver layout (tilemap 4), floor decorations, the firefly that lights the maze's breadcrumbs, speed apples, portal pairs in Maneuver, darkness with a light radius (level option `darkness`). Open: playtesting and rebalanced goals, boss framework (boss bar,
 phases) and The Hunger.
 
 ### M2: Arc 2

@@ -35,6 +35,8 @@ class Cam:
     def draw(self):
         self.map.draw(self.offset)
         self.snake.draw(self.offset)
+        if self.map.darkness and not self.game.cfg.debug:  # debug shows the whole level
+            self.map.darkness.draw(self.offset, self.snake, self.map.entities)
         if self.game.cfg.debug:
             # draw collision points
             p, q = self.snake.get_collision_points()

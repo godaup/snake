@@ -34,6 +34,7 @@ def register(name: str):
 
 class Entity:
     name = "entity"  # set by @register
+    light = 0  # radius in px it lights up in dark levels (see darkness.py)
     _img_x = None
     _img_y = None
 
@@ -58,6 +59,7 @@ class Entity:
                 v=self.img_y,
                 w=self.w,
                 h=self.h,
+                colkey=0,
             )
 
     def update(self, snake: "Snake", map: "Map"):
@@ -84,6 +86,7 @@ class Entity:
 class Apple(Entity):
     _img_x = 2
     _img_y = 0
+    light = 10
 
     def on_intersect(self, snake: "Snake", map: "Map"):
         # update stats
@@ -101,6 +104,7 @@ class Apple(Entity):
 class GoldenApple(Entity):
     _img_x = 2
     _img_y = 1
+    light = 14
 
     def on_intersect(self, snake: "Snake", map: "Map"):
         # update stats
@@ -117,6 +121,7 @@ class SpeedApple(Entity):
 
     _img_x = 4
     _img_y = 0
+    light = 8
     BOOST = 1.5  # speed factor
     SECONDS = 5.0
 
@@ -133,6 +138,7 @@ class Firefly(Entity):
 
     _img_x = 5
     _img_y = 0
+    light = 20
     NOTICE = 48  # px: closer than this, the firefly drifts towards the snake's head
     SPEED = 1.5  # px per frame
     LIGHT_SECONDS = 20.0  # how long the breadcrumbs shine before fading out
