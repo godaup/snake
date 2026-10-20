@@ -45,6 +45,9 @@ class Map:
         level.load_tilemaps()
 
         self.start = Vec2(self.cfg.start.x, self.cfg.start.y)
+        # plain copies of config values read in hot paths (OmegaConf lookups are slow, bots call tile_xy a lot)
+        self.header: int = game.cfg.header.h
+        self.tm: int = self.cfg.tm
         self.game = game
         self.timers: list[Timer] = []
         # create initial game objects
@@ -71,12 +74,12 @@ class Map:
                 if kind not in (None, TileKind.PATH):
                     continue
                 if kind == TileKind.PATH:
-                    self.path.append(Vec2(x=tile_x * 8, y=tile_y * 8 + self.game.cfg.header.h))
+                    self.path.append(Vec2(x=tile_x * 8, y=tile_y * 8 + self.header))
                     pyxel.tilemaps[self.cfg.tm].pset(tile_x, tile_y, EMPTY_TILE)
                     continue
                 e_cls = ENTITY_TILES.get((img_x, img_y))
                 if e_cls is not None:
-                    self.entities.append(e_cls.at_pos(Vec2(x=tile_x * 8, y=tile_y * 8 + self.game.cfg.header.h)))
+                    self.entities.append(e_cls.at_pos(Vec2(x=tile_x * 8, y=tile_y * 8 + self.header)))
                     # remove entity from 'background'
                     pyxel.tilemaps[self.cfg.tm].pset(tile_x, tile_y, EMPTY_TILE)
         for colour, pair in portal_colours.items():
@@ -156,7 +159,7 @@ class Map:
             pyxel.pal(0, self.darkness.floor)
         pyxel.bltm(
             x=0,
-            y=self.game.cfg.header.h,
+            y=self.header,
             tm=self.cfg.tm,
             u=-offset.x,
             v=-offset.y,
@@ -164,7 +167,7 @@ class Map:
             h=self.game.cfg.area.h,
         )
         pyxel.pal()
-        header = self.game.cfg.header.h
+        header = self.header
         angle = pyxel.frame_count * PORTAL_SPIN
         for x, y in self.portals:
             spark_x = x * 8 + 4 + offset.x + round(pyxel.cos(angle) * 3)
@@ -188,7 +191,7 @@ class Map:
         while invalid:
             invalid = False
             _x = pyxel.rndi(0, self.cfg.width - w)
-            _y = pyxel.rndi(0, self.cfg.height - h) + self.game.cfg.header.h
+            _y = pyxel.rndi(0, self.cfg.height - h) + self.header
             for pos in [Vec2(_x, _y), Vec2(_x + w, _y), Vec2(_x, _y + h), Vec2(_x + w, _y + h)]:
                 # no walls at the for corners
                 if self.tile_at(pos) not in FLOOR_TILES:
@@ -223,7 +226,7 @@ class Map:
             self.snake_killed = not snake.cut(HAZARD_CUT)
 
     def tile_center(self, tile: tuple[int, int]) -> Vec2:
-        return Vec2(tile[0] * 8 + 4, tile[1] * 8 + 4 + self.game.cfg.header.h)
+        return Vec2(tile[0] * 8 + 4, tile[1] * 8 + 4 + self.header)
 
     def crumbs_alpha(self) -> float:
         """1 while the breadcrumbs shine, falling to 0 during the last CRUMBS_FADE seconds of a timed reveal."""
@@ -245,7 +248,7 @@ class Map:
         self.crumbs_shown = 0.0
 
     def tile_xy(self, pos: Vec2) -> tuple[int, int]:
-        return int(pos.x) // 8, (int(pos.y) - self.game.cfg.header.h) // 8
+        return int(pos.x) // 8, (int(pos.y) - self.header) // 8
 
     def walking_distances(self, origin: Vec2) -> dict[tuple[int, int], int]:
         """Steps from `origin` to every floor tile reachable from it (breadth first, through non-wall tiles; a portal
@@ -267,7 +270,7 @@ class Map:
 
     def tile_at(self, pos: Vec2) -> tuple[int, int]:
         """Sprite tile shown at a world position."""
-        return pyxel.tilemaps[self.cfg.tm].pget(pos.x // 8, (pos.y - self.game.cfg.header.h) // 8)
+        return pyxel.tilemaps[self.tm].pget(pos.x // 8, (pos.y - self.header) // 8)
 
     def check_on_wall(self, pos: Vec2) -> bool:
         return self.tile_at(pos) in WALL_TILES

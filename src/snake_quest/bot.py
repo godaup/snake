@@ -13,7 +13,7 @@ from snake_quest.states import StateID
 from snake_quest.states.running import RunningStateHandler
 
 # the levels the bot wins by eating apples. Not yummy: at 250 points (about 50 golden apples, ~1000 segments in the
-# small room) the bot bites its tail at 12-100 points; the goal is set for people, to be confirmed by playtesting.
+# small room) the bot bites its tail at 70-200 points, while a person won it at the first try (playtest).
 LEVELS = ("classic", "hunger")
 
 
