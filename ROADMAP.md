@@ -24,7 +24,7 @@ Ground rules:
 | 2  | Yummy              | Feast in the same small room: golden apples rain, the snake grows fast                 | score                   | score 250: needs playtesting  |
 | 3  | Maneuver           | Large scrolling map with portals / wrap-around                                         | score                   | exists                        |
 | 4  | The Maze           | Navigation: follow the (hidden) pathway to the golden apples at its end               | eat all golden apples   | exists; layout incomplete     |
-| 5  | **Boss: The Hunger** | Starving in the dark: constant shrinking, scarce food, a light radius around the head; the hunger bar is the boss bar | hold length | exists (needs playtesting)    |
+| 5  | **Boss: The Hunger** | Starving in the dark: constant shrinking, scarce food, a light radius around the head; the hunger bar is the boss bar | survive until dawn | exists (needs playtesting) |
 
 ### Arc 2: The Wilds (hunters and prey)
 

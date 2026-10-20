@@ -48,15 +48,10 @@ timers:
       max: 1
 
 goal:
-  hold_length:
-    length: 50
-    seconds: 25
+  survive: 120  # until dawn: a plain countdown
 
 title: "Boss: The Hunger"
 intro:
   - "The lights are out and the Hunger is awake."
   - "It eats you from the tail. Eat to keep it at bay"
   - "and hold out until dawn."
-
-difficulty:  # scaled nightmare (hold 70 for 35 s) is beyond even the bot; this keeps it hard but winnable
-  nightmare: {goal: {hold_length: {length: 60, seconds: 30}}}
