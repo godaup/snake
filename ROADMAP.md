@@ -30,7 +30,7 @@ Ground rules:
 
 | #  | Level              | Twist                                                         | Goal                 |
 |----|--------------------|---------------------------------------------------------------|----------------------|
-| 6  | Hunted             | Enemies wake up and chase the snake                           | survive N seconds    |
+| 6  | Hunted             | Beetles wake up and chase the snake, biting off its tail      | survive N seconds (exists) |
 | 7  | Armed              | First weapon: **Gun**                                         | defeat N enemies     |
 | 8  | Prey               | Golden critters flee from the snake (new "flee" behavior)    | collect all          |
 | 9  | Burrows            | Nests keep spawning enemies until destroyed                   | destroy all nests    |
@@ -97,8 +97,9 @@ Classic and The Hunger are checked with a bot (`tests/test_winnable.py`), Yummy'
 
 ### M2: Arc 2
 
-Chase and flee behaviors, Gun fixes (self-hit, projectiles not removed, debug print), weapon pickups, nests, The Alpha.
-First `arc2.pyxres`.
+Done: `arc2.pyxres` and the arc in the campaign, Hunted (level 6) with the `Hunter` (sleeps, wakes, chases the
+tail along the shortest way, bites off chunks), bot avoidance of hostile entities. Open: flee behavior, Gun fixes
+(self-hit, projectiles not removed) and wiring, weapon pickups, nests, The Alpha.
 
 ### M3: Arc 3
 

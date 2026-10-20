@@ -96,6 +96,9 @@ class PathController(Controller):
     ORBIT_PENALTY = 200  # px added to an arc that leaves the target inside its turning circle
     FIELD_EVERY = 3  # frames between recomputing the distances to the target
     REACH = 5  # px: an arc passing this close to the target gets it (entities are 8 px wide)
+    THREAT = 14  # px kept from an awake hostile entity (hunters), growing by THREAT_GROWTH per frame ahead
+    THREAT_GROWTH = 1.0
+    SLEEPER = 10  # px kept from a sleeping one
 
     def __init__(self, target: Callable[["Snake", "Map"], Vec2 | None]):
         self.target = target
@@ -105,8 +108,14 @@ class PathController(Controller):
         self._walls: dict[tuple[int, int], bool] = {}  # cell -> wall, cached per map
         self._walls_map = None
         self.mode = ""  # why the last steering was chosen: goal, tail, escape or crash (for debugging)
+        self._threats: list[tuple[Vec2, float]] = []  # centre and radius to keep away from, per frame
 
     def steer(self, snake, map):
+        self._threats = [
+            (ent.pos + Vec2(ent.w / 2, ent.h / 2), self.SLEEPER if getattr(ent, "asleep", False) else self.THREAT)
+            for ent in map.entities
+            if ent.alive and ent.hostile
+        ]
         goal = self.target(snake, map)
         if goal is None:
             self.mode = ""
@@ -178,8 +187,16 @@ class PathController(Controller):
         there. A portal leads to the other one's centre."""
         vacate, head, speed = self._vacate(snake), snake.head.pos, snake.effective_speed
 
+        near_threat = {
+            (cx, cy)
+            for c, r in self._threats
+            for cx in range(int(c.x - r) // self.CELL, int(c.x + r) // self.CELL + 1)
+            for cy in range(int(c.y - r) // self.CELL, int(c.y + r) // self.CELL + 1)
+            if (Vec2(cx * self.CELL + self.CELL / 2, cy * self.CELL + self.CELL / 2) - c).length() < r
+        }
+
         def blocked(cell: tuple[int, int]) -> bool:
-            if self._wall(map, cell):
+            if self._wall(map, cell) or cell in near_threat:
                 return True
             if cell in vacate:
                 center = Vec2(cell[0] * self.CELL + self.CELL / 2, cell[1] * self.CELL + self.CELL / 2)
@@ -265,7 +282,8 @@ class PathController(Controller):
             pos = Vec2(pos.x + speed * pyxel.cos(orient), pos.y + speed * pyxel.sin(orient))
             p, q = collision_points(pos, orient, snake.size)
             near_body = frame % 2 == 0 and any((pos - seg.pos).length() < snake.size * 2 for seg in body)
-            if map.check_on_wall(p) or map.check_on_wall(q) or near_body:
+            threatened = any((pos - c).length() < r + frame * self.THREAT_GROWTH for c, r in self._threats)
+            if map.check_on_wall(p) or map.check_on_wall(q) or near_body or threatened:
                 return frame - 1, pos, orient, reached
             if reached is None and goal is not None and (goal - pos).length() < self.REACH:
                 reached = frame

@@ -7,3 +7,6 @@ arcs:
   - name: The Garden
     resources: garden.pyxres
     levels: [classic, yummy, maneuver, maze, hunger]
+  - name: The Wilds
+    resources: arc2.pyxres
+    levels: [hunted]

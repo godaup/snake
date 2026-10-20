@@ -166,6 +166,88 @@ class Firefly(Entity):
         self.alive = False
 
 
+@register("hunter")
+class Hunter(Entity):
+    """A beetle of The Wilds. It sleeps until the snake comes within WAKE px or its nap is over, then hunts the tail: it
+    follows the shortest way through the level to the snake's last segment (`map.chase`), a little slower than the
+    snake. A bite on the body takes CHUNK segments off the tail and sends it back to REST; a bite the snake is too
+    short for, or running into an awake beetle head first, is the end. Portals don't carry it."""
+
+    _img_x = 0
+    _img_y = 11
+    hostile = True
+    ASLEEP_IMG_X = 1  # sprite tile next to it: eyes closed
+    WAKE = 56  # px
+    NAP = (4.0, 12.0)  # seconds asleep at most, chosen at random
+    SPEED = 1.3  # px per frame, as fast as the snake starts; both scale with the difficulty's speed
+    BITE = 5  # px from its centre to a segment
+    REST = 2.5  # seconds it keeps away after a bite
+    CHUNK = 10  # segments a bite takes off the tail
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.asleep = True
+        self.nap = pyxel.rndf(*self.NAP)
+        self.rest = 0.0
+
+    @property
+    def center(self) -> Vec2:
+        return self.pos + Vec2(self.w / 2, self.h / 2)
+
+    def update(self, snake: "Snake", map: "Map"):
+        seconds = map.game.dt.total_seconds()
+        if self.asleep:
+            self.nap -= seconds
+            if self.nap <= 0 or (snake.head.pos - self.center).length() < self.WAKE:
+                self.asleep = False
+            return
+        if self.rest > 0:
+            self.rest -= seconds
+            self._move(self.center - snake.head.pos, self.SPEED / 2)  # back off
+            return
+        self._move(self._next_step(snake, map) - self.center, self.SPEED * map.game.difficulty.speed)
+        if any((seg.pos - self.center).length() < self.BITE for seg in snake.segs[1:]):
+            self.bite(snake, map)
+
+    def _next_step(self, snake: "Snake", map: "Map") -> Vec2:
+        """Where to head for: the centre of the neighbouring tile closest to the snake's tail along the way (diagonal
+        only where both tiles beside the corner are free), or the tail itself once in its tile."""
+        distance = map.chase(snake)
+        tail = snake.segs[-1].pos
+        x, y = here = map.tile_xy(self.center)
+        if here not in distance or here == map.tile_xy(tail):
+            return tail
+        steps = [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]
+        steps += [
+            (x + dx, y + dy) for dx in (-1, 1) for dy in (-1, 1) if (x + dx, y) in distance and (x, y + dy) in distance
+        ]
+        best = min((step for step in steps if step in distance), key=distance.get, default=here)
+        return map.tile_center(best)
+
+    def _move(self, direction: Vec2, speed: float) -> None:
+        length = direction.length()
+        if length > 0:
+            self.pos = self.pos + direction * (min(speed, length) / length)
+
+    def bite(self, snake: "Snake", map: "Map") -> None:
+        """Take CHUNK segments off the tail; the end when the snake isn't longer than that."""
+        map.game.sm.effect("hurt")
+        self.rest = self.REST
+        if not snake.cut(self.CHUNK):
+            map.snake_killed = True
+
+    def on_intersect(self, snake: "Snake", map: "Map"):
+        """The snake runs into it head first."""
+        if not self.asleep:
+            map.snake_killed = True
+
+    def draw(self, offset: "Vec2"):
+        self.img_x = 8 * (self.ASLEEP_IMG_X if self.asleep else self._img_x)
+        if self.rest > 0 and pyxel.frame_count % 6 < 3:  # blinks while backing off
+            return
+        super().draw(offset)
+
+
 @register("enemy")
 class Enemy(Entity):
     _img_x = 3

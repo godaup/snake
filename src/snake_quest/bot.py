@@ -14,11 +14,11 @@ from snake_quest.states.running import RunningStateHandler
 
 # the levels the bot wins by eating apples. Not yummy: at 250 points (about 50 golden apples, ~1000 segments in the
 # small room) the bot bites its tail at 70-200 points, while a person won it at the first try (playtest).
-LEVELS = ("classic", "hunger")
+LEVELS = ("classic", "hunger", "hunted")
 
 
 def play(game, level: str, seed: int, seconds: float) -> tuple[str, float]:
-    """One run of `level`: ('won' | 'wall' | 'tail' | 'starved' | 'timeout', seconds played)."""
+    """One run of `level`: ("won" | "wall" | "tail" | "killed" | "timeout", seconds played)."""
     pyxel.rseed(seed)
     game.level_counter = game.campaign.resolve(level)
     game.requested_states.clear()
@@ -31,7 +31,7 @@ def play(game, level: str, seed: int, seconds: float) -> tuple[str, float]:
             return "won", running.elapsed
         if StateID.DEATH in game.requested_states:
             if running.map.snake_killed:
-                return "starved", running.elapsed
+                return "killed", running.elapsed  # starved, a hazard, a hunter
             return ("tail" if running.snake.self_intersect() else "wall"), running.elapsed
     return "timeout", running.elapsed
 

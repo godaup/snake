@@ -32,6 +32,8 @@ if TYPE_CHECKING:
 
 PORTAL_SPIN = 12  # degrees per frame of the sparkle circling each portal
 COL_PORTAL_SPARK = 7
+NEW_POS_TRIES = 300  # attempts at keeping a spawn `away` from the snake before taking any free spot
+CHASE_EVERY = 0.25  # seconds between updates of the hunters' way to the snake's tail
 CRUMBS_PER_SECOND = 6  # how fast a firefly lights the breadcrumbs
 CRUMBS_FADE = 3.0  # seconds a timed reveal takes to fade out at its end
 
@@ -62,7 +64,9 @@ class Map:
         portal_colours: dict[tuple[int, int], list[tuple[int, int]]] = {}
         self._portal_lock: tuple[int, int] | None = None  # portal the head arrived on, inactive until it leaves
         self._head_tile: tuple[int, int] | None = None
-        self.snake_killed = False  # set when a hazard cuts more than the snake has
+        self.snake_killed = False  # set when a hazard cuts more than the snake has, or a hunter bites the head
+        self._chase: dict[tuple[int, int], int] | None = None  # walking distances from the tail, see chase
+        self._chase_age = 0.0
         # iterate over tilemap
         for tile_x in range(self.cfg.width // 8):
             for tile_y in range(self.cfg.height // 8):
@@ -131,6 +135,7 @@ class Map:
         for ent in self.entities:
             if ent.covers(p) or ent.covers(q):
                 ent.on_intersect(snake=snake, map=self)
+        self._chase_age += self.game.dt.total_seconds()
         # update alive entities
         for ent in self.entities:
             ent.update(snake=snake, map=self)
@@ -185,13 +190,19 @@ class Map:
         for proj in self.projectiles:
             proj.draw(offset=offset)
 
-    def new_pos(self, w: int = 8, h: int = 8, snake: Optional["Snake"] = None) -> Vec2:
+    def new_pos(self, w: int = 8, h: int = 8, snake: Optional["Snake"] = None, away: float = 0) -> Vec2:
+        """A free spot: floor at all four corners, no entity, not on the snake, and (if possible within a few hundred
+        tries) at least `away` px from its head."""
         _x, _y = 0, 0
-        invalid = True
+        invalid, tries = True, 0
         while invalid:
-            invalid = False
+            invalid, tries = False, tries + 1
             _x = pyxel.rndi(0, self.cfg.width - w)
             _y = pyxel.rndi(0, self.cfg.height - h) + self.header
+            too_close = snake and away and (Vec2(_x + w / 2, _y + h / 2) - snake.head.pos).length() < away
+            if too_close and tries < NEW_POS_TRIES:
+                invalid = True
+                continue
             for pos in [Vec2(_x, _y), Vec2(_x + w, _y), Vec2(_x, _y + h), Vec2(_x + w, _y + h)]:
                 # no walls at the for corners
                 if self.tile_at(pos) not in FLOOR_TILES:
@@ -227,6 +238,13 @@ class Map:
 
     def tile_center(self, tile: tuple[int, int]) -> Vec2:
         return Vec2(tile[0] * 8 + 4, tile[1] * 8 + 4 + self.header)
+
+    def chase(self, snake: "Snake") -> dict[tuple[int, int], int]:
+        """Walking distances (tiles) from the snake's tail to every reachable tile, shared by all hunters and computed
+        again every CHASE_EVERY seconds."""
+        if self._chase is None or self._chase_age >= CHASE_EVERY:
+            self._chase, self._chase_age = self.walking_distances(snake.segs[-1].pos), 0.0
+        return self._chase
 
     def crumbs_alpha(self) -> float:
         """1 while the breadcrumbs shine, falling to 0 during the last CRUMBS_FADE seconds of a timed reveal."""
@@ -301,7 +319,7 @@ class Map:
                 if "pos" in description:
                     new_pos = Vec2(*description["pos"])
                 else:
-                    new_pos: Vec2 = map.new_pos(snake=snake)
+                    new_pos: Vec2 = map.new_pos(snake=snake, away=description.get("away", 0))
                 ent_cls: Entity = ENTITY_NAMES[description["entity"]]
                 # optional cap: don't add more while `max` of them are on the map already
                 limit = description.get("max")
