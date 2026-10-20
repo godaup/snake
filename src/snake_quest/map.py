@@ -140,7 +140,7 @@ class Map:
         for name in self._field_age:
             self._field_age[name] += self.game.dt.total_seconds()
         # update alive entities
-        for ent in self.entities:
+        for ent in list(self.entities):  # a copy: entities may add others (nests send out beetles)
             ent.update(snake=snake, map=self)
         # update alive projectiles
         for proj in self.projectiles:

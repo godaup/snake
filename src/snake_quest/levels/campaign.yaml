@@ -9,4 +9,4 @@ arcs:
     levels: [classic, yummy, maneuver, maze, hunger]
   - name: The Wilds
     resources: arc2.pyxres
-    levels: [hunted, armed, prey]
+    levels: [hunted, armed, prey, burrows]

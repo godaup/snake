@@ -1,0 +1,52 @@
+tm: 3  # natural layout from tools/draft_garden.py organic (--src-tm 3 --dst-tm 3 --seed 9)
+width: 560
+height: 352
+
+start:
+  x: 60
+  y: 60
+
+timers:
+  nests:  # four burrows, well away from the start
+    duration: 0
+    frequency: 0.05
+    fire_n: 3
+    callback:
+      type: spawn
+      entity: nest
+      away: 200
+  first_gun:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: gun
+      pos: [100, 76]
+  more_guns:
+    duration: 10
+    frequency: 10
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: gun
+      max: 2
+  apple1:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+
+goal:
+  destroy_all: nest
+
+title: Burrows
+intro:
+  - "The beetles keep crawling out of their burrows."
+  - "Shoot the nests apart to stop them for good."
+
+difficulty:  # destroying them all is a fixed task, so harder means more nests
+  hard: {timers: {nests: {fire_n: 4}}}
+  nightmare: {timers: {nests: {fire_n: 5}}}

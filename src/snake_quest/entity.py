@@ -372,6 +372,57 @@ class Hunter(Entity):
         super().draw(offset)
 
 
+@register("nest")
+class Nest(Entity):
+    """A beetle burrow: while the snake's head is within ALERT px, every SPAWN seconds (fewer on harder difficulties:
+    `hostile` factor) a hunting beetle crawls out, as long as fewer than BROOD of its own are alive. HEALTH shots
+    destroy it (counted as defeated); it flashes when hit. Running into it is the end."""
+
+    _img_x = 4
+    _img_y = 11
+    hostile = True
+    HEALTH = 2
+    SPAWN = 9.0  # seconds
+    BROOD = 2
+    ALERT = 160  # px
+    FLASH = 0.2  # seconds it flashes after a hit
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.health = self.HEALTH
+        self.left = pyxel.rndf(1.0, self.SPAWN)  # not all nests at once
+        self.brood: list[Hunter] = []
+        self.flash = 0.0
+
+    def update(self, snake: "Snake", map: "Map"):
+        seconds = map.game.dt.total_seconds()
+        self.flash = max(self.flash - seconds, 0.0)
+        if (snake.head.pos - (self.pos + Vec2(self.w / 2, self.h / 2))).length() > self.ALERT:
+            return
+        self.left -= seconds
+        if self.left > 0:
+            return
+        self.left = self.SPAWN * map.game.difficulty.hostile
+        self.brood = [beetle for beetle in self.brood if beetle.alive]
+        if len(self.brood) < self.BROOD:
+            beetle = Hunter.at_pos(Vec2(self.pos.x, self.pos.y))
+            beetle.asleep = False  # out to hunt
+            self.brood.append(beetle)
+            map.entities.append(beetle)
+
+    def hit(self, dmg: int):
+        super().hit(dmg)
+        self.flash = self.FLASH
+
+    def on_intersect(self, snake: "Snake", map: "Map"):
+        map.snake_killed = True
+
+    def draw(self, offset: "Vec2"):
+        if self.flash > 0 and pyxel.frame_count % 2:
+            return
+        super().draw(offset)
+
+
 @register("enemy")
 class Enemy(Entity):
     _img_x = 3

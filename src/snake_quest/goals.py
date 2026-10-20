@@ -208,8 +208,27 @@ def _fraction(value: float, target: float) -> float:
     return 1.0 if target <= 0 else min(max(value / target, 0.0), 1.0)
 
 
+class DestroyAllGoal(CollectAllGoal):
+    """`destroy_all: <entity name>`: like collect_all, for things that are shot rather than eaten (e.g. nests)."""
+
+    key = "destroy_all"
+
+    def describe(self):
+        return f"Destroy every {self.value}"
+
+
 GOALS: dict[str, type[Goal]] = {
-    cls.key: cls for cls in (ScoreGoal, LengthGoal, ExitGoal, SurviveGoal, DefeatGoal, HoldLengthGoal, CollectAllGoal)
+    cls.key: cls
+    for cls in (
+        ScoreGoal,
+        LengthGoal,
+        ExitGoal,
+        SurviveGoal,
+        DefeatGoal,
+        HoldLengthGoal,
+        CollectAllGoal,
+        DestroyAllGoal,
+    )
 }
 
 
