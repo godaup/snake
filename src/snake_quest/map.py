@@ -66,8 +66,9 @@ class Map:
         self._portal_lock: tuple[int, int] | None = None  # portal the head arrived on, inactive until it leaves
         self._head_tile: tuple[int, int] | None = None
         self.snake_killed = False  # set when a hazard cuts more than the snake has, or a hunter bites the head
-        self._chase: dict[tuple[int, int], int] | None = None  # walking distances from the tail, see chase
-        self._chase_age = 0.0
+        # walking distances from the tail (see chase) and from the head (see flight), recomputed now and then
+        self._fields: dict[str, dict[tuple[int, int], int]] = {}
+        self._field_age: dict[str, float] = {}
         # iterate over tilemap
         for tile_x in range(self.cfg.width // 8):
             for tile_y in range(self.cfg.height // 8):
@@ -136,7 +137,8 @@ class Map:
         for ent in self.entities:
             if ent.covers(p) or ent.covers(q):
                 ent.on_intersect(snake=snake, map=self)
-        self._chase_age += self.game.dt.total_seconds()
+        for name in self._field_age:
+            self._field_age[name] += self.game.dt.total_seconds()
         # update alive entities
         for ent in self.entities:
             ent.update(snake=snake, map=self)
@@ -243,9 +245,16 @@ class Map:
     def chase(self, snake: "Snake") -> dict[tuple[int, int], int]:
         """Walking distances (tiles) from the snake's tail to every reachable tile, shared by all hunters and computed
         again every CHASE_EVERY seconds."""
-        if self._chase is None or self._chase_age >= CHASE_EVERY:
-            self._chase, self._chase_age = self.walking_distances(snake.segs[-1].pos), 0.0
-        return self._chase
+        return self._field("chase", snake.segs[-1].pos)
+
+    def flight(self, snake: "Snake") -> dict[tuple[int, int], int]:
+        """Walking distances (tiles) from the snake's head, for prey running away from it; shared like chase."""
+        return self._field("flight", snake.head.pos)
+
+    def _field(self, name: str, origin: Vec2) -> dict[tuple[int, int], int]:
+        if name not in self._fields or self._field_age[name] >= CHASE_EVERY:
+            self._fields[name], self._field_age[name] = self.walking_distances(origin), 0.0
+        return self._fields[name]
 
     def crumbs_alpha(self) -> float:
         """1 while the breadcrumbs shine, falling to 0 during the last CRUMBS_FADE seconds of a timed reveal."""

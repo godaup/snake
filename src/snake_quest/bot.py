@@ -9,22 +9,27 @@ from collections import Counter
 import pyxel
 
 from snake_quest.controls import PathController, nearest
-from snake_quest.entity import ENTITY_NAMES, Apple, GoldenApple, GunPickup
+from snake_quest.entity import ENTITY_NAMES, Apple, Critter, GoldenApple, GunPickup
+from snake_quest.goals import CollectAllGoal
 from snake_quest.states import StateID
 from snake_quest.states.running import RunningStateHandler
 
 # the levels the bot wins by eating apples. Not yummy: at 250 points (about 50 golden apples, ~1000 segments in the
 # small room) the bot bites its tail at 70-200 points, while a person won it at the first try (playtest).
-LEVELS = ("classic", "hunger", "hunted", "armed")
+LEVELS = ("classic", "hunger", "hunted", "armed", "prey")
 
 HUNT_LENGTH = 16  # segments: shorter, the bot eats before it hunts
-food = nearest(Apple, GoldenApple)
+food = nearest(Apple, GoldenApple, Critter)
 guns = nearest(GunPickup)
 foes = nearest(*(cls for cls in ENTITY_NAMES.values() if cls.hostile), clearance=0)
 
 
 def target(snake, map):
-    """Hunt with ammo (once long enough to afford a bite), fetch a gun without, eat otherwise."""
+    """What the level asks to collect first; then hunt with ammo (once long enough to afford a bite), fetch a gun
+    without, eat otherwise."""
+    wanted = [goal.entity_cls for goal in map.goals if isinstance(goal, CollectAllGoal)]
+    if wanted and (goal := nearest(*wanted, clearance=0)(snake, map)):
+        return goal
     if snake.weapon is not None and snake.weapon.ammo > 0 and len(snake) >= HUNT_LENGTH:
         return foes(snake, map) or food(snake, map)
     return guns(snake, map) or food(snake, map)

@@ -1,0 +1,53 @@
+tm: 2  # natural layout from tools/draft_garden.py organic (--src-tm 2 --dst-tm 2 --seed 8)
+width: 480
+height: 320
+
+start:
+  x: 60
+  y: 60
+
+timers:
+  critters:  # eight golden critters, grazing all over the wilds
+    duration: 0
+    frequency: 0.05
+    fire_n: 7
+    callback:
+      type: spawn
+      entity: critter
+      away: 120
+  apple1:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+  sleepers:  # don't wake them while chasing
+    duration: 0
+    frequency: 0.05
+    fire_n: 1
+    callback:
+      type: spawn
+      entity: hunter
+      away: 160
+  more_hunters:  # and the chase draws company
+    duration: 20
+    frequency: 15
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: hunter
+      away: 160
+      max: 5
+
+goal:
+  collect_all: critter
+
+title: Prey
+intro:
+  - "Golden critters graze in the wilds. Catch them all!"
+  - "They run when you come near, but soon tire."
+
+difficulty:  # catching them all is a fixed task, so harder means faster critters and more company
+  hard: {timers: {critters: {callback: {with: {SPEED: 1.2}}}, more_hunters: {callback: {max: 6}}}}
+  nightmare: {timers: {critters: {callback: {with: {SPEED: 1.25}}}, more_hunters: {callback: {max: 8}}}}

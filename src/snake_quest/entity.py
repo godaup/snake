@@ -186,6 +186,65 @@ class GunPickup(Entity):
         self.alive = False
 
 
+@register("critter")
+class Critter(Entity):
+    """Golden prey of The Wilds. It grazes until the snake's head comes within FLEE px, then runs away from it along the
+    paths (to the neighbouring tile farthest from the head, `map.flight`), a little slower than the snake. After a
+    random RUN it has to catch its breath for a while; on harder difficulties it runs longer and rests less.
+    Eaten: LENGTH more segments, POINTS points."""
+
+    _img_x = 3
+    _img_y = 11
+    light = 8
+    FLEE = 64  # px
+    SPEED = 1.1  # px per frame (the snake starts at 1.3), scaled with the difficulty's speed
+    RUN = (2.0, 3.5)  # seconds it can run (times the difficulty's `helpful` factor: longer when harder)
+    BREATH = (1.0, 2.5)  # seconds it then stands still (divided by that factor)
+    LENGTH = 3
+    POINTS = 2
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.state = "graze"  # graze, run or breath
+        self.left = 0.0
+
+    @property
+    def center(self) -> Vec2:
+        return self.pos + Vec2(self.w / 2, self.h / 2)
+
+    def update(self, snake: "Snake", map: "Map"):
+        self.left -= map.game.dt.total_seconds()
+        near = (snake.head.pos - self.center).length() < self.FLEE
+        if self.state == "graze" and near:
+            self.state, self.left = "run", pyxel.rndf(*self.RUN) * map.game.difficulty.helpful
+        elif self.state == "run" and self.left <= 0:
+            self.state, self.left = "breath", pyxel.rndf(*self.BREATH) / map.game.difficulty.helpful
+        elif self.state == "breath" and self.left <= 0:
+            self.state = "graze"
+        if self.state != "run":
+            return
+        distance = map.flight(snake)
+        x, y = here = map.tile_xy(self.center)
+        if here not in distance:
+            return
+        steps = [(x + dx, y + dy) for dx in (-1, 0, 1) for dy in (-1, 0, 1) if (dx or dy)]
+        steps = [s for s in steps if s in distance and (s[0], y) in distance and (x, s[1]) in distance]
+        best = max(steps, key=distance.get, default=here)
+        if distance.get(best, 0) <= distance[here]:  # cornered
+            return
+        direction = map.tile_center(best) - self.center
+        length = direction.length()
+        if length > 0:
+            speed = self.SPEED * map.game.difficulty.speed
+            self.pos = self.pos + direction * (min(speed, length) / length)
+
+    def on_intersect(self, snake: "Snake", map: "Map"):
+        snake.grow += self.LENGTH
+        map.game.score += self.POINTS
+        map.game.sm.effect("golden")
+        self.alive = False
+
+
 @register("hunter")
 class Hunter(Entity):
     """A beetle of The Wilds. It sleeps until the snake comes within WAKE px or its nap is over. Then it hunts the tail,
