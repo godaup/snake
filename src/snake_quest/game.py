@@ -24,6 +24,7 @@ from snake_quest.states.menu_common import Backdrop
 from snake_quest.states.mission import MissionStateHandler
 from snake_quest.states.pause import PauseStateHandler
 from snake_quest.states.running import RunningStateHandler
+from snake_quest.states.select import SelectStateHandler
 from snake_quest.states.victory import VictoryStateHandler
 
 SETTINGS = Path(__file__).parent / "settings.yaml"
@@ -86,6 +87,7 @@ class Game:
             StateID.CUSTOMIZE: CustomizeStateHandler(self),
             StateID.MISSION: MissionStateHandler(self),
             StateID.LEVEL_COMPLETE: LevelCompleteStateHandler(self),
+            StateID.SELECT: SelectStateHandler(self),
         }
         self.change_state(StateID.MENU)
         pyxel.run(self.update, self.draw)
@@ -141,8 +143,32 @@ class Game:
         self._state_handlers[StateID.RUNNING] = RunningStateHandler(self)
         self.change_state(state=StateID.RUNNING)
 
+    def unlocked_arcs(self) -> list:
+        """The arcs that can be started: the first, and each one after an arc played through."""
+        arcs = self.campaign.arcs
+        return [arc for i, arc in enumerate(arcs) if i == 0 or arcs[i - 1].name in self.profile.arcs_done]
+
+    def play(self) -> None:
+        """PLAY in the menu: the level select once more than the first arc is open, else straight to the first level."""
+        if len(self.unlocked_arcs()) > 1:
+            self.change_state(StateID.SELECT)
+        else:
+            self.restart()
+
+    def start_arc(self, arc) -> None:
+        """A new game from the first level of `arc` (also where it restarts after a game over)."""
+        self.start_level = arc.first
+        self.restart()
+
     def level_up(self):
-        """Go on from the level complete screen: the next level (it opens with its mission) or the victory screen."""
+        """Go on from the level complete screen: the next level (it opens with its mission) or the victory screen.
+        Finishing an arc's last level remembers the arc (checkpoint), and a game over in the next arc restarts at its
+        first level."""
+        arc = self.campaign.arc_of(self.level_counter)
+        if self.level_counter == arc.last:
+            self.profile.complete_arc(arc.name)
+            if self.level_counter < len(self.campaign):
+                self.start_level = self.level_counter + 1
         if self.level_counter == len(self.campaign):
             self.change_state(StateID.VICTORY)
             return

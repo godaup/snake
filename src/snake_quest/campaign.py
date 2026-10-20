@@ -29,6 +29,13 @@ class Level:
 
 
 @dataclass(frozen=True)
+class Arc:
+    name: str
+    first: int  # campaign numbers of its first and last level
+    last: int
+
+
+@dataclass(frozen=True)
 class Campaign:
     sprites: Path
     levels: tuple[Level, ...]
@@ -41,6 +48,21 @@ class Campaign:
         if not 1 <= number <= len(self.levels):
             raise IndexError(f"no level {number}, the campaign has {len(self.levels)}")
         return self.levels[number - 1]
+
+    @property
+    def arcs(self) -> list[Arc]:
+        """The arcs in order of play."""
+        arcs: list[Arc] = []
+        for level in self.levels:
+            if arcs and arcs[-1].name == level.arc:
+                arcs[-1] = Arc(level.arc, arcs[-1].first, level.number)
+            else:
+                arcs.append(Arc(level.arc, level.number, level.number))
+        return arcs
+
+    def arc_of(self, number: int) -> Arc:
+        """The arc of the level with this campaign number."""
+        return next(arc for arc in self.arcs if arc.first <= number <= arc.last)
 
     def resolve(self, value: str) -> int:
         """Campaign number for a level given by number or by name."""

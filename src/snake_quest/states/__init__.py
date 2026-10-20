@@ -13,3 +13,4 @@ class StateID(Enum):
     CUSTOMIZE = 8
     MISSION = 9
     LEVEL_COMPLETE = 10
+    SELECT = 11

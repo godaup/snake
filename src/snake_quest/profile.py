@@ -25,6 +25,7 @@ class Profile:
     palette: str = DEFAULT_PALETTE
     difficulty: str = DEFAULT_DIFFICULTY
     highscores: dict[str, list[Highscore]] = field(default_factory=dict)  # difficulty name -> its table
+    arcs_done: list[str] = field(default_factory=list)  # names of the arcs played through (checkpoints)
     path: Path | None = field(default=None, compare=False, repr=False)
 
     @classmethod
@@ -48,6 +49,7 @@ class Profile:
                 palette=name if name in PALETTES else DEFAULT_PALETTE,
                 difficulty=chosen if chosen in DIFFICULTIES else DEFAULT_DIFFICULTY,
                 highscores=highscores,
+                arcs_done=[name for name in data.get("arcs_done", []) if isinstance(name, str)],
             )
         except (OSError, ValueError, TypeError):
             profile = cls()
@@ -63,6 +65,7 @@ class Profile:
         data = {
             "palette": self.palette,
             "difficulty": self.difficulty,
+            "arcs_done": self.arcs_done,
             "highscores": {name: [asdict(h) for h in table] for name, table in self.highscores.items()},
         }
         try:
@@ -70,6 +73,12 @@ class Profile:
             self.path.write_text(json.dumps(data, indent=1))
         except OSError:
             pass  # e.g. a read-only home directory: the game still works, it just forgets
+
+    def complete_arc(self, name: str) -> None:
+        """Remember that an arc was played through, so the next one can be started from the level select. Saves."""
+        if name not in self.arcs_done:
+            self.arcs_done.append(name)
+            self.save()
 
     def table(self, name: str) -> list[Highscore]:
         """The highscores played at difficulty `name`, best first."""

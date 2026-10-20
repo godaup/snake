@@ -6,6 +6,7 @@ import pyxel
 from snake_quest import game as game_module
 from snake_quest.campaign import load_campaign
 from snake_quest.palettes import PALETTES
+from snake_quest.profile import Profile
 from snake_quest.states import StateID
 from snake_quest.states.credits import CREDITS, LINE_H, CreditsStateHandler
 from snake_quest.states.customize import CustomizeStateHandler
@@ -14,6 +15,7 @@ from snake_quest.states.highscores import HighscoresStateHandler
 from snake_quest.states.menu import MenuStateHandler
 from snake_quest.states.menu_common import MENU_MUSIC, Backdrop, Title
 from snake_quest.states.running import RunningStateHandler
+from snake_quest.states.select import SelectStateHandler
 
 FRAME = datetime.timedelta(seconds=1 / 24)
 
@@ -22,7 +24,7 @@ def test_menu_items_lead_where_they_say(game):
     menu = MenuStateHandler(game)
     actions = dict(menu.items)
     actions["PLAY"]()
-    assert game.restarts == 1
+    assert game.plays == 1  # straight into the game, or the level select once an arc is done
     actions["HIGHSCORES"]()
     actions["CUSTOMIZE"]()
     actions["CREDITS"]()
@@ -154,3 +156,25 @@ def test_music_only_restarts_when_it_changes():
 
 def test_campaign_still_loads():
     assert len(load_campaign()) >= 1
+
+
+def test_level_select_lists_the_arcs_and_locks_the_unreached(assets, game):
+    select = SelectStateHandler(game)
+    first, second = game.campaign.arcs[:2]
+    assert select.label(0) == f"1  {first.name.upper()}   LEVEL {first.first}"
+    assert select.label(1).endswith("LOCKED")
+    select.choose(1)  # locked: nothing happens
+    assert getattr(game, "started_arcs", []) == []
+    game.profile.arcs_done.append(first.name)
+    select.on_enter()
+    assert select.selected == 1  # the furthest open arc
+    assert select.label(1) == f"2  {second.name.upper()}   LEVEL {second.first}"
+    select.choose(1)
+    assert game.started_arcs == [second]
+
+
+def test_finished_arcs_are_saved(tmp_path):
+    profile = Profile(path=tmp_path / "profile.json")
+    profile.complete_arc("The Garden")
+    profile.complete_arc("The Garden")
+    assert Profile.load(tmp_path / "profile.json").arcs_done == ["The Garden"]

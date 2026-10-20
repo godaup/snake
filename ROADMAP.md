@@ -115,6 +115,7 @@ Trail walls, mirrored input, Laser and Homing, AI-controlled rival snake (reusin
 - [x] Menu theme song, animated main menu, highscores, snake colour palettes, credits (saved per user)
 - [x] Difficulty setting (Easy, Medium, Hard, Nightmare) chosen in the menu, one highscore table per difficulty,
       bot-checked win-rate bands (`tools/balance.py`, `tests/test_winnable.py`)
-- [ ] Level music, level select in the menu, initials for highscores
+- [x] Checkpoints and level select: a finished arc can be started directly (`states/select.py`)
+- [ ] Level music, initials for highscores
 - [ ] A winnability test per level (`PathController` bot in `tests/test_winnable.py`: Classic, The Hunger; input layer, later `pyxel-mcp` once the upstream GitHub account is restored)
 - [ ] `snake-quest` 0.x on PyPI

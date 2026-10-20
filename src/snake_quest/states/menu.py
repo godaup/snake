@@ -35,7 +35,7 @@ class MenuStateHandler(GameStateHandler):
         super().__init__(game=game)
         self.title = Title("SNAKE QUEST")
         self.items: list[tuple[str, Callable[[], None]]] = [
-            ("PLAY", self.game.restart),
+            ("PLAY", self.game.play),
             ("DIFFICULTY", lambda: self.change_difficulty(1)),
             ("HIGHSCORES", lambda: self.game.change_state(StateID.HIGHSCORES)),
             ("CUSTOMIZE", lambda: self.game.change_state(StateID.CUSTOMIZE)),
@@ -85,7 +85,7 @@ class MenuStateHandler(GameStateHandler):
         if self.selected == DIFFICULTY_ITEM and (left() or right()):
             self.change_difficulty(-1 if left() else 1)
         if pyxel.btnp(pyxel.KEY_P):  # the old shortcut keeps working
-            self.game.restart()
+            self.game.play()
         elif confirm():
             self.items[self.selected][1]()
 

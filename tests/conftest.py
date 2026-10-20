@@ -61,6 +61,16 @@ class FakeGame:
     def restart(self):
         self.restarts += 1
 
+    def unlocked_arcs(self):
+        arcs = self.campaign.arcs
+        return [arc for i, arc in enumerate(arcs) if i == 0 or arcs[i - 1].name in self.profile.arcs_done]
+
+    def play(self):
+        self.plays = getattr(self, "plays", 0) + 1
+
+    def start_arc(self, arc):
+        self.started_arcs = [*getattr(self, "started_arcs", []), arc]
+
     @property
     def running_handler(self):
         """Like Game.running_handler; built on first use (needs the `assets` fixture)."""
