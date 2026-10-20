@@ -38,7 +38,6 @@ timers:
       type: spawn
       entity: hunter
       away: 160
-      with: {SPEED: 1.1}  # slower than in Hunted: room to turn and shoot
   more_hunters:
     duration: 15
     frequency: 8
@@ -47,7 +46,6 @@ timers:
       type: spawn
       entity: hunter
       away: 160
-      with: {SPEED: 1.1}  # slower than in Hunted: room to turn and shoot
       max: 10
 
 goal:
@@ -57,3 +55,6 @@ title: Armed
 intro:
   - "A gun! Pick it up and press SPACE to shoot."
   - "Beetles fall to a single shot. Clear the wilds."
+
+difficulty:  # scaled nightmare (17 beetles) is beyond even the bot
+  nightmare: {goal: {defeat: 14}}

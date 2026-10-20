@@ -1,6 +1,7 @@
 import datetime
 
 import pytest
+import pyxel
 
 from snake_quest.campaign import load_campaign
 from snake_quest.controls import PathController
@@ -50,7 +51,7 @@ def test_the_wilds_is_the_second_arc():
 def test_sleeps_until_the_snake_comes_near(hunted):
     snake = snake_along(hunted)
     hunter = Hunter.at_pos(snake.head.pos + Vec2(Hunter.WAKE + 20, 0))
-    hunter.nap = 100
+    hunter.left = 100  # a long nap
     hunter.update(snake, hunted)
     assert hunter.asleep
     hunter.pos = snake.head.pos + Vec2(Hunter.WAKE - 20, 0)
@@ -61,7 +62,7 @@ def test_sleeps_until_the_snake_comes_near(hunted):
 def test_wakes_when_its_nap_is_over(hunted, game):
     snake = snake_along(hunted)
     hunter = Hunter.at_pos(snake.head.pos + Vec2(200, 0))
-    hunter.nap = 0.01
+    hunter.left = 0.01  # nap nearly over
     hunter.update(snake, hunted)
     assert not hunter.asleep
 
@@ -88,7 +89,7 @@ def test_bite_takes_a_chunk_off_the_tail_then_rests(hunted, game):
     hunter = awake_hunter(snake.segs[20].pos)
     hunter.update(snake, hunted)
     assert len(snake) == 30 - Hunter.CHUNK
-    assert hunter.rest == Hunter.REST
+    assert hunter.state == "retreat" and hunter.left == Hunter.RETREAT
     assert game.sm.effects_played == ["hurt"]
     assert not hunted.snake_killed
 
@@ -130,3 +131,54 @@ def test_bot_keeps_away_from_an_awake_hunter(hunted, game):
     target = snake.head.pos + Vec2(120, 0)  # straight through it
     bot = PathController(lambda snake, map: target)
     assert bot.steer(snake, hunted) != 0.0
+
+
+def run_until_break(hunter, snake, level_map):
+    """Hunt until the hunt time is over; returns the state it breaks into."""
+    hunter.left = 0.01
+    hunter.update(snake, level_map)
+    return hunter.state
+
+
+def test_after_a_hunt_it_rests_or_takes_a_detour(hunted, monkeypatch):
+    snake = snake_along(hunted, x=300, y=150)
+    hunter = awake_hunter(snake.segs[-1].pos + Vec2(-100, 0))
+    monkeypatch.setattr(pyxel, "rndf", lambda low, high: low)  # 0 < DETOUR_CHANCE: a detour
+    assert run_until_break(hunter, snake, hunted) == "detour"
+    hunter.state = "hunt"
+    monkeypatch.setattr(pyxel, "rndf", lambda low, high: high)  # 1 >= DETOUR_CHANCE: a rest
+    assert run_until_break(hunter, snake, hunted) == "rest"
+
+
+def test_resting_it_stays_put_with_its_eyes_closed_then_hunts_again(hunted, monkeypatch):
+    snake = snake_along(hunted, x=300, y=150)
+    hunter = awake_hunter(snake.segs[-1].pos + Vec2(-100, 0))
+    hunter.state, hunter.left = "rest", 1.0
+    start = Vec2(hunter.pos.x, hunter.pos.y)
+    hunter.update(snake, hunted)
+    assert hunter.pos == start
+    hunter.draw(Vec2(0, 0))
+    assert hunter.img_x == 8 * Hunter.ASLEEP_IMG_X
+    hunter.left = 0.01
+    hunter.update(snake, hunted)
+    assert hunter.state == "hunt"
+
+
+def test_a_detour_moves_slowly_and_harmlessly(hunted, monkeypatch):
+    snake = snake_along(hunted, x=300, y=150)
+    hunter = awake_hunter(snake.segs[-1].pos + Vec2(-100, 0))
+    monkeypatch.setattr(pyxel, "rndf", lambda low, high: low)
+    run_until_break(hunter, snake, hunted)
+    start = hunter.center
+    hunter.update(snake, hunted)
+    assert (hunter.center - start).length() <= Hunter.DETOUR_SPEED + 1e-6
+
+
+@pytest.mark.parametrize("name", ["easy", "nightmare"])
+def test_breaks_scale_with_the_difficulty(hunted, game, monkeypatch, name):
+    game.profile.difficulty = name
+    snake = snake_along(hunted, x=300, y=150)
+    hunter = awake_hunter(snake.segs[-1].pos + Vec2(-100, 0))
+    monkeypatch.setattr(pyxel, "rndf", lambda low, high: high)  # a rest of PAUSE[1] seconds at medium
+    run_until_break(hunter, snake, hunted)
+    assert hunter.left == pytest.approx(Hunter.PAUSE[1] * game.difficulty.hostile)

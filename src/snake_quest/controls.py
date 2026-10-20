@@ -198,7 +198,8 @@ class PathController(Controller):
             if any(map.check_on_wall(head + to_ent * (i / steps)) for i in range(1, steps)):
                 continue
             turn = (pyxel.atan2(to_ent.y, to_ent.x) - snake.orient + 180) % 360 - 180
-            if abs(turn) > self.AIM_AHEAD:  # one behind (chasing the tail) can't be faced in time
+            # one behind (chasing the tail) can't be faced in time, unless it holds still
+            if abs(turn) > self.AIM_AHEAD and getattr(ent, "state", "") not in ("rest", "asleep"):
                 continue
             best = (distance, turn, max(self.AIM, math.degrees(math.atan2(ent.w / 2, distance))))
         return None if best is None else best[1:]

@@ -188,61 +188,104 @@ class GunPickup(Entity):
 
 @register("hunter")
 class Hunter(Entity):
-    """A beetle of The Wilds. It sleeps until the snake comes within WAKE px or its nap is over, then hunts the tail: it
-    follows the shortest way through the level to the snake's last segment (`map.chase`), a little slower than the
-    snake. A bite on the body takes CHUNK segments off the tail and sends it back to REST; a bite the snake is too
-    short for, or running into an awake beetle head first, is the end. Portals don't carry it."""
+    """A beetle of The Wilds. It sleeps until the snake comes within WAKE px or its nap is over. Then it hunts the tail,
+    faster than the snake: it follows the shortest way through the level to the snake's last segment (`map.chase`).
+    After a random HUNT time it either rests (eyes closed, a chance to get away or turn and shoot) or takes a detour to
+    a nearby spot, then hunts again. A bite on the body takes CHUNK segments off the tail and makes it retreat; a bite
+    the snake is too short for, or running into an awake beetle head first, is the end. Rest and detour times scale
+    with the difficulty's `hostile` factor, speeds with its `speed`. Portals don't carry it."""
 
     _img_x = 0
     _img_y = 11
     hostile = True
-    ASLEEP_IMG_X = 1  # sprite tile next to it: eyes closed
+    ASLEEP_IMG_X = 1  # sprite tile next to it: eyes closed (asleep and resting)
     WAKE = 56  # px
     NAP = (4.0, 12.0)  # seconds asleep at most, chosen at random
-    SPEED = 1.3  # px per frame, as fast as the snake starts; both scale with the difficulty's speed
+    SPEED = 1.4  # px per frame while hunting (the snake starts at 1.3)
+    DETOUR_SPEED = 0.8  # px per frame on a detour
+    HUNT = (2.0, 4.0)  # seconds of hunting before it rests or takes a detour
+    PAUSE = (1.5, 2.5)  # seconds of rest
+    DETOUR = (1.0, 3.0)  # seconds of detour at most
+    DETOUR_CHANCE = 0.5  # of a break being a detour rather than a rest
+    DETOUR_REACH = (3, 10)  # tiles away (along the way) a detour heads for
     BITE = 5  # px from its centre to a segment
-    REST = 2.5  # seconds it keeps away after a bite
-    CHUNK = 10  # segments a bite takes off the tail
+    RETREAT = 2.5  # seconds it backs off after a bite
+    CHUNK = 6  # segments a bite takes off the tail
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.asleep = True
-        self.nap = pyxel.rndf(*self.NAP)
+        self.state = "asleep"  # asleep, hunt, rest, detour or retreat
+        self.left = pyxel.rndf(*self.NAP)  # seconds until the state ends
         self.health = 1  # one shot
-        self.rest = 0.0
+        self._detour: dict[tuple[int, int], int] = {}  # walking distances to the detour's spot
+
+    @property
+    def asleep(self) -> bool:
+        return self.state == "asleep"
+
+    @asleep.setter
+    def asleep(self, value: bool) -> None:
+        self._begin("asleep", pyxel.rndf(*self.NAP)) if value else self._begin("hunt", pyxel.rndf(*self.HUNT))
 
     @property
     def center(self) -> Vec2:
         return self.pos + Vec2(self.w / 2, self.h / 2)
 
+    def _begin(self, state: str, seconds: float) -> None:
+        self.state, self.left = state, seconds
+
+    def _break(self, map: "Map") -> None:
+        """End of a hunt: a rest or a detour, shorter on harder difficulties."""
+        factor = map.game.difficulty.hostile
+        if pyxel.rndf(0, 1) < self.DETOUR_CHANCE:
+            near = [
+                tile
+                for tile, steps in map.walking_distances(self.center).items()
+                if self.DETOUR_REACH[0] <= steps <= self.DETOUR_REACH[1]
+            ]
+            if near:
+                self._detour = map.walking_distances(map.tile_center(near[pyxel.rndi(0, len(near) - 1)]))
+                self._begin("detour", pyxel.rndf(*self.DETOUR) * factor)
+                return
+        self._begin("rest", pyxel.rndf(*self.PAUSE) * factor)
+
     def update(self, snake: "Snake", map: "Map"):
-        seconds = map.game.dt.total_seconds()
-        if self.asleep:
-            self.nap -= seconds
-            if self.nap <= 0 or (snake.head.pos - self.center).length() < self.WAKE:
-                self.asleep = False
+        self.left -= map.game.dt.total_seconds()
+        speed = map.game.difficulty.speed
+        if self.state == "asleep":
+            if self.left <= 0 or (snake.head.pos - self.center).length() < self.WAKE:
+                self._begin("hunt", pyxel.rndf(*self.HUNT))
             return
-        if self.rest > 0:
-            self.rest -= seconds
-            self._move(self.center - snake.head.pos, self.SPEED / 2)  # back off
+        if self.left <= 0:
+            if self.state == "hunt":
+                self._break(map)
+            else:
+                self._begin("hunt", pyxel.rndf(*self.HUNT))
+        if self.state == "rest":
             return
-        self._move(self._next_step(snake, map) - self.center, self.SPEED * map.game.difficulty.speed)
+        if self.state == "retreat":
+            self._move(self.center - snake.head.pos, self.DETOUR_SPEED * speed)
+            return
+        if self.state == "detour":
+            self._move(self._next_step(self._detour, None, map) - self.center, self.DETOUR_SPEED * speed)
+            return
+        self._move(self._next_step(map.chase(snake), snake.segs[-1].pos, map) - self.center, self.SPEED * speed)
         if any((seg.pos - self.center).length() < self.BITE for seg in snake.segs[1:]):
             self.bite(snake, map)
 
-    def _next_step(self, snake: "Snake", map: "Map") -> Vec2:
-        """Where to head for: the centre of the neighbouring tile closest to the snake's tail along the way (diagonal
-        only where both tiles beside the corner are free), or the tail itself once in its tile."""
-        distance = map.chase(snake)
-        tail = snake.segs[-1].pos
+    def _next_step(self, distance: dict[tuple[int, int], int], goal: Vec2 | None, map: "Map") -> Vec2:
+        """Where to head for along `distance` (walking distances to where it is going): the centre of the neighbouring
+        tile closest to it (diagonal only where both tiles beside the corner are free), or `goal` once in its tile."""
         x, y = here = map.tile_xy(self.center)
-        if here not in distance or here == map.tile_xy(tail):
-            return tail
+        if here not in distance or (goal is not None and here == map.tile_xy(goal)):
+            return goal if goal is not None else self.center
         steps = [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]
         steps += [
             (x + dx, y + dy) for dx in (-1, 1) for dy in (-1, 1) if (x + dx, y) in distance and (x, y + dy) in distance
         ]
         best = min((step for step in steps if step in distance), key=distance.get, default=here)
+        if distance.get(best, 0) >= distance[here]:  # arrived (a detour's spot): stay
+            return map.tile_center(here)
         return map.tile_center(best)
 
     def _move(self, direction: Vec2, speed: float) -> None:
@@ -253,7 +296,7 @@ class Hunter(Entity):
     def bite(self, snake: "Snake", map: "Map") -> None:
         """Take CHUNK segments off the tail; the end when the snake isn't longer than that."""
         map.game.sm.effect("hurt")
-        self.rest = self.REST
+        self._begin("retreat", self.RETREAT)
         if not snake.cut(self.CHUNK):
             map.snake_killed = True
 
@@ -263,8 +306,9 @@ class Hunter(Entity):
             map.snake_killed = True
 
     def draw(self, offset: "Vec2"):
-        self.img_x = 8 * (self.ASLEEP_IMG_X if self.asleep else self._img_x)
-        if self.rest > 0 and pyxel.frame_count % 6 < 3:  # blinks while backing off
+        closed = self.state in ("asleep", "rest")
+        self.img_x = 8 * (self.ASLEEP_IMG_X if closed else self._img_x)
+        if self.state == "retreat" and pyxel.frame_count % 6 < 3:  # blinks while backing off
             return
         super().draw(offset)
 
