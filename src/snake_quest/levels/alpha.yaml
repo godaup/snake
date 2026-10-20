@@ -1,0 +1,64 @@
+tm: 4  # natural layout from tools/draft_garden.py organic (--src-tm 4 --dst-tm 4 --seed 10)
+width: 640
+height: 384
+
+start:
+  x: 60
+  y: 60
+
+boss:
+  type: alpha
+  pos: [480, 280]  # world position (y includes the header), far from the start
+  health: 7  # shots
+  call: 10  # seconds between beetles it calls out of its burrows
+  pack: 2  # no more calls while this many beetles are about
+  phases:
+    - below: 1.0
+    - below: 0.66
+      call: 8
+      speed: 1.35
+    - below: 0.33
+      call: 6
+      speed: 1.4
+
+timers:
+  burrows:  # where its pack comes from: shoot them to stop the reinforcements
+    duration: 0
+    frequency: 0.05
+    fire_n: 1
+    callback:
+      type: spawn
+      entity: nest
+      away: 200
+  first_gun:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: gun
+      pos: [100, 76]
+  more_guns:
+    duration: 10
+    frequency: 10
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: gun
+      max: 2
+  apple1:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+
+goal:
+  boss: defeated
+
+title: "Boss: The Alpha"
+intro:
+  - "The pack leader itself is coming for you."
+  - "Shoot it down. Its burrows keep sending help,"
+  - "so take them out too if you can."

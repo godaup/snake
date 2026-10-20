@@ -372,6 +372,45 @@ class Hunter(Entity):
         super().draw(offset)
 
 
+@register("alpha")
+class Alpha(Hunter):
+    """The pack leader of The Wilds (level 10, put in by the `alpha` boss): a hunter twice the size. It waits in its
+    lair until the snake comes within WAKE px or LAIR seconds are over, then hunts in long bursts with short rests,
+    bites harder from farther away and takes many shots (`health`, set by the boss). It flashes when hit."""
+
+    _img_x = 6  # 2x2 sprite tiles from here
+    _img_y = 11
+    SPEED = 1.3
+    HUNT = (2.5, 4.0)
+    PAUSE = (1.5, 2.5)
+    DETOUR_CHANCE = 0.3
+    BITE = 7
+    CHUNK = 6
+    FLASH = 0.15
+    WAKE = 100
+    LAIR = 20.0
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.w = self.h = 16
+        self.health = 12
+        self.flash = 0.0
+        self.left = self.LAIR  # asleep in its lair: time to get ready
+
+    def update(self, snake: "Snake", map: "Map"):
+        self.flash = max(self.flash - map.game.dt.total_seconds(), 0.0)
+        super().update(snake, map)
+
+    def hit(self, dmg: int):
+        super().hit(dmg)
+        self.flash = self.FLASH
+
+    def draw(self, offset: "Vec2"):
+        if (self.flash > 0 and pyxel.frame_count % 2) or (self.state == "retreat" and pyxel.frame_count % 6 < 3):
+            return
+        Entity.draw(self, offset)
+
+
 @register("nest")
 class Nest(Entity):
     """A beetle burrow: while the snake's head is within ALERT px, every SPAWN seconds (fewer on harder difficulties:

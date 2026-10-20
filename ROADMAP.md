@@ -34,7 +34,7 @@ Ground rules:
 | 7  | Armed              | First weapon: **Gun**                                         | defeat N enemies (exists) |
 | 8  | Prey               | Golden critters flee from the snake (new "flee" behavior)    | collect all (exists) |
 | 9  | Burrows            | Nests keep spawning enemies until destroyed                   | destroy all nests (exists) |
-| 10 | **Boss: The Alpha** | Pack leader that chases and calls in hunters from its burrows | defeat the boss      |
+| 10 | **Boss: The Alpha** | Pack leader that chases and calls in hunters from its burrows | defeat the boss (exists) |
 
 ### Arc 3: The Fortress (firepower and defense)
 
@@ -100,7 +100,7 @@ Classic and The Hunger are checked with a bot (`tests/test_winnable.py`), Yummy'
 Done: `arc2.pyxres` and the arc in the campaign, Hunted (level 6) with the `Hunter` (sleeps, wakes, chases the
 tail along the shortest way, bites off chunks), bot avoidance of hostile entities; Armed (level 7) with the Gun
 (`weapons.py`), gun pickups that add ammo, ammo in the HUD and a bot that aims and shoots. Prey (level 8) with
-fleeing critters, Burrows (level 9) with nests. Open: The Alpha.
+fleeing critters, Burrows (level 9) with nests, Boss: The Alpha (level 10). Open: playtesting.
 
 ### M3: Arc 3
 

@@ -8,6 +8,10 @@ import datetime
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, ClassVar
 
+import pyxel
+
+from snake_quest.utils import Vec2
+
 if TYPE_CHECKING:
     from snake_quest.map import Map
     from snake_quest.snake import Snake
@@ -68,6 +72,14 @@ class Boss(ABC):
         """Shown big for a moment when a phase starts (not the first)."""
         return None
 
+    def defeated(self, map: "Map") -> bool:
+        """Whether the boss is beaten (see the `boss: defeated` goal)."""
+        return False
+
+    def target(self) -> "Vec2 | None":
+        """Where to shoot at, for bots: the boss's body if it has one."""
+        return None
+
 
 class Hunger(Boss):
     """The Hunger (level 5): hunger rises all the time and the snake shrinks the hungrier it is, down to nothing;
@@ -110,7 +122,61 @@ class Hunger(Boss):
         return "THE HUNGER GROWS"
 
 
-BOSSES: dict[str, type[Boss]] = {cls.key: cls for cls in [Hunger]}
+class AlphaBoss(Boss):
+    """The Alpha (level 10): puts the Alpha (entity) into the level at `pos` with `health`; the bar is its health. Every
+    `call` seconds it calls a hunting beetle out of one of the level's nests, as long as fewer than `pack` are about, so
+    destroying the nests stops the reinforcements. Phases start when its health falls `below` a fraction, and can set
+    its `speed`.
+
+        boss: {type: alpha, pos: [x, y], health: 12, call: 8, pack: 4, phases: [{below: 1}, {below: 0.66, call: 6}]}"""
+
+    key = "alpha"
+    title = "THE ALPHA"
+    pressure = ("health", "pack")
+    relief = ("call",)
+
+    def __init__(self, cfg, map):
+        super().__init__(cfg, map)
+        from snake_quest.entity import Alpha, Hunter, Nest
+
+        self._hunter, self._nest = Hunter, Nest
+        self.alpha = Alpha.at_pos(Vec2(*cfg.pos) - Vec2(8, 8))
+        self.alpha.health = self.full = max(1, round(cfg.health))
+        map.entities.append(self.alpha)
+        self.left = self.setting("call")
+
+    def next_phase_due(self, map, snake):
+        return self.alpha.health <= self.full * self.phases[self.phase + 1]["below"]
+
+    def act(self, map, snake, seconds):
+        if "speed" in self.phases[self.phase]:
+            self.alpha.SPEED = self.setting("speed")
+        self.left -= seconds
+        if self.left > 0 or not self.alpha.alive:
+            return
+        self.left = self.setting("call")
+        nests = [ent for ent in map.entities if ent.alive and isinstance(ent, self._nest)]
+        pack = sum(ent.alive and type(ent) is self._hunter for ent in map.entities)
+        if nests and pack < round(self.setting("pack")):
+            nest = nests[pyxel.rndi(0, len(nests) - 1)]
+            beetle = self._hunter.at_pos(Vec2(nest.pos.x, nest.pos.y))
+            beetle.asleep = False
+            map.entities.append(beetle)
+
+    def bar(self, map, snake):
+        return max(self.alpha.health, 0) / self.full
+
+    def phase_message(self):
+        return "THE ALPHA CALLS ITS PACK"
+
+    def defeated(self, map):
+        return not self.alpha.alive
+
+    def target(self):
+        return self.alpha.center if self.alpha.alive else None
+
+
+BOSSES: dict[str, type[Boss]] = {cls.key: cls for cls in [Hunger, AlphaBoss]}
 
 
 def load_boss(cfg, map: "Map") -> Boss:

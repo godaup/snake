@@ -16,7 +16,7 @@ from snake_quest.states.running import RunningStateHandler
 
 # the levels the bot wins by eating apples. Not yummy: at 250 points (about 50 golden apples, ~1000 segments in the
 # small room) the bot bites its tail at 70-200 points, while a person won it at the first try (playtest).
-LEVELS = ("classic", "hunger", "hunted", "armed", "prey", "burrows")
+LEVELS = ("classic", "hunger", "hunted", "armed", "prey", "burrows", "alpha")
 
 HUNT_LENGTH = 16  # segments: shorter, the bot eats before it hunts
 food = nearest(Apple, GoldenApple, Critter)
@@ -32,7 +32,9 @@ def target(snake, map):
     if wanted and (goal := nearest(*wanted, clearance=0)(snake, map)):
         return goal
     if snake.weapon is not None and snake.weapon.ammo > 0 and len(snake) >= HUNT_LENGTH:
-        # what the level asks to destroy (nests) before the foes it sends out
+        # the boss first, then what the level asks to destroy (nests), then the foes they send out
+        if map.boss is not None and (body := map.boss.target()) is not None:
+            return body
         targets = [goal.entity_cls for goal in map.goals if isinstance(goal, DestroyAllGoal)]
         aimed = nearest(*targets, clearance=0)(snake, map) if targets else None
         return aimed or foes(snake, map) or food(snake, map)

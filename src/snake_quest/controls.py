@@ -114,7 +114,10 @@ class PathController(Controller):
 
     def steer(self, snake, map):
         self._threats = [
-            (ent.pos + Vec2(ent.w / 2, ent.h / 2), self.SLEEPER if getattr(ent, "asleep", False) else self.THREAT)
+            (
+                ent.pos + Vec2(ent.w / 2, ent.h / 2),
+                (self.SLEEPER if getattr(ent, "asleep", False) else self.THREAT) + max(ent.w, ent.h) - 8,
+            )  # bigger entities (the Alpha) get a wider berth
             for ent in map.entities
             if ent.alive and ent.hostile
         ]

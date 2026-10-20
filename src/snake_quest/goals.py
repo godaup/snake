@@ -217,6 +217,24 @@ class DestroyAllGoal(CollectAllGoal):
         return f"Destroy every {self.value}"
 
 
+class BossGoal(Goal):
+    """`boss: defeated`: beat the level's boss (its `defeated()`); the footer shows its bar."""
+
+    key = "boss"
+
+    def done(self, map, snake):
+        return map.boss is not None and map.boss.defeated(map)
+
+    def describe(self):
+        return "Defeat the boss"
+
+    def status(self, map, snake):
+        return "BOSS" if map.boss is None else f"BOSS {round(map.boss.bar(map, snake) * 100)}%"
+
+    def progress(self, map, snake):
+        return None if map.boss is None else 1 - map.boss.bar(map, snake)
+
+
 GOALS: dict[str, type[Goal]] = {
     cls.key: cls
     for cls in (
@@ -228,6 +246,7 @@ GOALS: dict[str, type[Goal]] = {
         HoldLengthGoal,
         CollectAllGoal,
         DestroyAllGoal,
+        BossGoal,
     )
 }
 

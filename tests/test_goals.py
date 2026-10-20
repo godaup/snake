@@ -152,7 +152,17 @@ def test_collect_all_counts_collected_and_new_spawns(map):
 
 
 def test_every_registered_goal_is_tested():
-    assert set(GOALS) == {"score", "length", "exit", "survive", "defeat", "hold_length", "collect_all", "destroy_all"}
+    assert set(GOALS) == {
+        "score",
+        "length",
+        "exit",
+        "survive",
+        "defeat",
+        "hold_length",
+        "collect_all",
+        "destroy_all",
+        "boss",
+    }
 
 
 @pytest.mark.parametrize(
