@@ -99,6 +99,8 @@ class PathController(Controller):
     THREAT = 14  # px kept from an awake hostile entity (hunters), growing by THREAT_GROWTH per frame ahead
     THREAT_GROWTH = 1.0
     SLEEPER = 10  # px kept from a sleeping one
+    AIM = 8  # degrees: shoots at a hostile entity this close to straight ahead (wider when it is near)
+    AIM_AHEAD = 100  # degrees: only entities about ahead are aimed at
 
     def __init__(self, target: Callable[["Snake", "Map"], Vec2 | None]):
         self.target = target
@@ -107,7 +109,7 @@ class PathController(Controller):
         self._age = 0  # frames since the distances were computed
         self._walls: dict[tuple[int, int], bool] = {}  # cell -> wall, cached per map
         self._walls_map = None
-        self.mode = ""  # why the last steering was chosen: goal, tail, escape or crash (for debugging)
+        self.mode = ""  # why the last steering was chosen: goal, aim, tail, escape or crash (for debugging)
         self._threats: list[tuple[Vec2, float]] = []  # centre and radius to keep away from, per frame
 
     def steer(self, snake, map):
@@ -132,6 +134,14 @@ class PathController(Controller):
         if not safe:  # crashing anyway: as late as possible
             self.mode = "crash"
             return max(arcs, key=lambda steering: arcs[steering][0])
+        # a hostile entity in the line of fire: turn to face it, if that is safe
+        aim = self._aim(snake, map)
+        if aim is not None:
+            wanted = max(-1.0, min(1.0, aim[0] / snake.turn_speed))
+            for steering in sorted(safe, key=lambda steering: abs(steering - wanted)):
+                if self._escape(snake, map, *arcs[steering][1:3]) == self.ESCAPE:
+                    self.mode = "aim"
+                    return steering
 
         # turning circle: a target inside the circle on the side the snake turns to can't be reached by turning on, only
         # by straightening out first; without this the bot orbits the target until it bites its tail
@@ -169,6 +179,34 @@ class PathController(Controller):
             return min(cramped, key=lambda steering: (arcs[steering][1] - tail).length())
         self.mode = "escape"
         return max(escapes, key=escapes.get)
+
+    def _aim(self, snake: "Snake", map: "Map") -> tuple[float, float] | None:
+        """(degrees to turn, degrees of tolerance) towards the nearest hostile entity in the weapon's range with no wall
+        in between, or None."""
+        weapon = snake.weapon
+        if weapon is None or weapon.ammo <= 0:
+            return None
+        head, best = snake.head.pos, None
+        for ent in map.entities:
+            if not (ent.alive and ent.hostile):
+                continue
+            to_ent = ent.pos + Vec2(ent.w / 2, ent.h / 2) - head
+            distance = to_ent.length()
+            if not 0 < distance <= getattr(weapon, "range", 100) or (best and distance >= best[0]):
+                continue
+            steps = int(distance // 4)
+            if any(map.check_on_wall(head + to_ent * (i / steps)) for i in range(1, steps)):
+                continue
+            turn = (pyxel.atan2(to_ent.y, to_ent.x) - snake.orient + 180) % 360 - 180
+            if abs(turn) > self.AIM_AHEAD:  # one behind (chasing the tail) can't be faced in time
+                continue
+            best = (distance, turn, max(self.AIM, math.degrees(math.atan2(ent.w / 2, distance))))
+        return None if best is None else best[1:]
+
+    def fire(self, snake, map):
+        """Shoot when the weapon is ready and the nearest hostile entity in range is about straight ahead."""
+        aim = self._aim(snake, map) if snake.weapon is not None and snake.weapon.ready else None
+        return aim is not None and abs(aim[0]) <= aim[1]
 
     def _cell(self, pos: Vec2) -> tuple[int, int]:
         return int(pos.x) // self.CELL, int(pos.y) // self.CELL

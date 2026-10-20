@@ -13,10 +13,12 @@ from snake_quest.controls import (
     nearest,
 )
 from snake_quest.entity import Apple, GoldenApple
-from snake_quest.snake import Gun, Snake
+from snake_quest.snake import Snake
 from snake_quest.states import StateID
 from snake_quest.states.running import RunningStateHandler
 from snake_quest.utils import Vec2
+from snake_quest.weapons import Gun
+from tests.conftest import FakeSounds
 
 FRAME = datetime.timedelta(seconds=1 / 24)
 
@@ -73,9 +75,8 @@ def test_chase_controller_without_target_goes_straight():
 
 def test_weapon_fires_only_when_the_controller_says_so():
     snake = snake_with(ScriptedController(fire_frames={1}))
-    snake.weapon = Gun(snake)
-    snake.weapon._last_time -= datetime.timedelta(seconds=10)  # ready
-    level_map = SimpleNamespace(projectiles=[])
+    snake.weapon = Gun(ammo=3)
+    level_map = SimpleNamespace(projectiles=[], game=SimpleNamespace(sm=FakeSounds()))
     snake.update(dt=FRAME, map=level_map)
     assert level_map.projectiles == []
     snake.update(dt=FRAME, map=level_map)

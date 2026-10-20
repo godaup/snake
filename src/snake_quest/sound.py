@@ -2,7 +2,9 @@ import pyxel
 
 # sound slot of each effect, written by tools/compose_effects.py (slots 8-11 hold the menu theme)
 EFFECTS = {
-    name: slot for slot, name in enumerate(["eat", "golden", "speed", "firefly", "portal", "hurt", "death", "win"])
+    **{name: slot for slot, name in enumerate(["eat", "golden", "speed", "firefly", "portal", "hurt", "death", "win"])},
+    "shoot": 12,
+    "pickup": 13,
 }
 # effects play on the last channel: the level music (music 0) is still empty, and the menu screens play none
 EFFECT_CHANNEL = 3

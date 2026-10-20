@@ -28,7 +28,8 @@ from snake_quest.utils import Vec2
 
 if TYPE_CHECKING:
     from snake_quest.game import Game
-    from snake_quest.snake import Projectile, Snake
+    from snake_quest.snake import Snake
+    from snake_quest.weapons import Projectile
 
 PORTAL_SPIN = 12  # degrees per frame of the sparkle circling each portal
 COL_PORTAL_SPARK = 7
@@ -141,7 +142,7 @@ class Map:
             ent.update(snake=snake, map=self)
         # update alive projectiles
         for proj in self.projectiles:
-            proj.update(map=self, snake=snake)
+            proj.update(map=self, seconds=self.game.dt.total_seconds())
         # update alive timers
         for tmr in self.timers:
             tmr.update(map=self, snake=snake)
@@ -325,7 +326,13 @@ class Map:
                 limit = description.get("max")
                 if limit is not None and sum(isinstance(e, ent_cls) and e.alive for e in map.entities) >= limit:
                     return
-                map.entities.append(ent_cls.at_pos(new_pos))
+                ent = ent_cls.at_pos(new_pos)
+                # optional per-level tuning of the entity's settings, e.g. {SPEED: 1.1}
+                for name, value in description.get("with", {}).items():
+                    if not hasattr(ent_cls, name):
+                        raise ValueError(f"{description['entity']} has no setting {name!r}")
+                    setattr(ent, name, value)
+                map.entities.append(ent)
 
             return callback
         elif description["type"] == "grow":

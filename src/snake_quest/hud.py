@@ -78,6 +78,8 @@ class Hud:
     def right_lines(self) -> tuple[str, str]:
         """Best score and length; an active speed boost takes the place of the best score."""
         length = f"LENGTH {len(self.snake)}"
+        if self.snake.weapon is not None:
+            length = f"{self.snake.weapon.name} {self.snake.weapon.ammo}  {length}"
         if self.snake.boost_left > 0:
             percent = round((self.snake.boost_factor - 1) * 100)
             return f"SPEED {percent:+}% {self.snake.boost_left:.1f}s", length

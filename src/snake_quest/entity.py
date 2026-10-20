@@ -166,6 +166,26 @@ class Firefly(Entity):
         self.alive = False
 
 
+@register("gun")
+class GunPickup(Entity):
+    """A gun lying around: the snake picks up the Gun with AMMO shots, or AMMO more for the gun it carries."""
+
+    _img_x = 2
+    _img_y = 11
+    light = 10
+    AMMO = 12
+
+    def on_intersect(self, snake: "Snake", map: "Map"):
+        from snake_quest.weapons import Gun  # weapons need nothing from here, but keep entities importable first
+
+        if isinstance(snake.weapon, Gun):
+            snake.weapon.ammo += self.AMMO
+        else:
+            snake.weapon = Gun(ammo=self.AMMO)
+        map.game.sm.effect("pickup")
+        self.alive = False
+
+
 @register("hunter")
 class Hunter(Entity):
     """A beetle of The Wilds. It sleeps until the snake comes within WAKE px or its nap is over, then hunts the tail: it
@@ -188,6 +208,7 @@ class Hunter(Entity):
         super().__init__(**kwargs)
         self.asleep = True
         self.nap = pyxel.rndf(*self.NAP)
+        self.health = 1  # one shot
         self.rest = 0.0
 
     @property

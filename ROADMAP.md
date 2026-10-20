@@ -31,7 +31,7 @@ Ground rules:
 | #  | Level              | Twist                                                         | Goal                 |
 |----|--------------------|---------------------------------------------------------------|----------------------|
 | 6  | Hunted             | Beetles wake up and chase the snake, biting off its tail      | survive N seconds (exists) |
-| 7  | Armed              | First weapon: **Gun**                                         | defeat N enemies     |
+| 7  | Armed              | First weapon: **Gun**                                         | defeat N enemies (exists) |
 | 8  | Prey               | Golden critters flee from the snake (new "flee" behavior)    | collect all          |
 | 9  | Burrows            | Nests keep spawning enemies until destroyed                   | destroy all nests    |
 | 10 | **Boss: The Alpha** | Pack leader that chases and calls in hunters from its burrows | defeat the boss      |
@@ -60,7 +60,7 @@ Ground rules:
 
 | Weapon   | Introduced | Projectile behavior                         |
 |----------|------------|---------------------------------------------|
-| Gun      | 7          | single straight shot (exists, needs fixes)  |
+| Gun      | 7          | single straight shot (exists)               |
 | Spread   | 12         | fan of three shots                          |
 | Ricochet | 13         | bounces off walls                           |
 | Mines    | 14         | dropped behind the tail, area damage        |
@@ -83,7 +83,7 @@ home, explode, lifetime), weapon pickups and switching, and ammo/cooldown in the
       (exit, portal, hazard)
 - [x] Level intro (mission briefing), countdown and level-complete screen
 - [x] Header and footer HUD: level and title, score, best score, length; per-goal status and progress bars (timer, counters)
-- [ ] HUD for mechanics still to come: health, ammo (the boss bar, which shows The Hunger, exists)
+- [ ] HUD for mechanics still to come: health (ammo and the boss bar exist)
 - [x] Sound effects on events (eat, hit, death, win)
 - [x] Input layer: steering through a controller interface instead of `pyxel.btn`, so tests, bots and the rival snake
       can play
@@ -98,8 +98,9 @@ Classic and The Hunger are checked with a bot (`tests/test_winnable.py`), Yummy'
 ### M2: Arc 2
 
 Done: `arc2.pyxres` and the arc in the campaign, Hunted (level 6) with the `Hunter` (sleeps, wakes, chases the
-tail along the shortest way, bites off chunks), bot avoidance of hostile entities. Open: flee behavior, Gun fixes
-(self-hit, projectiles not removed) and wiring, weapon pickups, nests, The Alpha.
+tail along the shortest way, bites off chunks), bot avoidance of hostile entities; Armed (level 7) with the Gun
+(`weapons.py`), gun pickups that add ammo, ammo in the HUD and a bot that aims and shoots. Open: flee behavior,
+nests, The Alpha.
 
 ### M3: Arc 3
 

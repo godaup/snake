@@ -29,6 +29,8 @@ SOUNDS = {
     "hurt": {"steps": "c2 a1 -", "tone": "n", "volume": 6, "speed": 6},
     "death": {"steps": "g2 f#2 f2 e2 d#2 d2 c#2 c2 - -", "tone": "s", "volume": 5, "speed": 10, "effect": "v"},
     "win": {"steps": "c3 e3 g3 c4 - r g3 c4 - -", "tone": "p", "volume": 5, "speed": 9},
+    "shoot": {"steps": "a4 e4 a3", "tone": "s", "volume": 4, "speed": 2, "effect": "s"},
+    "pickup": {"steps": "g3 c4 e4 g4", "tone": "p", "volume": 5, "speed": 4},
 }
 
 

@@ -1,5 +1,4 @@
 import datetime
-from abc import abstractmethod
 from copy import copy
 from typing import TYPE_CHECKING
 
@@ -11,6 +10,7 @@ from snake_quest.utils import Vec2, collision_points
 
 if TYPE_CHECKING:
     from snake_quest.map import Map
+    from snake_quest.weapons import Weapon
 
 MAX_SPEED = 4
 MIN_SPEED = 1
@@ -53,7 +53,7 @@ class Snake:
         self.segs: list[SnakeSeg] = [SnakeSeg(pos, self.size, self.colors.head)]
         self.grow: int = 20
         self.delay = datetime.timedelta(seconds=0)
-        self.weapon: Weapon | None = None
+        self.weapon: Weapon | None = None  # see weapons.py; picked up in the level
         self.controller: Controller = controller or Controller()  # the default one goes straight
         self.turn_speed = turn_speed
 
@@ -130,7 +130,7 @@ class Snake:
             self.segs = self.segs[: self.grow]
         # fire
         if self.weapon:
-            self.weapon.update(map=map, fire=self.controller.fire(self, map))
+            self.weapon.update(self, map, fire=self.controller.fire(self, map), seconds=dt.total_seconds())
 
     def cut(self, n: int) -> bool:
         """Lose `n` segments from the tail; False (and nothing cut) when the snake isn't longer than that."""
@@ -149,60 +149,3 @@ class Snake:
 
     def get_collision_points(self) -> tuple[Vec2, Vec2]:
         return collision_points(self.head.pos, self.orient, self.size)
-
-
-class Projectile:
-    def __init__(self, pos: Vec2, size: int, speed: float, orient: int, col: int, dmg: int = 1):
-        self.pos = pos
-        self.size = size
-        self.speed = speed
-        self.dir = Vec2(x=pyxel.cos(orient), y=pyxel.sin(orient))
-        self.col = col
-        self.alive = True
-        self.dmg = dmg
-
-    def draw(self, offset: Vec2):
-        pyxel.circ(self.pos.x + offset.x, self.pos.y + offset.y, self.size, self.col)
-
-    def update(self, map: "Map", snake: "Snake"):
-        # move
-        self.pos = self.pos + self.dir * self.speed
-        # check wall
-        if map.check_on_wall(self.pos + self.dir * self.size):
-            self.alive = False
-        # check entities
-        for ent in map.entities:
-            if ent.covers(self.pos):
-                ent.hit(self.dmg)
-        # check snake
-        hit_pattern = [(self.pos - seg.pos).length() < snake.size + self.size for seg in snake.segs]
-        if any(hit_pattern):
-            # find first hit
-            hit_index = hit_pattern.index(True)
-            snake.segs = snake.segs[: hit_index - 1]
-
-
-class Weapon:
-    def __init__(self, snake: Snake, delay: datetime.timedelta = datetime.timedelta(seconds=0.75)):
-        self.snake = snake
-        self.delay = delay
-        self._last_time = datetime.datetime.now()
-
-    def update(self, map: "Map", fire: bool):
-        if fire and datetime.datetime.now() - self._last_time > self.delay:
-            self._last_time = datetime.datetime.now()
-            projectiles = self.next_pattern()
-            map.projectiles.extend(projectiles)
-
-    @abstractmethod
-    def next_pattern(self) -> list[Projectile]:
-        pass
-
-
-class Gun(Weapon):
-    def __init__(self, snake: "Snake"):
-        super().__init__(snake=snake, delay=datetime.timedelta(seconds=1.5))
-
-    def next_pattern(self) -> list[Projectile]:
-        shot = Projectile(pos=self.snake.head.pos, size=2, speed=5.0, orient=self.snake.orient, col=9, dmg=1)
-        return [shot]
