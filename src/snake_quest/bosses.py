@@ -249,7 +249,63 @@ class CoreBoss(Boss):
         return next((turret.center for turret in self.ring if turret.alive), None)
 
 
-BOSSES: dict[str, type[Boss]] = {cls.key: cls for cls in [Hunger, AlphaBoss, CoreBoss]}
+class OuroborosBoss(Boss):
+    """Ouroboros (level 20): a rival snake (the Rival entity) with `lives`, starting from its lair at `pos`, moving at
+    `speed` and `length` segments long at every start, shooting every `reload` seconds at most; it is back `respawn`
+    seconds after losing a life. The bar is its lives (the current one by its length). Phases start when its lives
+    fall `below` a fraction and may change these settings (from its next start).
+
+        boss: {type: ouroboros, pos: [x, y], lives: 3, speed: 1.2, length: 16, reload: 1.2, respawn: 3,
+               phases: [{below: 1}, {below: 0.67, speed: 1.3}, {below: 0.34, speed: 1.4}]}"""
+
+    key = "ouroboros"
+    title = "OUROBOROS"
+    pressure = ("lives", "speed")
+    relief = ("respawn", "reload")
+
+    def __init__(self, cfg, map):
+        super().__init__(cfg, map)
+        from snake_quest.entity import Rival
+
+        self.rival = Rival.at_pos(Vec2(*cfg.pos) - Vec2(4, 4))
+        self.rival.lives = self.full = max(1, round(cfg.lives))
+        self._tune()
+        self.rival.spawn()
+        map.entities.append(self.rival)
+
+    def _tune(self) -> None:
+        self.rival.SPEED = self.setting("speed")
+        self.rival.START = max(self.rival.MIN, round(self.setting("length")))
+        self.rival.RESPAWN = self.setting("respawn")
+        self.rival.RELOAD = self.setting("reload")
+
+    def next_phase_due(self, map, snake):
+        return self.rival.lives <= self.full * self.phases[self.phase + 1]["below"]
+
+    def on_phase(self, map, snake):
+        self._tune()
+
+    def act(self, map, snake, seconds):
+        pass  # the rival is an entity: it moves in the map's update
+
+    def bar(self, map, snake):
+        body = self.rival.body
+        current = min(len(body) / self.rival.START, 1.0) if body is not None else 0.0
+        return max(self.rival.lives - 1 + current, 0) / self.full
+
+    def phase_message(self):
+        return "OUROBOROS SHEDS ITS SKIN"
+
+    def defeated(self, map):
+        return self.rival.lives <= 0
+
+    def target(self):
+        """The rival's tail: shots there cut it, and the head (deadly to meet) is farthest away."""
+        body = self.rival.body
+        return body.segs[-1].pos if body is not None and self.rival.lives > 0 else None
+
+
+BOSSES: dict[str, type[Boss]] = {cls.key: cls for cls in [Hunger, AlphaBoss, CoreBoss, OuroborosBoss]}
 
 
 def load_boss(cfg, map: "Map") -> Boss:

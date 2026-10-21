@@ -2,7 +2,7 @@
 (`apply`), with the factors from the `difficulty` section of settings.yaml:
 
     speed    the snake's speed
-    goals    goal targets (score, length, hold length and time, survive, defeat)
+    goals    goal targets (score, length, hold length and time, survive, defeat); time limits are divided by it
     helpful  intervals of timers spawning something good (apples, fireflies): larger is rarer
     hostile  intervals of timers spawning something bad (`Entity.hostile`, e.g. enemies): smaller is more often
     boss     a boss's pressure (`Boss.pressure` keys, e.g. The Hunger's rise); its `relief` keys are divided by it
@@ -22,6 +22,7 @@ NAMES = ("easy", "medium", "hard", "nightmare")
 DEFAULT = "medium"
 # goals with a number to scale: key -> the scaled fields (None: the value itself)
 SCALED_GOALS = {"score": None, "length": None, "survive": None, "defeat": None, "hold_length": ("length", "seconds")}
+LIMITS = ("time_limit",)  # goals that get easier with more: divided by the goals factor
 
 
 @dataclass(frozen=True)
@@ -75,6 +76,9 @@ def apply(cfg: omegaconf.DictConfig, difficulty: Difficulty) -> omegaconf.DictCo
         else:
             for name in fields:
                 cfg.goal[key][name] = _round(cfg.goal[key][name] * d.goals, cfg.goal[key][name])
+    for key in LIMITS:
+        if key in cfg.get("goal", {}):
+            cfg.goal[key] = cfg.goal[key] / d.goals
     for timer in cfg.get("timers", {}).values():
         if timer.callback.type != "spawn":
             continue

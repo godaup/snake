@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 
 import pyxel
 
+from snake_quest.palettes import Palette
 from snake_quest.utils import Vec2
 from snake_quest.widget import WIDGET_MARGIN, Widget
 
@@ -227,6 +228,14 @@ class LaserPickup(WeaponPickup):
     _img_y = 13
     AMMO = 12
     WEAPON = "Laser"
+
+
+@register("homing")
+class HomingPickup(WeaponPickup):
+    _img_x = 12
+    _img_y = 13
+    AMMO = 12
+    WEAPON = "Homing"
 
 
 @register("mine")
@@ -733,6 +742,138 @@ class Knight(Hunter):
             x, y = self.pos.x + offset.x + 4, self.pos.y + offset.y + 4
             pyxel.line(x - 4, y, x + 4, y, 7)
             pyxel.line(x, y - 4, x, y + 4, 7)
+
+
+@register("rival")
+class Rival(Entity):
+    """Ouroboros (level 20, put in by the `ouroboros` boss): a second snake (`body`, driven by a RivalController) that
+    eats apples and grows, picks up weapons and shoots at the snake (its shots are hostile). Its head running into a
+    wall, into itself or into the snake's body costs it a life, and so does being shot shorter than MIN (a shot cuts it
+    where it strikes, like the snake). Then it is gone for RESPAWN seconds and comes back at its lair, START long. The
+    snake's head touching any of it is the end. The entity's own box follows the head; `covers` is the whole body."""
+
+    _img_x = 13  # 2x2 sprite tiles from here: the boss on the overview map
+    _img_y = 13
+    hostile = True
+    tally = False  # its lives are the boss's business
+    COLORS = Palette("Ouroboros", head=10, body=(8, 8, 2, 2, 1))
+    SPEED = 1.2
+    START = 16  # segments at every (re)start
+    MIN = 6  # segments: shorter after a hit, it loses a life
+    RESPAWN = 3.0  # seconds
+    RELOAD = 1.2  # seconds at least between its shots, whatever the weapon (it aims well)
+    HUNT_LENGTH = 20  # segments: shorter, it eats before it hunts
+    STOCK = 12  # shots it fetches before hunting
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.lair = Vec2(self.pos.x + 4, self.pos.y + 4)
+        self.lives = 1
+        self.body: Snake | None = None
+        self.away = 0.0  # seconds until it is back
+        self.struck: int | None = None  # the segment `covers` found last (where a shot hits)
+        self.shot_down = False  # shot shorter than MIN: loses a life on its next update
+
+    def spawn(self) -> None:
+        from snake_quest.controls import RivalController
+        from snake_quest.snake import Snake
+
+        self.body = Snake(
+            pos=Vec2(self.lair.x, self.lair.y),
+            orient=pyxel.rndi(0, 3) * 90,
+            size=2,
+            colors=self.COLORS,
+            controller=RivalController(self.target),
+            speed=self.SPEED,
+        )
+        self.body.grow = self.START
+
+    def target(self, body: "Snake", map: "Map") -> "Vec2 | None":
+        """What the rival goes for: a weapon while it has no ammo (a few shots in stock), food while short, else the
+        snake's head (to shoot it)."""
+        from snake_quest.controls import nearest
+
+        food = nearest(Apple, GoldenApple)
+        weapon = body.weapon
+        if weapon is None or weapon.ammo <= 0 or (weapon.ammo < self.STOCK and len(body) < self.HUNT_LENGTH):
+            return nearest(WeaponPickup)(body, map) or food(body, map)
+        if len(body) < self.HUNT_LENGTH:
+            return food(body, map)
+        prey = body.controller.prey
+        return prey.head.pos if prey is not None else food(body, map)
+
+    def update(self, snake: "Snake", map: "Map"):
+        seconds = map.game.dt.total_seconds()
+        if self.body is None:
+            self.away -= seconds
+            if self.away <= 0 and self.lives > 0:
+                self.spawn()
+            return
+        body = self.body
+        body.controller.prey = snake
+        body.update(dt=map.game.dt, map=map)
+        self.pos = Vec2(body.head.pos.x - 4, body.head.pos.y - 4)
+        p, q = body.get_collision_points()
+        for ent in map.entities:
+            if ent.alive and ent is not self and (ent.covers(p) or ent.covers(q)):
+                self._take(ent, map)
+        crashed = map.check_on_wall(p) or map.check_on_wall(q) or body.self_intersect() or snake.covers(body.head.pos)
+        if crashed or self.shot_down:
+            self.crash(map)
+
+    def _take(self, ent: "Entity", map: "Map") -> None:
+        """Eat an apple (the snake gets no points for it) or pick up a weapon."""
+        if isinstance(ent, Apple):
+            self.body.grow += 5
+            map.entities.append(Apple.at_pos(map.new_pos(snake=self.body)))
+        elif isinstance(ent, GoldenApple):
+            self.body.grow += 20
+        elif isinstance(ent, WeaponPickup):
+            from snake_quest import weapons
+
+            weapon_cls = getattr(weapons, ent.WEAPON)
+            if type(self.body.weapon) is weapon_cls:
+                self.body.weapon.ammo += ent.AMMO
+            else:
+                self.body.weapon = weapon_cls(ammo=ent.AMMO, hostile=True)
+            self.body.weapon.COOLDOWN = max(weapon_cls.COOLDOWN, self.RELOAD)
+        else:
+            return
+        map.game.sm.effect("eat")
+        ent.alive = False
+
+    def crash(self, map: "Map") -> None:
+        """A life lost: gone for RESPAWN seconds (for good with the last one)."""
+        self.lives -= 1
+        self.shot_down = False
+        self.body = None
+        self.away = self.RESPAWN
+        map.game.sm.effect("death")
+        if self.lives <= 0:
+            self.alive = False
+            self.killed = True
+
+    def covers(self, point: "Vec2") -> bool:
+        if self.body is None:
+            return False
+        self.struck = self.body.segment_at(point)
+        return self.struck is not None
+
+    def on_intersect(self, snake: "Snake", map: "Map"):
+        map.snake_killed = True
+
+    def hit(self, dmg: int):
+        """A shot cuts it where it strikes; too short then, it loses a life (on its next update)."""
+        if self.body is None or self.struck is None:
+            return
+        if not self.body.wound(self.struck) or len(self.body) < self.MIN:
+            self.shot_down = True
+
+    def draw(self, offset: "Vec2"):
+        if self.body is not None:
+            self.body.draw(offset)
+        elif self.lives > 0 and pyxel.frame_count % 6 < 3:  # about to come back
+            pyxel.circb(self.lair.x + offset.x, self.lair.y + offset.y, 6, self.COLORS.head)
 
 
 @register("core")

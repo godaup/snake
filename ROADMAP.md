@@ -55,8 +55,8 @@ Ground rules:
 | 16 | Trail                | The snake's path turns into walls                             | score (exists)       |
 | 17 | Mirror               | Mirrored floor swaps left and right                           | length, exit (exists) |
 | 18 | Armored              | Armored enemies that only the **Laser** pierces               | defeat N (exists)    |
-| 19 | Gauntlet             | Timed run through earlier twists; **Homing** shots            | reach the exit       |
-| 20 | **Boss: Ouroboros**  | A rival AI snake that eats, grows and shoots like the player  | defeat the boss      |
+| 19 | Gauntlet             | Timed run through earlier twists; **Homing** shots            | goldens, exit, in time (exists) |
+| 20 | **Boss: Ouroboros**  | A rival AI snake that eats, grows and shoots like the player  | defeat the boss (exists) |
 
 ### Weapons
 
@@ -67,7 +67,7 @@ Ground rules:
 | Ricochet | 13         | bounces off walls (exists)                  |
 | Mines    | 14         | dropped behind the tail, area damage (exists) |
 | Laser    | 18         | piercing beam (exists)                      |
-| Homing   | 19         | steers towards the nearest enemy            |
+| Homing   | 19         | steers towards the nearest enemy (exists)   |
 
 `Weapon.next_pattern()` already returns a list of projectiles. The rest needs projectile behaviors (pierce, bounce,
 home, explode, lifetime), weapon pickups and switching, and ammo/cooldown in the footer HUD.
@@ -179,7 +179,9 @@ Trail walls, mirrored input, Laser and Homing, AI-controlled rival snake (reusin
 
 Done: `arc4.pyxres` with temple layouts (`draft_garden.py temple`), Trail (level 16: the tail leaves walls that
 crumble, crawlers on the trail), Mirror (level 17: bands of mirrored floor across the halls swap left and right), Armored (level 18: knights in
-armour, the Laser).
+armour, the Laser), Gauntlet (level 19: ice, mirrors and thorns against the clock, `time_limit`, Homing), Boss: Ouroboros (level
+20: a rival snake driven by the bot, with lives, that eats, grows, takes the guns and shoots). The campaign is complete.
+Open: playtesting.
 
 ### M5: Release
 

@@ -1,0 +1,84 @@
+tm: 3  # tools/draft_garden.py temple (--src-tm 3 --dst-tm 3 --seed 8, keeping the exit), then ice (--patches 10
+# --region 10 50 --seed 1), mirror (--bands 2 --region 52 100 --seed 3) and thorns (--patches 26 --region 104 152 --seed 2);
+# a golden apple in every stretch
+width: 1280
+height: 256
+tint: {3: 2, 11: 14}  # the hedges as temple stone
+
+start:
+  x: 40
+  y: 60
+
+timers:
+  turrets:  # watching the whole way
+    duration: 0
+    frequency: 0.05
+    fire_n: 6
+    callback:
+      type: spawn
+      entity: turret
+      away: 200
+      clear: [[1252, 256, 64]]  # not right at the exit
+  drones:  # and the swarm follows
+    duration: 15
+    frequency: 15
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: drone
+      count: 2
+      away: 150
+      max: 4
+  first_homing:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: homing
+      pos: [80, 76]
+  more_homing:
+    duration: 10
+    frequency: 10
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: homing
+      max: 3
+  apple1:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+  apple2:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+  apple3:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+
+goal:
+  collect_all: golden
+  exit: true
+  time_limit: 75
+
+title: Gauntlet
+intro:
+  - "Everything at once, against the clock: across the"
+  - "ice, the mirrors and the thorns, with a golden"
+  - "apple to fetch in each, to the far exit. Turrets"
+  - "watch, drones follow. HOMING shots find a target."
+
+difficulty:  # harder: more turrets watching, more drones following
+  hard: {timers: {turrets: {fire_n: 7}, drones: {callback: {max: 5}}}}
+  nightmare: {timers: {turrets: {fire_n: 9}, drones: {callback: {max: 6}}}}

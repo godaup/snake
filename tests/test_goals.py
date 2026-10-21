@@ -157,6 +157,7 @@ def test_every_registered_goal_is_tested():
         "length",
         "exit",
         "survive",
+        "time_limit",
         "defeat",
         "hold_length",
         "collect_all",

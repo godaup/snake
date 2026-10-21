@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Optional
 
 import pyxel
 
-from snake_quest.tiles import ICE_GRIP, ICE_TILE
+from snake_quest.tiles import HAZARD_TILE, ICE_GRIP, ICE_TILE
 from snake_quest.utils import Vec2, collision_points, drift
 
 if TYPE_CHECKING:
@@ -124,15 +124,27 @@ class PathController(Controller):
         steering = self._steer(snake, map)
         return -steering if snake.mirrored else steering
 
+    BODY = 7  # px kept from every segment of another snake's body (a rival's)
+
+    def threats(self, snake, map) -> list[tuple[Vec2, float]]:
+        """Centres and radii to keep away from: awake and sleeping hostile entities (bigger ones get a wider berth) and
+        the body of a rival snake (an entity with a `body`); never the snake's own."""
+        threats = []
+        for ent in map.entities:
+            if not (ent.alive and ent.hostile and ent.avoid):
+                continue
+            body = getattr(ent, "body", None)
+            if body is snake:
+                continue
+            if body is not None:
+                threats += [(seg.pos, self.BODY) for seg in body.segs[::2]]
+                continue
+            radius = (self.SLEEPER if getattr(ent, "asleep", False) else self.THREAT) + max(ent.w, ent.h) - 8
+            threats.append((ent.pos + Vec2(ent.w / 2, ent.h / 2), radius))
+        return threats
+
     def _steer(self, snake, map):
-        self._threats = [
-            (
-                ent.pos + Vec2(ent.w / 2, ent.h / 2),
-                (self.SLEEPER if getattr(ent, "asleep", False) else self.THREAT) + max(ent.w, ent.h) - 8,
-            )  # bigger entities (the Alpha) get a wider berth
-            for ent in map.entities
-            if ent.alive and ent.hostile and ent.avoid
-        ]
+        self._threats = self.threats(snake, map)
         self._shots = [(shot.pos, shot.dir * shot.speed) for shot in map.projectiles if shot.alive and shot.hostile]
         goal = self.target(snake, map)
         if goal is None:
@@ -253,8 +265,11 @@ class PathController(Controller):
             self._walls, self._walls_map = {}, map
         if cell not in self._walls:
             center = Vec2(cell[0] * self.CELL + self.CELL / 2, cell[1] * self.CELL + self.CELL / 2)
-            # cached: only the walls that stay (the trail comes and goes)
-            self._walls[cell] = map.check_on_wall(center) and map.tile_xy(center) not in map.trail
+            # cached: only the walls that stay (the trail comes and goes); thorns are walls for finding the way, though
+            # an arc may still cross them when there is no other
+            self._walls[cell] = (map.check_on_wall(center) and map.tile_xy(center) not in map.trail) or (
+                map.tile_at(center) == HAZARD_TILE
+            )
         if map.trail and not self._walls[cell]:
             return map.tile_xy(Vec2(cell[0] * self.CELL, cell[1] * self.CELL)) in map.trail
         return self._walls[cell]
@@ -388,6 +403,34 @@ class PathController(Controller):
             if partner is not None and partner != map.tile_xy(snake.head.pos):  # through the portal, as in the game
                 pos = map.tile_center(partner)
         return frames, pos, orient, reached, heading
+
+
+class RivalController(PathController):
+    """The bot behind a rival snake (Ouroboros): a PathController whose foe is the player's snake, `prey` (set by its
+    owner every frame): it aims and fires at its head, and keeps away from its body."""
+
+    def __init__(self, target: Callable[["Snake", "Map"], Vec2 | None]):
+        super().__init__(target)
+        self.prey: Snake | None = None
+
+    def threats(self, snake, map):
+        if self.prey is None:
+            return []
+        return [(seg.pos, self.BODY) for seg in self.prey.segs[::2]]
+
+    def _aim(self, snake, map, reach=None):
+        """(degrees to turn, tolerance) towards the prey's head when it is in range and in sight, else None."""
+        weapon = snake.weapon
+        if self.prey is None or weapon is None or weapon.ammo <= 0:
+            return None
+        head, to_prey = snake.head.pos, self.prey.head.pos - snake.head.pos
+        distance = to_prey.length()
+        if not 0 < distance <= getattr(weapon, "range", 100) or not map.clear_line(head, self.prey.head.pos):
+            return None
+        turn = (pyxel.atan2(to_prey.y, to_prey.x) - snake.orient + 180) % 360 - 180
+        if abs(turn) > self.AIM_AHEAD:
+            return None
+        return turn, self.AIM + getattr(weapon, "FAN", 0)
 
 
 def nearest(

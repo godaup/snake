@@ -1,6 +1,7 @@
 """Win conditions of a level, built from the `goal` section of its YAML file. All goals must be met."""
 
 import datetime
+import math
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, ClassVar
 
@@ -132,6 +133,38 @@ class SurviveGoal(Goal):
         return _fraction(self.elapsed.total_seconds(), self.value)
 
 
+class TimeLimitGoal(Goal):
+    """`time_limit: seconds`: the other goals must be done within this time; when it runs out, the level is lost
+    (`map.snake_killed`)."""
+
+    key = "time_limit"
+
+    def __init__(self, value, map):
+        super().__init__(value, map)
+        self.elapsed = datetime.timedelta(0)
+
+    def left(self) -> float:
+        return max(self.value - self.elapsed.total_seconds(), 0.0)
+
+    def update(self, map, snake, dt):
+        self.elapsed += dt
+        if self.left() <= 0:
+            map.snake_killed = True
+
+    def done(self, map, snake):
+        return self.left() > 0
+
+    def describe(self):
+        return f"Within {_count(round(self.value), 'second')}"
+
+    def status(self, map, snake):
+        minutes, seconds = divmod(math.ceil(self.left()), 60)
+        return f"TIME {minutes}:{seconds:02}"
+
+    def progress(self, map, snake):
+        return _fraction(self.left(), self.value)
+
+
 class DefeatGoal(Goal):
     """`defeat: N`: kill N entities (eating does not count)."""
 
@@ -253,6 +286,7 @@ GOALS: dict[str, type[Goal]] = {
         LengthGoal,
         ExitGoal,
         SurviveGoal,
+        TimeLimitGoal,
         DefeatGoal,
         HoldLengthGoal,
         CollectAllGoal,

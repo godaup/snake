@@ -33,6 +33,7 @@ class Projectile:
         lifetime: float | None = None,
         bounces: int = 0,
         pierce: bool = False,
+        homing: float = 0,
     ):
         self.pos = pos
         self.dir = Vec2(x=pyxel.cos(orient), y=pyxel.sin(orient))
@@ -47,10 +48,13 @@ class Projectile:
         self.bounces = bounces  # walls it bounces off before one stops it
         self.pierce = pierce  # through armour, and on through every entity it hits (each once)
         self.struck: list = []  # what a piercing shot has hit
+        self.homing = homing  # degrees per frame it turns towards the nearest hostile entity within HOMING_RANGE
 
     def update(self, map: "Map", seconds: float, snake: "Snake | None" = None) -> None:
         """Fly on; gone after its lifetime, outside the map, at a wall (after its bounces) or after a hit: the snake's
         shots hit hostile entities, hostile shots the snake (cutting it where they strike, see `Snake.wound`)."""
+        if self.homing and not self.hostile:
+            self._home(map)
         before, self.pos = self.pos, self.pos + self.dir * self.speed
         self.age += seconds
         outside = not (0 <= self.pos.x < map.cfg.width and map.header <= self.pos.y < map.header + map.cfg.height)
@@ -84,6 +88,24 @@ class Projectile:
                     return
                 self.struck.append(ent)
 
+    HOMING_RANGE = 120  # px
+
+    def _home(self, map: "Map") -> None:
+        """Turn at most `homing` degrees towards the nearest hostile entity within HOMING_RANGE that it can hurt."""
+        best, target = self.HOMING_RANGE, None
+        for ent in map.entities:
+            if not ent.alive or not ent.hostile or (ent.armored and not self.pierce):
+                continue
+            to_ent = ent.pos + Vec2(ent.w / 2, ent.h / 2) - self.pos
+            if to_ent.length() < best:
+                best, target = to_ent.length(), to_ent
+        if target is None:
+            return
+        heading = pyxel.atan2(self.dir.y, self.dir.x)
+        turn = (pyxel.atan2(target.y, target.x) - heading + 180) % 360 - 180
+        heading += max(-self.homing, min(self.homing, turn))
+        self.dir = Vec2(pyxel.cos(heading), pyxel.sin(heading))
+
     def _bounce(self, map: "Map", before: Vec2) -> None:
         """Back to where it was before flying into the wall, turned around along the wall's side it hit (both ways in a
         corner)."""
@@ -110,9 +132,10 @@ class Weapon(ABC):
     name: ClassVar[str]  # upper case, shown in the HUD
     COOLDOWN: ClassVar[float]  # seconds between shots
 
-    def __init__(self, ammo: int):
+    def __init__(self, ammo: int, hostile: bool = False):
         self.ammo = ammo
         self.cooldown = 0.0
+        self.hostile = hostile  # carried by a rival: its shots hit the player's snake
 
     @property
     def ready(self) -> bool:
@@ -128,7 +151,10 @@ class Weapon(ABC):
 
     def release(self, snake: "Snake", map: "Map") -> None:
         """One shot: its projectiles fly off from the head."""
-        map.projectiles.extend(self.shots(snake))
+        shots = self.shots(snake)
+        for shot in shots:
+            shot.hostile = self.hostile
+        map.projectiles.extend(shots)
 
     @abstractmethod
     def shots(self, snake: "Snake") -> list[Projectile]:
@@ -216,6 +242,32 @@ class Laser(Gun):
                 col=self.COL,
                 lifetime=self.LIFETIME,
                 pierce=self.PIERCE,
+            )
+        ]
+
+
+class Homing(Gun):
+    """A slower shot that steers towards the nearest enemy (TURN degrees per frame), so it needs only rough aim."""
+
+    name = "HOMING"
+    COOLDOWN = 0.5
+    SPEED = 3.5
+    COL = 11
+    LIFETIME = 2.0
+    TURN = 7
+    FAN = 30  # bots fire when a target is this much off straight ahead: the shot finds it
+
+    def shots(self, snake):
+        start = snake.head.pos + Vec2(pyxel.cos(snake.orient), pyxel.sin(snake.orient)) * (snake.size + 1)
+        return [
+            Projectile(
+                pos=start,
+                orient=snake.orient,
+                speed=self.SPEED,
+                size=1,
+                col=self.COL,
+                lifetime=self.LIFETIME,
+                homing=self.TURN,
             )
         ]
 

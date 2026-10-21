@@ -22,6 +22,10 @@
     python tools/draft_garden.py mirror src/snake_quest/resources/arc4.pyxres \\
         --level src/snake_quest/levels/mirror.yaml --bands 3 --seed 1
 
+    # small clusters of thorns, here only between tile columns 100 and 150 (--region works for ice and mirror too)
+    python tools/draft_garden.py thorns src/snake_quest/resources/arc4.pyxres \\
+        --level src/snake_quest/levels/gauntlet.yaml --patches 20 --region 100 150 --seed 1
+
 The organic layout is a hedge border plus rounded bushes (unions of circles) and gently curved hedge rows. Every
 obstacle keeps CLEARANCE tiles of open floor to the next one, the area around the start stays clear, and floor the snake
 cannot reach is filled in, so nothing spawns in a closed pocket. Review with `snake-quest --level NAME --preview x.png`.
@@ -80,12 +84,13 @@ def decorate(tilemap, width, height, rng, avoid: set, density: float = 1.0) -> i
     return count
 
 
-def ice(tilemap, width, height, rng, avoid: set, patches: int, tile=ICE_TILE) -> int:
-    """Paint `patches` rounded patches of ice (or another floor `tile`) on floor tiles that are not in `avoid`; returns
-    how many tiles."""
+def ice(tilemap, width, height, rng, avoid: set, patches: int, tile=ICE_TILE, region=None, sizes=(2.5, 6.0)) -> int:
+    """Paint `patches` rounded patches of ice (or another floor `tile`) on floor tiles that are not in `avoid`, between
+    the tile columns of `region` if given; returns how many tiles."""
+    x0, x1 = region or (3, width - 4)
     count = 0
     for _ in range(patches):
-        patch = bush(rng, rng.uniform(3, width - 4), rng.uniform(3, height - 4), rng.uniform(2.5, 6.0))
+        patch = bush(rng, rng.uniform(x0, x1), rng.uniform(3, height - 4), rng.uniform(*sizes))
         for x, y in patch:
             if 0 <= x < width and 0 <= y < height and (x, y) not in avoid and tilemap.pget(x, y) in FLOOR:
                 tilemap.pset(x, y, tile)
@@ -93,12 +98,14 @@ def ice(tilemap, width, height, rng, avoid: set, patches: int, tile=ICE_TILE) ->
     return count
 
 
-def bands(tilemap, width, height, rng, avoid: set, count: int, tile) -> int:
+def bands(tilemap, width, height, rng, avoid: set, count: int, tile, region=None) -> int:
     """Paint `count` wavy bands of `tile` from the top wall to the bottom one, evenly spread over the width, so every
     way from left to right crosses them; returns how many tiles."""
     painted = 0
+    x0, x1 = region or (0, width)
     for index in range(count):
-        center, phase, thickness = width * (index + 1) / (count + 1), rng.uniform(0, math.tau), rng.randint(5, 7)
+        center = x0 + (x1 - x0) * (index + 1) / (count + 1)
+        phase, thickness = rng.uniform(0, math.tau), rng.randint(5, 7)
         for y in range(1, height - 1):
             x0 = round(center + 3 * math.sin(y / 4 + phase) - thickness / 2)
             for x in range(x0, x0 + thickness):
@@ -266,7 +273,7 @@ def organic(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("command", choices=["decorate", "organic", "fortress", "temple", "ice", "mirror"])
+    parser.add_argument("command", choices=["decorate", "organic", "fortress", "temple", "ice", "mirror", "thorns"])
     parser.add_argument("resources", type=Path)
     parser.add_argument("--level", type=Path, required=True)
     parser.add_argument("--src-tm", type=int, help="organic: tilemap whose entity tiles are kept")
@@ -274,6 +281,9 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--patches", type=int, default=12, help="ice/mirror: how many patches")
     parser.add_argument("--bands", type=int, default=0, help="mirror: bands across the level instead of patches")
+    parser.add_argument(
+        "--region", type=int, nargs=2, metavar=("X0", "X1"), help="ice/mirror/thorns: only between these tile columns"
+    )
     parser.add_argument(
         "--open",
         type=int,
@@ -294,15 +304,17 @@ def main() -> None:
     # entities and special terrain survive a new layout
     entity_sprites = set(ENTITY_TILES) | set(PORTAL_TILES) | {EXIT_TILE, HAZARD_TILE, ICE_TILE, MIRROR_TILE}
 
-    if args.command in ("ice", "mirror"):
+    if args.command in ("ice", "mirror", "thorns"):
         tilemap = pyxel.tilemaps[level.tm]
         kept = [(x, y) for y in range(height) for x in range(width) if tilemap.pget(x, y) in entity_sprites]
-        tile = ICE_TILE if args.command == "ice" else MIRROR_TILE
+        tile = {"ice": ICE_TILE, "mirror": MIRROR_TILE, "thorns": HAZARD_TILE}[args.command]
         avoid = near([start], START_CLEAR) | near(kept, 3)
         if args.bands:
-            count = bands(tilemap, width, height, rng, avoid, args.bands, tile)
+            count = bands(tilemap, width, height, rng, avoid, args.bands, tile, args.region)
+        elif args.command == "thorns":  # small clusters, with room to steer between them
+            count = ice(tilemap, width, height, rng, avoid, args.patches, tile, args.region, sizes=(0.8, 1.6))
         else:
-            count = ice(tilemap, width, height, rng, avoid, args.patches, tile)
+            count = ice(tilemap, width, height, rng, avoid, args.patches, tile, args.region)
         print(f"tilemap {level.tm}: {count} {args.command} tiles")
     elif args.command == "decorate":
         tilemap = pyxel.tilemaps[level.tm]

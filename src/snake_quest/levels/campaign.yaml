@@ -33,9 +33,10 @@ arcs:
       boss: [8, 13]
   - name: Ouroboros
     resources: arc4.pyxres
-    levels: [trail, mirror, armored]
+    levels: [trail, mirror, armored, gauntlet, ouroboros]
     map:
       ground: 2
       tint: {3: 1, 11: 14}
       decor: [[0, 9], [5, 9], [5, 9]]
       props: [[7, 10], [8, 10], [9, 10], [11, 13], [11, 13], [10, 13]]
+      boss: [13, 13]
