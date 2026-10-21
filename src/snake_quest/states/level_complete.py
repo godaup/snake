@@ -36,6 +36,9 @@ class LevelCompleteStateHandler(OverlayStateHandler):
         self.stats: LevelStats | None = None
         self.t = 0.0
 
+    def get_music(self) -> int | None:
+        return None  # quiet for the jingle
+
     def on_enter(self) -> None:
         """Snapshot the finished level, so the numbers don't change while the screen is shown."""
         running = self.running

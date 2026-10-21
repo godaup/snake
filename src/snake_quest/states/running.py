@@ -9,6 +9,7 @@ from snake_quest.hud import Hud
 from snake_quest.map import Map
 from snake_quest.palettes import palette
 from snake_quest.snake import INIT_SPEED, Snake
+from snake_quest.sound import MUSIC
 from snake_quest.states import StateID
 from snake_quest.states.abstract import GameStateHandler
 
@@ -42,7 +43,8 @@ class RunningStateHandler(GameStateHandler):
         return False
 
     def get_music(self) -> int | None:
-        return 0
+        """The level's own music if it names one (bosses), else its arc's."""
+        return MUSIC[self.map.cfg.get("music", self.map.level.music)]
 
     def update(self) -> None:
         self.elapsed += self.game.dt.total_seconds()

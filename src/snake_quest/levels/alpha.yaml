@@ -57,6 +57,8 @@ timers:
 goal:
   boss: defeated
 
+music: boss  # instead of the arc's
+
 title: "Boss: The Alpha"
 intro:
   - "The pack leader itself is coming for you."

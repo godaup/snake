@@ -18,6 +18,7 @@ class Level:
     number: int  # 1-based position in the whole campaign
     arc: str
     resources: Path  # .pyxres holding this level's tilemaps
+    music: str = "garden"  # its arc's music (see sound.MUSIC); a level file may name another (`music: boss`)
 
     @property
     def path(self) -> Path:
@@ -88,6 +89,12 @@ def load_campaign(path: Path = CAMPAIGN_FILE) -> Campaign:
     for arc in cfg.arcs:
         for name in arc.levels:
             levels.append(
-                Level(name=name, number=len(levels) + 1, arc=arc.name, resources=RESOURCES_DIR / arc.resources)
+                Level(
+                    name=name,
+                    number=len(levels) + 1,
+                    arc=arc.name,
+                    resources=RESOURCES_DIR / arc.resources,
+                    music=arc.get("music", "garden"),
+                )
             )
     return Campaign(sprites=RESOURCES_DIR / cfg.sprites, levels=tuple(levels), themes=themes)

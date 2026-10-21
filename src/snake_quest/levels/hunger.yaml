@@ -50,6 +50,8 @@ timers:
 goal:
   survive: 120  # until dawn: a plain countdown
 
+music: boss  # instead of the arc's
+
 title: "Boss: The Hunger"
 intro:
   - "The lights are out and the Hunger is awake."

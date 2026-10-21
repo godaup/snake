@@ -1,13 +1,14 @@
 # Order of play, see ROADMAP.md. Levels are referenced by the name of their file in this directory.
 # Every level of an arc takes its tilemaps from the arc's resource file (in ../resources/).
 # Images, sounds and music always come from the shared `sprites` file; images in arc files are ignored.
-# `map` is the arc's look on the overview map of the level select (worldmap.py): ground colour, colour swaps for its
+# `music` names its level music (see sound.MUSIC). `map` is the arc's look on the overview map of the level select (worldmap.py): ground colour, colour swaps for its
 # walls (`tint`, like a level's), decoration and prop sprite tiles scattered over it, and the 16x16 sprite of its boss.
 sprites: garden.pyxres
 
 arcs:
   - name: The Garden
     resources: garden.pyxres
+    music: garden
     levels: [classic, yummy, maneuver, maze, hunger]
     map:
       ground: 0
@@ -15,6 +16,7 @@ arcs:
       props: [[2, 0], [2, 1], [4, 0], [5, 0], [0, 10], [2, 10]]
   - name: The Wilds
     resources: arc2.pyxres
+    music: wilds
     levels: [hunted, armed, prey, burrows, alpha]
     map:
       ground: 4
@@ -24,6 +26,7 @@ arcs:
       boss: [6, 11]
   - name: The Fortress
     resources: arc3.pyxres
+    music: fortress
     levels: [turrets, swarm, ice, minefield, core]
     map:
       ground: 5
@@ -33,6 +36,7 @@ arcs:
       boss: [8, 13]
   - name: Ouroboros
     resources: arc4.pyxres
+    music: ouroboros
     levels: [trail, mirror, armored, gauntlet, ouroboros]
     map:
       ground: 2

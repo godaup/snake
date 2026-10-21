@@ -77,6 +77,8 @@ timers:
 goal:
   boss: defeated
 
+music: boss  # instead of the arc's
+
 title: "Boss: Ouroboros"
 intro:
   - "The serpent that eats its own tail: a snake like"
