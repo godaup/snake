@@ -8,6 +8,10 @@
     python tools/draft_garden.py organic src/snake_quest/resources/garden.pyxres \\
         --level src/snake_quest/levels/maneuver.yaml --src-tm 1 --dst-tm 4 --seed 3
 
+    # paint patches of ice on a level's floor (in place)
+    python tools/draft_garden.py ice src/snake_quest/resources/arc3.pyxres \\
+        --level src/snake_quest/levels/ice.yaml --patches 14 --seed 3
+
     # the same with straight walls and towers (arc 3; levels there tint the hedges into stone)
     python tools/draft_garden.py fortress src/snake_quest/resources/arc3.pyxres \\
         --level src/snake_quest/levels/turrets.yaml --src-tm 0 --dst-tm 0 --seed 1
@@ -27,12 +31,13 @@ import omegaconf
 import pyxel
 
 from snake_quest.entity import ENTITY_TILES
-from snake_quest.tiles import DECOR_TILES, EMPTY_TILE, EXIT_TILE, HAZARD_TILE, PORTAL_TILES, WALL_TILE
+from snake_quest.tiles import DECOR_TILES, EMPTY_TILE, EXIT_TILE, HAZARD_TILE, ICE_TILE, PORTAL_TILES, WALL_TILE
 
 HEADER_H = 20  # world y of the map's top edge, see settings.yaml
 CLEARANCE = 3  # tiles of open floor between obstacles (the snake needs room to turn, also when boosted)
 START_CLEAR = 6  # tiles around the start kept free of obstacles and decorations
 GRASS, FLOWERS, STONE = sorted(DECOR_TILES)[:2], sorted(DECOR_TILES)[2:5], sorted(DECOR_TILES)[5]
+FLOOR = DECOR_TILES | {EMPTY_TILE}
 
 
 def start_tile(level) -> tuple[int, int]:
@@ -57,6 +62,18 @@ def decorate(tilemap, width, height, rng, avoid: set, density: float = 1.0) -> i
                 continue
             tilemap.pset(x, y, tile)
             count += 1
+    return count
+
+
+def ice(tilemap, width, height, rng, avoid: set, patches: int) -> int:
+    """Paint `patches` rounded patches of ice on floor tiles that are not in `avoid`; returns how many tiles."""
+    count = 0
+    for _ in range(patches):
+        patch = bush(rng, rng.uniform(3, width - 4), rng.uniform(3, height - 4), rng.uniform(2.5, 6.0))
+        for x, y in patch:
+            if 0 <= x < width and 0 <= y < height and (x, y) not in avoid and tilemap.pget(x, y) in FLOOR:
+                tilemap.pset(x, y, ICE_TILE)
+                count += 1
     return count
 
 
@@ -200,12 +217,13 @@ def organic(tilemap, width, height, rng, start, keep: dict, shape_of=garden_shap
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("command", choices=["decorate", "organic", "fortress"])
+    parser.add_argument("command", choices=["decorate", "organic", "fortress", "ice"])
     parser.add_argument("resources", type=Path)
     parser.add_argument("--level", type=Path, required=True)
     parser.add_argument("--src-tm", type=int, help="organic: tilemap whose entity tiles are kept")
     parser.add_argument("--dst-tm", type=int, help="organic: tilemap to write (decorate uses the level's tm)")
     parser.add_argument("--seed", type=int, default=1)
+    parser.add_argument("--patches", type=int, default=12, help="ice: how many patches")
     args = parser.parse_args()
     resources = args.resources.resolve()  # before pyxel.init() changes the working directory
     level = omegaconf.OmegaConf.load(args.level)
@@ -215,9 +233,14 @@ def main() -> None:
     width, height = level.width // 8, level.height // 8
     start = start_tile(level)
     # entities and special terrain survive a new layout
-    entity_sprites = set(ENTITY_TILES) | set(PORTAL_TILES) | {EXIT_TILE, HAZARD_TILE}
+    entity_sprites = set(ENTITY_TILES) | set(PORTAL_TILES) | {EXIT_TILE, HAZARD_TILE, ICE_TILE}
 
-    if args.command == "decorate":
+    if args.command == "ice":
+        tilemap = pyxel.tilemaps[level.tm]
+        kept = [(x, y) for y in range(height) for x in range(width) if tilemap.pget(x, y) in entity_sprites]
+        count = ice(tilemap, width, height, rng, near([start], START_CLEAR) | near(kept, 3), args.patches)
+        print(f"tilemap {level.tm}: {count} ice tiles")
+    elif args.command == "decorate":
         tilemap = pyxel.tilemaps[level.tm]
         entities = [(x, y) for y in range(height) for x in range(width) if tilemap.pget(x, y) in entity_sprites]
         count = decorate(tilemap, width, height, rng, avoid=near([start], START_CLEAR) | near(entities, 1))

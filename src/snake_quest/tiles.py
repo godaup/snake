@@ -13,6 +13,7 @@ class TileKind(Enum):
     EXIT = "exit"  # walkable, the target of `exit: true` goals
     PORTAL = "portal"  # walkable; entering one moves the head to the other portal of the same colour
     HAZARD = "hazard"  # walkable, but every hazard tile the head enters cuts HAZARD_CUT segments off the tail
+    ICE = "ice"  # walkable, but slippery: the snake's heading drifts after its steering (ICE_GRIP)
 
 
 EMPTY_TILE = (0, 0)
@@ -31,6 +32,8 @@ PORTAL_TILES = ((0, 10), (1, 10), (2, 10), (3, 10))
 EXIT_TILE = (4, 10)
 HAZARD_TILE = (5, 10)  # thorns
 HAZARD_CUT = 5
+ICE_TILE = (6, 10)
+ICE_GRIP = 0.12  # share of the way to where the snake points that its heading turns per frame on ice
 
 TILE_KINDS: dict[tuple[int, int], TileKind] = {
     **{tile: TileKind.FLOOR for tile in FLOOR_TILES},
@@ -39,6 +42,7 @@ TILE_KINDS: dict[tuple[int, int], TileKind] = {
     **{tile: TileKind.PORTAL for tile in PORTAL_TILES},
     EXIT_TILE: TileKind.EXIT,
     HAZARD_TILE: TileKind.HAZARD,
+    ICE_TILE: TileKind.ICE,
 }
 # tiles that stay in the tilemap after loading (walls only as hedge variants)
 TERRAIN_TILES = frozenset(tile for tile, kind in TILE_KINDS.items() if kind != TileKind.PATH) - {WALL_TILE}

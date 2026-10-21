@@ -4,6 +4,8 @@ import datetime
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, ClassVar
 
+import pyxel
+
 from snake_quest.entity import ENTITY_NAMES
 from snake_quest.tiles import EXIT_TILE
 
@@ -84,9 +86,18 @@ class ExitGoal(Goal):
 
     def __init__(self, value, map):
         super().__init__(EXIT_TILE if value is True else tuple(value), map)
+        self._tiles: list[tuple[int, int]] | None = None
 
     def done(self, map, snake):
         return map.tile_at(snake.head.pos) == self.value
+
+    def tiles(self, map: "Map") -> list[tuple[int, int]]:
+        """Tile coordinates of the exits (looked up once), e.g. for bots."""
+        if self._tiles is None:
+            tilemap = pyxel.tilemaps[map.tm]
+            width, height = map.cfg.width // 8, map.cfg.height // 8
+            self._tiles = [(x, y) for y in range(height) for x in range(width) if tilemap.pget(x, y) == self.value]
+        return self._tiles
 
     def describe(self):
         return "Find the exit"

@@ -27,6 +27,7 @@ class Projectile:
         dmg: int = 1,
         hostile: bool = False,
         lifetime: float | None = None,
+        bounces: int = 0,
     ):
         self.pos = pos
         self.dir = Vec2(x=pyxel.cos(orient), y=pyxel.sin(orient))
@@ -38,16 +39,19 @@ class Projectile:
         self.alive = True
         self.hostile = hostile  # fired at the snake: hits it, never an entity
         self.lifetime = self.LIFETIME if lifetime is None else lifetime  # seconds before it fizzles out
+        self.bounces = bounces  # walls it bounces off before one stops it
 
     def update(self, map: "Map", seconds: float, snake: "Snake | None" = None) -> None:
-        """Fly on; gone after its lifetime, at a wall, outside the map or after a hit: the snake's shots hit hostile
-        entities, hostile shots the snake (cutting it where they strike, see `Snake.wound`)."""
-        self.pos = self.pos + self.dir * self.speed
+        """Fly on; gone after its lifetime, outside the map, at a wall (after its bounces) or after a hit: the snake's
+        shots hit hostile entities, hostile shots the snake (cutting it where they strike, see `Snake.wound`)."""
+        before, self.pos = self.pos, self.pos + self.dir * self.speed
         self.age += seconds
         outside = not (0 <= self.pos.x < map.cfg.width and map.header <= self.pos.y < map.header + map.cfg.height)
-        if self.age >= self.lifetime or outside or map.check_on_wall(self.pos):
+        if self.age >= self.lifetime or outside or (map.check_on_wall(self.pos) and self.bounces <= 0):
             self.alive = False
             return
+        if map.check_on_wall(self.pos):
+            self._bounce(map, before)
         if self.hostile:
             index = snake.segment_at(self.pos, self.size) if snake is not None else None
             if index is not None:
@@ -62,6 +66,18 @@ class Projectile:
                 map.game.sm.effect("hurt")
                 self.alive = False
                 return
+
+    def _bounce(self, map: "Map", before: Vec2) -> None:
+        """Back to where it was before flying into the wall, turned around along the wall's side it hit (both ways in a
+        corner)."""
+        step = self.dir * self.speed
+        flip_x = map.check_on_wall(Vec2(before.x + step.x, before.y))
+        flip_y = map.check_on_wall(Vec2(before.x, before.y + step.y))
+        if not (flip_x or flip_y):
+            flip_x = flip_y = True
+        self.dir = Vec2(-self.dir.x if flip_x else self.dir.x, -self.dir.y if flip_y else self.dir.y)
+        self.pos = before
+        self.bounces -= 1
 
     def draw(self, offset: Vec2) -> None:
         pyxel.circ(self.pos.x + offset.x, self.pos.y + offset.y, self.size, self.col)
@@ -107,11 +123,12 @@ class Gun(Weapon):
         return [Projectile(pos=start, orient=snake.orient, speed=self.SPEED, size=1, col=self.COL)]
 
     FAN = 0  # degrees between the shots of a fan (bots aim this much wider)
+    LIFETIME = Projectile.LIFETIME
 
     @property
     def range(self) -> float:
         """How far a shot flies, in px (24 frames per second)."""
-        return self.SPEED * 24 * Projectile.LIFETIME
+        return self.SPEED * 24 * self.LIFETIME
 
 
 class Spread(Gun):
@@ -127,4 +144,27 @@ class Spread(Gun):
         return [
             Projectile(pos=start, orient=snake.orient + turn, speed=self.SPEED, size=1, col=self.COL)
             for turn in (-self.FAN, 0, self.FAN)
+        ]
+
+
+class Ricochet(Gun):
+    """A shot that bounces off up to BOUNCES walls and flies longer: around corners, at what hides behind them."""
+
+    name = "RICOCHET"
+    COL = 12
+    BOUNCES = 3
+    LIFETIME = 2.0
+
+    def shots(self, snake):
+        start = snake.head.pos + Vec2(pyxel.cos(snake.orient), pyxel.sin(snake.orient)) * (snake.size + 1)
+        return [
+            Projectile(
+                pos=start,
+                orient=snake.orient,
+                speed=self.SPEED,
+                size=1,
+                col=self.COL,
+                lifetime=self.LIFETIME,
+                bounces=self.BOUNCES,
+            )
         ]

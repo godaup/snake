@@ -1,0 +1,64 @@
+tm: 2  # fortress layout from tools/draft_garden.py fortress (--src-tm 2 --dst-tm 2 --seed 4), then ice (--patches 34 --seed 3)
+width: 800
+height: 400
+tint: {3: 13, 11: 6}  # the hedges as stone walls
+
+start:
+  x: 60
+  y: 60
+
+timers:
+  turrets:  # guarding the frozen courtyards
+    duration: 0
+    frequency: 0.05
+    fire_n: 4
+    callback:
+      type: spawn
+      entity: turret
+      away: 160
+      clear: [[772, 392, 72]]  # not right at the exit
+  first_ricochet:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: ricochet
+      pos: [100, 76]
+  more_ricochet:
+    duration: 12
+    frequency: 12
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: ricochet
+      max: 2
+  apple1:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+  apple2:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+
+goal:
+  destroy_all: turret
+  exit: true
+
+title: Ice
+intro:
+  - "The courtyards are frozen: on ice the snake slides"
+  - "on before it turns."
+  - "Destroy the turrets, then find the way out."
+  - "RICOCHET shots bounce off the walls: around corners!"
+
+difficulty:  # destroying them all is a fixed task, so harder means more turrets
+  hard: {timers: {turrets: {fire_n: 5}}}
+  nightmare: {timers: {turrets: {fire_n: 6}}}

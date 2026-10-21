@@ -201,6 +201,13 @@ class SpreadPickup(WeaponPickup):
     WEAPON = "Spread"
 
 
+@register("ricochet")
+class RicochetPickup(WeaponPickup):
+    _img_x = 3
+    _img_y = 13
+    WEAPON = "Ricochet"
+
+
 @register("critter")
 class Critter(Entity):
     """Golden prey of The Wilds. It grazes until the snake's head comes within FLEE px, then runs away from it along the
@@ -538,7 +545,7 @@ class Turret(Entity):
     def intercept(self, snake: "Snake", speed: float) -> Vec2:
         """Direction to shoot in to meet the head if it keeps its course (so turning dodges the shot, and the body,
         following the head's actual way, isn't hit instead)."""
-        velocity = Vec2(pyxel.cos(snake.orient), pyxel.sin(snake.orient)) * snake.effective_speed
+        velocity = Vec2(pyxel.cos(snake.heading), pyxel.sin(snake.heading)) * snake.effective_speed
         aim = snake.head.pos - self.center
         for _ in range(3):  # the head moves while the shot flies: refine the meeting point
             aim = snake.head.pos + velocity * (aim.length() / speed) - self.center

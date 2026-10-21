@@ -17,6 +17,8 @@ from snake_quest.tiles import (
     FLOOR_TILES,
     HAZARD_CUT,
     HAZARD_TILE,
+    ICE_GRIP,
+    ICE_TILE,
     PATH_TILE,
     WALL_TILES,
     WALL_VARIANT_ROW,
@@ -67,6 +69,7 @@ class Map:
         portal_colours: dict[tuple[int, int], list[tuple[int, int]]] = {}
         self._portal_lock: tuple[int, int] | None = None  # portal the head arrived on, inactive until it leaves
         self._head_tile: tuple[int, int] | None = None
+        self.ice = False  # any ice tiles (bots then simulate the drift)
         self.snake_killed = False  # set when a hazard cuts more than the snake has, or a hunter bites the head
         # walking distances from the tail (see chase) and from the head (see flight), recomputed now and then
         self._fields: dict[str, dict[tuple[int, int], int]] = {}
@@ -76,6 +79,7 @@ class Map:
             for tile_y in range(self.cfg.height // 8):
                 img_x, img_y = pyxel.tilemaps[self.cfg.tm].pget(tile_x, tile_y)
                 kind = tile_kind((img_x, img_y))
+                self.ice |= kind == TileKind.ICE
                 if kind == TileKind.PORTAL:
                     portal_colours.setdefault((img_x, img_y), []).append((tile_x, tile_y))
                     continue
@@ -197,16 +201,20 @@ class Map:
         for proj in self.projectiles:
             proj.draw(offset=offset)
 
-    def new_pos(self, w: int = 8, h: int = 8, snake: Optional["Snake"] = None, away: float = 0) -> Vec2:
+    def new_pos(
+        self, w: int = 8, h: int = 8, snake: Optional["Snake"] = None, away: float = 0, clear: list | None = None
+    ) -> Vec2:
         """A free spot: floor at all four corners, no entity, not on the snake, and (if possible within a few hundred
-        tries) at least `away` px from its head."""
+        tries) at least `away` px from its head and outside the `clear` circles ([x, y, radius] in world px)."""
         _x, _y = 0, 0
         invalid, tries = True, 0
         while invalid:
             invalid, tries = False, tries + 1
             _x = pyxel.rndi(0, self.cfg.width - w)
             _y = pyxel.rndi(0, self.cfg.height - h) + self.header
-            too_close = snake and away and (Vec2(_x + w / 2, _y + h / 2) - snake.head.pos).length() < away
+            center = Vec2(_x + w / 2, _y + h / 2)
+            too_close = snake and away and (center - snake.head.pos).length() < away
+            too_close = too_close or any((center - Vec2(x, y)).length() < r for x, y, r in clear or ())
             if too_close and tries < NEW_POS_TRIES:
                 invalid = True
                 continue
@@ -227,7 +235,9 @@ class Map:
         return Vec2(_x, _y)
 
     def _step_on_tiles(self, snake: "Snake") -> None:
-        """Effects of the tile under the snake's head: portals move it to their partner, thorns cut the tail."""
+        """Effects of the tile under the snake's head: portals move it to their partner, thorns cut the tail, ice
+        makes it drift."""
+        snake.grip = ICE_GRIP if self.ice and self.tile_at(snake.head.pos) == ICE_TILE else 1.0
         tile = self.tile_xy(snake.head.pos)
         entered = tile != self._head_tile
         self._head_tile = tile
@@ -339,7 +349,9 @@ class Map:
                 if "pos" in description:
                     new_pos = Vec2(*description["pos"])
                 else:
-                    new_pos: Vec2 = map.new_pos(snake=snake, away=description.get("away", 0))
+                    new_pos: Vec2 = map.new_pos(
+                        snake=snake, away=description.get("away", 0), clear=description.get("clear")
+                    )
                 ent_cls: Entity = ENTITY_NAMES[description["entity"]]
                 # optional: `count` at once (a wave), each at a spot of its own
                 for index in range(description.get("count", 1)):
@@ -348,7 +360,9 @@ class Map:
                     if limit is not None and sum(isinstance(e, ent_cls) and e.alive for e in map.entities) >= limit:
                         return
                     if index:
-                        new_pos = map.new_pos(snake=snake, away=description.get("away", 0))
+                        new_pos = map.new_pos(
+                            snake=snake, away=description.get("away", 0), clear=description.get("clear")
+                        )
                     ent = ent_cls.at_pos(new_pos)
                     # optional per-level tuning of the entity's settings, e.g. {SPEED: 1.1}
                     for name, value in description.get("with", {}).items():

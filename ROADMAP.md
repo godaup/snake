@@ -42,7 +42,7 @@ Ground rules:
 |----|-------------------|---------------------------------------------------------------|--------------------|
 | 11 | Turrets           | Turrets shoot back; a hit cuts the snake at that segment      | length (exists)    |
 | 12 | Swarm             | Many small enemies; **Spread** shot                           | defeat N (exists)  |
-| 13 | Ice               | Turning drifts; **Ricochet** shots bounce off walls           | reach the exit     |
+| 13 | Ice               | Turning drifts; **Ricochet** shots bounce off walls           | turrets, exit (exists) |
 | 14 | Minefield         | **Mines** dropped from the tail; enemies follow the trail     | defeat N enemies   |
 | 15 | **Boss: The Core** | Shielded core with turret phases                              | defeat the boss    |
 
@@ -62,7 +62,7 @@ Ground rules:
 |----------|------------|---------------------------------------------|
 | Gun      | 7          | single straight shot (exists)               |
 | Spread   | 12         | fan of three shots (exists)                 |
-| Ricochet | 13         | bounces off walls                           |
+| Ricochet | 13         | bounces off walls (exists)                  |
 | Mines    | 14         | dropped behind the tail, area damage        |
 | Laser    | 18         | piercing beam                               |
 | Homing   | 19         | steers towards the nearest enemy            |

@@ -6,7 +6,7 @@ import pyxel
 
 from snake_quest.controls import Controller
 from snake_quest.palettes import DEFAULT_PALETTE, Palette, palette
-from snake_quest.utils import Vec2, collision_points
+from snake_quest.utils import Vec2, collision_points, drift
 
 if TYPE_CHECKING:
     from snake_quest.map import Map
@@ -45,7 +45,9 @@ class Snake:
         speed: float = INIT_SPEED,
     ):
         self.size: int = size
-        self.orient: int = orient
+        self.orient: int = orient  # where it points (steering turns this)
+        self.heading: float = orient  # where it moves: the same, except on ice (see drift)
+        self.grip: float = 1.0  # set by the map from the ground under the head
         self._speed: float = speed
         self.boost_factor: float = 1.0  # temporary speed factor, see boost()
         self.boost_left: float = 0.0  # seconds
@@ -103,13 +105,14 @@ class Snake:
         self.boost_left = max(self.boost_left - dt.total_seconds(), 0.0)
         # steer
         self.turn(round(self.controller.steer(self, map) * self.turn_speed))
+        self.heading = drift(self.heading, self.orient, self.grip)
         # move
         previous = None
         for ix, seg in enumerate(self.segs):
             if ix == 0:
                 new = Vec2(
-                    x=self.head.pos.x + (self.effective_speed * (pyxel.cos(self.orient))),
-                    y=self.head.pos.y + (self.effective_speed * (pyxel.sin(self.orient))),
+                    x=self.head.pos.x + (self.effective_speed * (pyxel.cos(self.heading))),
+                    y=self.head.pos.y + (self.effective_speed * (pyxel.sin(self.heading))),
                 )
             else:
                 new = previous
@@ -163,4 +166,4 @@ class Snake:
         return any([(point - seg.pos).length() < self.size for seg in self.segs])
 
     def get_collision_points(self) -> tuple[Vec2, Vec2]:
-        return collision_points(self.head.pos, self.orient, self.size)
+        return collision_points(self.head.pos, self.heading, self.size)

@@ -33,3 +33,11 @@ def collision_points(head: Vec2, orient: float, size: float) -> tuple[Vec2, Vec2
     hor = Vec2(x=head.x + pyxel.cos(orient) * size, y=head.y)
     ver = Vec2(x=head.x, y=head.y + pyxel.sin(orient) * size)
     return hor, ver
+
+
+def drift(heading: float, orient: float, grip: float) -> float:
+    """The direction a snake moves in next frame: where it points (`orient`) with full grip, on ice (grip < 1) only
+    that share of the way from where it has been moving."""
+    if grip >= 1:
+        return orient
+    return (heading + ((orient - heading + 180) % 360 - 180) * grip) % 360

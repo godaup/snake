@@ -8,7 +8,8 @@ from typing import TYPE_CHECKING, Optional
 
 import pyxel
 
-from snake_quest.utils import Vec2, collision_points
+from snake_quest.tiles import ICE_GRIP, ICE_TILE
+from snake_quest.utils import Vec2, collision_points, drift
 
 if TYPE_CHECKING:
     from snake_quest.map import Map
@@ -102,6 +103,7 @@ class PathController(Controller):
     AIM = 8  # degrees: shoots at a hostile entity this close to straight ahead (wider when it is near)
     AIM_AHEAD = 100  # degrees: only entities about ahead are aimed at
     DODGE = 5  # px kept from a hostile shot (turrets), along its flight
+    AIM_PATIENCE = 48  # frames it turns to aim at most, then AIM_PATIENCE frames not (so it never circles forever)
 
     def __init__(self, target: Callable[["Snake", "Map"], Vec2 | None]):
         self.target = target
@@ -113,6 +115,7 @@ class PathController(Controller):
         self.mode = ""  # why the last steering was chosen: goal, aim, tail, escape or crash (for debugging)
         self._threats: list[tuple[Vec2, float]] = []  # centre and radius to keep away from, per frame
         self._shots: list[tuple[Vec2, Vec2]] = []  # position and velocity (px per frame) of hostile shots, per frame
+        self._aiming = 0  # frames in a row spent turning to aim (and then counting down the pause)
 
     def steer(self, snake, map):
         self._threats = [
@@ -133,21 +136,25 @@ class PathController(Controller):
         if goal_cell != self._goal_cell or self._age >= self.FIELD_EVERY:
             self._goal_cell, self._distance, self._age = goal_cell, self._field(snake, map, goal_cell), 0
         arcs = {
-            steering: self._arc(snake, map, snake.head.pos, snake.orient, steering, self.HORIZON, goal)
+            steering: self._arc(snake, map, snake.head.pos, snake.orient, steering, self.HORIZON, goal, snake.heading)
             for steering in self.STEERING
         }
         safe = [steering for steering, (survived, *_) in arcs.items() if survived == self.HORIZON]
         if not safe:  # crashing anyway: as late as possible
             self.mode = "crash"
             return max(arcs, key=lambda steering: arcs[steering][0])
-        # a hostile entity in the line of fire: turn to face it, if that is safe
-        aim = self._aim(snake, map)
+        # a hostile entity in the line of fire: turn to face it, if that is safe (for a while: an aim that never lines
+        # up, e.g. one turning into a turret's shots, gives way to the goal for as long)
+        aim = self._aim(snake, map) if self._aiming < self.AIM_PATIENCE else None
+        self._aiming = self._aiming + 1 if self._aiming < 2 * self.AIM_PATIENCE else 0
         if aim is not None:
             wanted = max(-1.0, min(1.0, aim[0] / snake.turn_speed))
             for steering in sorted(safe, key=lambda steering: abs(steering - wanted)):
-                if self._escape(snake, map, *arcs[steering][1:3]) == self.ESCAPE:
+                if self._escape(snake, map, *arcs[steering][1:3], arcs[steering][4]) == self.ESCAPE:
                     self.mode = "aim"
                     return steering
+        if self._aiming < self.AIM_PATIENCE:
+            self._aiming = 0  # not aiming: patience restored
 
         # turning circle: a target inside the circle on the side the snake turns to can't be reached by turning on, only
         # by straightening out first; without this the bot orbits the target until it bites its tail
@@ -156,7 +163,7 @@ class PathController(Controller):
         def distance(steering: float) -> float:
             """Way (px) left to the target from where the arc ends, plus ORBIT_PENALTY when it keeps circling; an arc
             passing over the target wins, the sooner the better."""
-            _, pos, orient, reached = arcs[steering]
+            _, pos, orient, reached, _ = arcs[steering]
             if reached is not None:
                 return reached - self.HORIZON * 100
             cost = self._distance.get(self._cell(pos), len(self._distance)) * self.CELL + (goal - pos).length()
@@ -172,7 +179,7 @@ class PathController(Controller):
         escapes, cramped = {}, []
         vacate = self._vacate(snake) if len(snake) >= self.LONG else None
         for steering in sorted(safe, key=distance):
-            escapes[steering] = self._escape(snake, map, *arcs[steering][1:3])
+            escapes[steering] = self._escape(snake, map, *arcs[steering][1:3], arcs[steering][4])
             if escapes[steering] < self.ESCAPE:
                 continue
             if vacate is None or self._room(snake, map, arcs[steering][1], vacate):
@@ -311,44 +318,54 @@ class PathController(Controller):
                 queue.append((nxt, arrival))
         return False
 
-    def _escape(self, snake: "Snake", map: "Map", pos: Vec2, orient: int) -> int:
+    def _escape(self, snake: "Snake", map: "Map", pos: Vec2, orient: int, heading: float | None = None) -> int:
         """Frames the best of a hard turn or a straight line survives from there (at most ESCAPE)."""
         best = 0
         for turn in self.ESCAPES:
-            best = max(best, self._arc(snake, map, pos, orient, turn, self.ESCAPE)[0])
+            best = max(best, self._arc(snake, map, pos, orient, turn, self.ESCAPE, heading=heading)[0])
             if best == self.ESCAPE:
                 break
         return best
 
     def _arc(
-        self, snake: "Snake", map: "Map", pos: Vec2, orient: int, steering: float, frames: int, goal: Vec2 | None = None
+        self,
+        snake: "Snake",
+        map: "Map",
+        pos: Vec2,
+        orient: int,
+        steering: float,
+        frames: int,
+        goal: Vec2 | None = None,
+        heading: float | None = None,
     ):
-        """Follow `steering` for `frames`: (frames survived, end position, end orientation, first frame within REACH
-        of `goal` or None)."""
-        reached = None
+        """Follow `steering` for `frames` (drifting on ice like the snake, see `drift`): (frames survived, end position,
+        end orientation, first frame within REACH of `goal` or None, end heading)."""
+        reached, heading = None, orient if heading is None else heading
         speed, body = snake.effective_speed, snake.segs[self.BODY_SKIP :: 2]  # segments are ~1.3 px apart
         for frame in range(1, frames + 1):
             orient = (orient + round(steering * snake.turn_speed)) % 360
-            pos = Vec2(pos.x + speed * pyxel.cos(orient), pos.y + speed * pyxel.sin(orient))
-            p, q = collision_points(pos, orient, snake.size)
+            grip = ICE_GRIP if map.ice and map.tile_at(pos) == ICE_TILE else 1.0
+            heading = drift(heading, orient, grip)
+            pos = Vec2(pos.x + speed * pyxel.cos(heading), pos.y + speed * pyxel.sin(heading))
+            p, q = collision_points(pos, heading, snake.size)
             near_body = frame % 2 == 0 and any((pos - seg.pos).length() < snake.size * 2 for seg in body)
             threatened = any((pos - c).length() < r + frame * self.THREAT_GROWTH for c, r in self._threats) or any(
                 (pos - (shot + velocity * frame)).length() < self.DODGE for shot, velocity in self._shots
             )
             if map.check_on_wall(p) or map.check_on_wall(q) or near_body or threatened:
-                return frame - 1, pos, orient, reached
+                return frame - 1, pos, orient, reached, heading
             if reached is None and goal is not None and (goal - pos).length() < self.REACH:
                 reached = frame
             partner = map.portals.get(map.tile_xy(pos))
             if partner is not None and partner != map.tile_xy(snake.head.pos):  # through the portal, as in the game
                 pos = map.tile_center(partner)
-        return frames, pos, orient, reached
+        return frames, pos, orient, reached, heading
 
 
-def nearest(*classes: type, clearance: int = 1) -> Callable[["Snake", "Map"], Vec2 | None]:
+def nearest(*classes: type, clearance: int = 1, wary: float = 0) -> Callable[["Snake", "Map"], Vec2 | None]:
     """Target for a ChaseController or PathController: the centre of the nearest live entity of these classes. Entities
-    with a wall within `clearance` tiles (e.g. in a corner, hard to leave again) are only chosen when there is nothing
-    else."""
+    with a wall within `clearance` tiles (e.g. in a corner, hard to leave again) or within `wary` px of a hostile entity
+    bots avoid (e.g. a pickup next to a turret) are only chosen when there is nothing else."""
 
     def open_around(map: "Map", pos: Vec2) -> bool:
         reach = range(-clearance, clearance + 1)
@@ -358,7 +375,12 @@ def nearest(*classes: type, clearance: int = 1) -> Callable[["Snake", "Map"], Ve
         centres = [
             ent.pos + Vec2(ent.w / 2, ent.h / 2) for ent in map.entities if ent.alive and isinstance(ent, classes)
         ]
-        safe = [pos for pos in centres if open_around(map, pos)]
+        foes = [ent.pos + Vec2(ent.w / 2, ent.h / 2) for ent in map.entities if ent.alive and ent.hostile and ent.avoid]
+        safe = [
+            pos
+            for pos in centres
+            if open_around(map, pos) and not any((pos - foe).length() < wary for foe in foes if wary)
+        ]
         return min(safe or centres, key=lambda pos: (pos - snake.head.pos).length(), default=None)
 
     return target
