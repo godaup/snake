@@ -1,0 +1,86 @@
+tm: 4  # fortress layout from tools/draft_garden.py fortress (--src-tm 4 --dst-tm 4 --seed 6 --open 30 22 11)
+width: 480
+height: 352
+tint: {3: 13, 11: 6}  # the hedges as stone walls
+
+start:
+  x: 60
+  y: 60
+
+boss:
+  type: core
+  pos: [240, 196]  # the middle of the arena
+  health: 6
+  turrets: 3
+  ring: 64
+  reload: 5.0
+  armor: 1  # shots per ring turret: they are shield pylons more than guns
+  call: 12
+  swarm: 1
+  phases:
+    - {below: 1}
+    - {below: 0.66, turrets: 4, reload: 4.5, call: 10}
+    - {below: 0.33, turrets: 4, reload: 4.0, call: 8}
+
+timers:
+  first_spread:  # right next to the start
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: spread
+      with: {AMMO: 24}  # a full crate for the long fight
+      pos: [100, 76]
+  ricochets:
+    duration: 8
+    frequency: 12
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: ricochet
+      with: {AMMO: 24}  # a full crate for the long fight
+      max: 1
+  spreads:
+    duration: 14
+    frequency: 12
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: spread
+      with: {AMMO: 24}  # a full crate for the long fight
+      max: 1
+  apple1:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+  apple2:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+  apple3:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+
+goal:
+  boss: defeated
+
+title: "Boss: The Core"
+intro:
+  - "The heart of the fortress, behind its shield."
+  - "Its turrets keep the shield up: destroy them all,"
+  - "then shoot the Core before it rebuilds its ring."
+  - "Watch out for its drones."
+
+difficulty:  # the last stand: scaling alone leaves nightmare too easy
+  nightmare: {boss: {health: 9}}

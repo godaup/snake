@@ -150,10 +150,11 @@ class Snake:
         return None
 
     def wound(self, index: int) -> bool:
-        """A shot hits segment `index`: the body from there to the tail falls off; a hit on the head costs half the
-        body. False (and nothing lost) when the snake is too short to lose half."""
+        """A shot hits segment `index`: the body from there to the tail falls off, but never more than half of it (a
+        shot from the front, dodged at the last moment, still hits the body right behind the head); a hit on the head
+        costs half. False (and nothing lost) when the snake is too short to lose half."""
         if index > 0:
-            self.segs = self.segs[:index]
+            self.segs = self.segs[: max(index, len(self) // 2)]
             return True
         return len(self) >= 4 and self.cut(len(self) // 2)
 

@@ -557,8 +557,8 @@ class Turret(Entity):
     """A gun emplacement of The Fortress. While the snake's head is within RANGE px with no wall in between, it turns
     towards it and every RELOAD seconds (fewer on harder difficulties: `hostile` factor) fires a slow shot where the
     head is heading, its eye glowing for WARN seconds before. A shot cuts the snake where it strikes (on the head: half
-    of it, see `Snake.wound`). HEALTH shots destroy it (counted as defeated); it flashes when hit. Running into it is
-    the end."""
+    of it, see `Snake.wound`). HEALTH shots destroy it (counted as defeated); it flashes when hit. Ramming it wrecks
+    it too, for half the snake."""
 
     _img_x = 0
     _img_y = 13
@@ -624,7 +624,13 @@ class Turret(Entity):
         self.flash = self.FLASH
 
     def on_intersect(self, snake: "Snake", map: "Map"):
-        map.snake_killed = True
+        """Rammed: the turret is wrecked (defeated), and the snake loses half, like from a shot on the head."""
+        if not self.alive:
+            return
+        map.game.sm.effect("hurt")
+        self.hit(self.health)
+        if not snake.wound(0):
+            map.snake_killed = True
 
     def draw(self, offset: "Vec2"):
         if self.flash > 0 and pyxel.frame_count % 2:
@@ -671,6 +677,52 @@ class Crawler(Hunter):
         if self.flash > 0 and pyxel.frame_count % 2:
             return
         super().draw(offset)
+
+
+@register("core")
+class Core(Entity):
+    """The heart of The Fortress (level 15, put in by the `core` boss): a 16x16 machine that only takes shots while its
+    shield is down (`shielded`, kept up by the boss while turrets of its ring stand); shots on the shield make it
+    glint. It flashes when hit; running into it is the end."""
+
+    _img_x = 8  # 2x2 sprite tiles from here
+    _img_y = 13
+    hostile = True
+    FLASH = 0.15
+    SHIELD = 13  # px, radius of the shield around its centre
+    COL_SHIELD, COL_GLINT = 12, 7
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.w = self.h = 16
+        self.health = 10
+        self.shielded = False
+        self.flash = 0.0
+
+    @property
+    def center(self) -> Vec2:
+        return self.pos + Vec2(self.w / 2, self.h / 2)
+
+    def update(self, snake: "Snake", map: "Map"):
+        self.flash = max(self.flash - map.game.dt.total_seconds(), 0.0)
+
+    def hit(self, dmg: int):
+        if not self.shielded:
+            super().hit(dmg)
+        self.flash = self.FLASH
+
+    def on_intersect(self, snake: "Snake", map: "Map"):
+        map.snake_killed = True
+
+    def draw(self, offset: "Vec2"):
+        if not (self.flash > 0 and not self.shielded and pyxel.frame_count % 2):
+            super().draw(offset)
+        if self.shielded:
+            centre = self.center + offset
+            col = self.COL_GLINT if self.flash > 0 else self.COL_SHIELD
+            pyxel.dither(0.5 if pyxel.frame_count % 8 < 4 else 0.75)
+            pyxel.circb(centre.x, centre.y, self.SHIELD, col)
+            pyxel.dither(1.0)
 
 
 @register("drone")

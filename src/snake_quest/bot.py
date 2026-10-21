@@ -16,7 +16,20 @@ from snake_quest.states.running import RunningStateHandler
 
 # the levels the bot wins by eating apples. Not yummy: at 250 points (about 50 golden apples, ~1000 segments in the
 # small room) the bot bites its tail at 70-200 points, while a person won it at the first try (playtest).
-LEVELS = ("classic", "hunger", "hunted", "armed", "prey", "burrows", "alpha", "turrets", "swarm", "ice", "minefield")
+LEVELS = (
+    "classic",
+    "hunger",
+    "hunted",
+    "armed",
+    "prey",
+    "burrows",
+    "alpha",
+    "turrets",
+    "swarm",
+    "ice",
+    "minefield",
+    "core",
+)
 
 HUNT_LENGTH = 16  # segments: shorter, the bot eats before it hunts
 STOCK = 24  # shots: fewer, a short bot fetches weapons before it eats (more would be chasing every pickup forever)
@@ -41,8 +54,8 @@ def target(snake, map):
         return min(centres, key=lambda pos: (pos - snake.head.pos).length(), default=None)
     if snake.weapon is None or snake.weapon.ammo <= 0:
         return guns(snake, map) or food(snake, map)
-    if len(snake) < HUNT_LENGTH:
-        return (snake.weapon.ammo < STOCK and guns(snake, map)) or food(snake, map)
+    if len(snake) < HUNT_LENGTH:  # (another kind of weapon would replace this one, not add to its ammo)
+        return (snake.weapon.ammo < STOCK and more_ammo(snake, map)) or food(snake, map)
     if getattr(snake.weapon, "DROPS", False):  # mines: lead what follows the trail over them
         return food(snake, map)
     # the boss first, then what the level asks to destroy (nests), then the foes they send out
@@ -51,6 +64,16 @@ def target(snake, map):
     targets = [goal.entity_cls for goal in map.goals if isinstance(goal, DestroyAllGoal)]
     aimed = nearest(*targets, clearance=0)(snake, map) if targets else None
     return aimed or foes(snake, map) or food(snake, map)
+
+
+def more_ammo(snake, map):
+    """The nearest pickup of the weapon the snake carries."""
+    kinds = [
+        cls
+        for cls in ENTITY_NAMES.values()
+        if issubclass(cls, WeaponPickup) and type(snake.weapon).__name__ == cls.WEAPON
+    ]
+    return nearest(*kinds, wary=WARY)(snake, map) if kinds else None
 
 
 def play(game, level: str, seed: int, seconds: float) -> tuple[str, float]:

@@ -48,3 +48,7 @@ intro:
   - "Something sleeps in the bushes. Don't wake it."
   - "If you do: run! Beetles nibble at your tail,"
   - "so keep eating to stay long."
+
+difficulty:  # harder: more beetles, asleep in the bushes and coming (the faster snake outruns them better)
+  hard: {timers: {sleepers: {fire_n: 4}, more_hunters: {frequency: 7, callback: {max: 16}}}}
+  nightmare: {timers: {sleepers: {fire_n: 5}, more_hunters: {frequency: 6, callback: {max: 18}}}}

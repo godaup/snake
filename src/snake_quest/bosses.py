@@ -176,7 +176,80 @@ class AlphaBoss(Boss):
         return self.alpha.center if self.alpha.alive else None
 
 
-BOSSES: dict[str, type[Boss]] = {cls.key: cls for cls in [Hunger, AlphaBoss]}
+class CoreBoss(Boss):
+    """The Core (level 15): puts the Core (entity) into the level at `pos` with `health`; the bar is its health. It is
+    shielded while any turret of its ring stands: each phase builds a new ring of `turrets` turrets `ring` px around it
+    (firing every `reload` seconds, `armor` shots each), and phases start when its health falls `below` a fraction.
+    Every `call` seconds it launches a drone, as long as fewer than `swarm` are about.
+
+        boss: {type: core, pos: [x, y], health: 6, turrets: 3, ring: 64, reload: 5, armor: 1, call: 12, swarm: 1,
+               phases: [{below: 1}, {below: 0.66, turrets: 4}, {below: 0.33, turrets: 4, reload: 4}]}"""
+
+    key = "core"
+    title = "THE CORE"
+    pressure = ("health", "turrets", "swarm")
+    relief = ("call",)
+
+    def __init__(self, cfg, map):
+        super().__init__(cfg, map)
+        from snake_quest.entity import Core, Drone, Turret
+
+        self._drone, self._turret = Drone, Turret
+        self.core = Core.at_pos(Vec2(*cfg.pos) - Vec2(8, 8))
+        self.core.health = self.full = max(1, round(cfg.health))
+        map.entities.append(self.core)
+        self.ring: list = []
+        self.left = self.setting("call")
+        self._build(map)
+
+    def _build(self, map: "Map") -> None:
+        """A new ring of turrets around the core, which raises its shield again."""
+        count, radius, centre = max(1, round(self.setting("turrets"))), self.setting("ring"), self.core.center
+        offset = pyxel.rndf(0, 360)
+        self.ring = []
+        for index in range(count):
+            angle = offset + 360 * index / count
+            turret = self._turret.at_pos(centre + Vec2(pyxel.cos(angle), pyxel.sin(angle)) * radius - Vec2(4, 4))
+            turret.RELOAD = self.setting("reload")
+            turret.health = max(1, round(self.setting("armor")))
+            self.ring.append(turret)
+        map.entities.extend(self.ring)
+        self.core.shielded = True
+
+    def next_phase_due(self, map, snake):
+        return self.core.health <= self.full * self.phases[self.phase + 1]["below"]
+
+    def on_phase(self, map, snake):
+        self._build(map)
+
+    def act(self, map, snake, seconds):
+        self.core.shielded = any(turret.alive for turret in self.ring)
+        self.left -= seconds
+        if self.left > 0 or not self.core.alive:
+            return
+        self.left = self.setting("call")
+        if sum(ent.alive and isinstance(ent, self._drone) for ent in map.entities) < round(self.setting("swarm")):
+            map.entities.append(self._drone.at_pos(Vec2(self.core.pos.x + 4, self.core.pos.y + 4)))
+
+    def bar(self, map, snake):
+        return max(self.core.health, 0) / self.full
+
+    def phase_message(self):
+        return "THE CORE REBUILDS ITS DEFENCES"
+
+    def defeated(self, map):
+        return not self.core.alive
+
+    def target(self):
+        """The core once its shield is down, else a turret of its ring."""
+        if not self.core.alive:
+            return None
+        if not self.core.shielded:
+            return self.core.center
+        return next((turret.center for turret in self.ring if turret.alive), None)
+
+
+BOSSES: dict[str, type[Boss]] = {cls.key: cls for cls in [Hunger, AlphaBoss, CoreBoss]}
 
 
 def load_boss(cfg, map: "Map") -> Boss:

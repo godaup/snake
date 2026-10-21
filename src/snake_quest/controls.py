@@ -104,6 +104,7 @@ class PathController(Controller):
     AIM_AHEAD = 100  # degrees: only entities about ahead are aimed at
     DODGE = 5  # px kept from a hostile shot (turrets), along its flight
     TRAIL = 40  # px: a hostile entity this close to the tail gets a mine dropped in its way
+    DEFENCE = 64  # px: while not hunting, it only turns to aim at hostile entities that never move this close
     AIM_PATIENCE = 48  # frames it turns to aim at most, then AIM_PATIENCE frames not (so it never circles forever)
 
     def __init__(self, target: Callable[["Snake", "Map"], Vec2 | None]):
@@ -146,7 +147,11 @@ class PathController(Controller):
             return max(arcs, key=lambda steering: arcs[steering][0])
         # a hostile entity in the line of fire: turn to face it, if that is safe (for a while: an aim that never lines
         # up, e.g. one turning into a turret's shots, gives way to the goal for as long)
-        aim = self._aim(snake, map) if self._aiming < self.AIM_PATIENCE else None
+        # turn to aim at what it hunts and at what moves at any range, else (turrets, nests) only when close: one in
+        # range, but not in the way, isn't worth the detour
+        hunting = any(ent.alive and ent.hostile and ent.covers(goal) for ent in map.entities)
+        reach = None if hunting else self.DEFENCE
+        aim = self._aim(snake, map, reach) if self._aiming < self.AIM_PATIENCE else None
         self._aiming = self._aiming + 1 if self._aiming < 2 * self.AIM_PATIENCE else 0
         if aim is not None:
             wanted = max(-1.0, min(1.0, aim[0] / snake.turn_speed))
@@ -194,7 +199,7 @@ class PathController(Controller):
         self.mode = "escape"
         return max(escapes, key=escapes.get)
 
-    def _aim(self, snake: "Snake", map: "Map") -> tuple[float, float] | None:
+    def _aim(self, snake: "Snake", map: "Map", reach: float | None = None) -> tuple[float, float] | None:
         """(degrees to turn, degrees of tolerance) towards the nearest hostile entity in the weapon's range with no wall
         in between, or None."""
         weapon = snake.weapon
@@ -207,6 +212,8 @@ class PathController(Controller):
             to_ent = ent.pos + Vec2(ent.w / 2, ent.h / 2) - head
             distance = to_ent.length()
             if not 0 < distance <= getattr(weapon, "range", 100) or (best and distance >= best[0]):
+                continue
+            if reach is not None and distance > reach and not hasattr(ent, "state"):  # standing still: no hurry
                 continue
             if not map.clear_line(head, head + to_ent):
                 continue

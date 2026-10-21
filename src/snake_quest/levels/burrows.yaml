@@ -48,5 +48,5 @@ intro:
   - "Shoot the nests apart to stop them for good."
 
 difficulty:  # destroying them all is a fixed task, so harder means more nests
-  hard: {timers: {nests: {fire_n: 4}}}
+  hard: {timers: {nests: {fire_n: 3}}}
   nightmare: {timers: {nests: {fire_n: 5}}}

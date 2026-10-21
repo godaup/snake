@@ -166,9 +166,18 @@ def fortress_shape(rng, width, height) -> set:
     return tiles
 
 
-def organic(tilemap, width, height, rng, start, keep: dict, shape_of=garden_shape, beds=True) -> tuple[int, int]:
+def organic(
+    tilemap, width, height, rng, start, keep: dict, shape_of=garden_shape, beds=True, open_areas=()
+) -> tuple[int, int]:
     walls = {(x, y) for y in range(height) for x in range(width) if x in (0, width - 1) or y in (0, height - 1)}
-    blocked_start = near([start], START_CLEAR)
+    # kept free of obstacles: around the start and the open areas (x, y, radius in tiles, e.g. a boss arena)
+    blocked_start = near([start], START_CLEAR) | {
+        (x, y)
+        for cx, cy, r in open_areas
+        for x in range(cx - r, cx + r + 1)
+        for y in range(cy - r, cy + r + 1)
+        if (x - cx) ** 2 + (y - cy) ** 2 <= r * r
+    }
     placed = 0
     attempts = 0
     while attempts < 400:
@@ -224,6 +233,15 @@ def main() -> None:
     parser.add_argument("--dst-tm", type=int, help="organic: tilemap to write (decorate uses the level's tm)")
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--patches", type=int, default=12, help="ice: how many patches")
+    parser.add_argument(
+        "--open",
+        type=int,
+        nargs=3,
+        action="append",
+        default=[],
+        metavar=("X", "Y", "R"),
+        help="organic/fortress: keep a circle of R tiles around tile (X, Y) free, e.g. a boss arena (repeatable)",
+    )
     args = parser.parse_args()
     resources = args.resources.resolve()  # before pyxel.init() changes the working directory
     level = omegaconf.OmegaConf.load(args.level)
@@ -249,10 +267,12 @@ def main() -> None:
         src, dst = pyxel.tilemaps[args.src_tm], pyxel.tilemaps[args.dst_tm]
         keep = {(x, y): src.pget(x, y) for y in range(height) for x in range(width) if src.pget(x, y) in entity_sprites}
         if args.command == "fortress":  # sparse rubble instead of flower beds
-            placed, filled = organic(dst, width, height, rng, start, keep, shape_of=fortress_shape, beds=False)
+            placed, filled = organic(
+                dst, width, height, rng, start, keep, shape_of=fortress_shape, beds=False, open_areas=args.open
+            )
             density = 0.4
         else:
-            placed, filled = organic(dst, width, height, rng, start, keep)
+            placed, filled = organic(dst, width, height, rng, start, keep, open_areas=args.open)
             density = 1.0
         count = decorate(dst, width, height, rng, avoid=near([start], START_CLEAR) | near(keep, 1), density=density)
         dst.imgsrc = src.imgsrc

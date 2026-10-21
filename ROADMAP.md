@@ -44,7 +44,7 @@ Ground rules:
 | 12 | Swarm             | Many small enemies; **Spread** shot                           | defeat N (exists)  |
 | 13 | Ice               | Turning drifts; **Ricochet** shots bounce off walls           | turrets, exit (exists) |
 | 14 | Minefield         | **Mines** dropped from the tail; enemies follow the trail     | defeat N (exists)  |
-| 15 | **Boss: The Core** | Shielded core with turret phases                              | defeat the boss    |
+| 15 | **Boss: The Core** | Shielded core with turret phases                              | defeat the boss (exists) |
 
 ### Arc 4: Ouroboros (everything at once)
 
@@ -104,7 +104,11 @@ fleeing critters, Burrows (level 9) with nests, Boss: The Alpha (level 10). Open
 
 ### M3: Arc 3
 
-Turrets, weapon system (Spread, Ricochet, Mines), ice steering, The Core.
+Done: `arc3.pyxres` with fortress layouts (`draft_garden.py fortress`, `tint` for stone walls), Turrets (level 11:
+turrets that lead their shots, a hit cuts the snake where it strikes), Swarm (level 12: drones over the walls, the
+Spread), Ice (level 13: drifting on ice, the Ricochet, turrets then the exit), Minefield (level 14: crawlers on the
+trail, Mines), Boss: The Core (level 15: a shield held up by rings of turrets, drones). Weapon pickups switch weapons
+(`WeaponPickup`); the bot dodges shots, drops mines and stocks ammo. Open: playtesting.
 
 ### M4: Arc 4
 

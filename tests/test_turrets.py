@@ -6,7 +6,7 @@ import pyxel
 from snake_quest import bot
 from snake_quest.campaign import load_campaign
 from snake_quest.controls import PathController
-from snake_quest.entity import ENTITY_NAMES, Hunter, Turret
+from snake_quest.entity import ENTITY_NAMES, GunPickup, Hunter, Turret
 from snake_quest.map import Map
 from snake_quest.snake import Snake, SnakeSeg
 from snake_quest.tiles import EMPTY_TILE, FLOOR_TILES
@@ -64,8 +64,14 @@ def test_the_fortress_tints_its_walls(turrets):
 
 def test_a_hit_on_the_body_cuts_the_snake_there():
     snake = snake_at(Vec2(100, 100), length=30)
-    assert snake.wound(12)
-    assert len(snake) == 12
+    assert snake.wound(20)
+    assert len(snake) == 20
+
+
+def test_a_hit_never_cuts_off_more_than_half():
+    snake = snake_at(Vec2(100, 100), length=30)
+    assert snake.wound(3)  # right behind the head
+    assert len(snake) == 15
 
 
 def test_a_hit_on_the_head_costs_half_the_body():
@@ -168,10 +174,38 @@ def test_shots_hit_a_turret_three_times_to_destroy_it(turrets):
     assert not turret.alive and turret.killed
 
 
-def test_running_into_a_turret_is_the_end(turrets):
-    snake = snake_at(Vec2(100, 100))
-    Turret.at_pos(Vec2(98, 96)).on_intersect(snake, turrets)
-    assert turrets.snake_killed
+def test_ramming_a_turret_wrecks_it_for_half_the_snake(turrets):
+    snake = snake_at(Vec2(100, 100), length=20)
+    turret = Turret.at_pos(Vec2(98, 96))
+    turret.on_intersect(snake, turrets)
+    assert not turret.alive and turret.killed and len(snake) == 10
+    turret.on_intersect(snake, turrets)  # wrecked already: nothing more
+    assert len(snake) == 10 and not turrets.snake_killed
+    Turret.at_pos(Vec2(98, 96)).on_intersect(snake_at(Vec2(100, 100), length=3), turrets)
+    assert turrets.snake_killed  # too short to lose half
+
+
+def test_bot_stocks_up_on_the_weapon_it_carries_only(turrets):
+    from snake_quest.entity import SpreadPickup
+
+    pos = open_spot(turrets)
+    snake = snake_at(pos, length=10)
+    snake.weapon = Gun(ammo=5)
+    spread, gun = SpreadPickup.at_pos(pos + Vec2(20, -4)), GunPickup.at_pos(pos + Vec2(60, -4))
+    turrets.entities += [spread, gun]
+    assert bot.target(snake, turrets) == gun.pos + Vec2(4, 4)  # not the spread, which would replace the gun
+
+
+def test_bot_turns_to_aim_at_turrets_only_when_close_unless_hunting(turrets):
+    pos = open_spot(turrets, tiles=28)
+    snake = snake_at(pos, length=10)
+    snake.weapon = Gun(ammo=5)
+    controller = PathController(lambda snake, map: None)
+    turrets.entities.append(Turret.at_pos(pos + Vec2(PathController.DEFENCE + 20, 30)))
+    assert controller._aim(snake, turrets) is not None
+    assert controller._aim(snake, turrets, reach=PathController.DEFENCE) is None
+    turrets.entities.append(Hunter.at_pos(pos + Vec2(PathController.DEFENCE + 20, -30)))
+    assert controller._aim(snake, turrets, reach=PathController.DEFENCE) is not None  # it moves: aim at any range
 
 
 def test_bot_dodges_a_shot_coming_head_on(turrets):
