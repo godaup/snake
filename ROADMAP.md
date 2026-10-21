@@ -2,7 +2,9 @@
 
 Snake is the starting point, not the limit: **every level gives the game its own twist.** The campaign has
 **20 levels in 4 story arcs**, and each arc ends with a boss level (5, 10, 15, 20). Difficulty and mechanics ramp up
-gradually. A level introduces at most one new mechanic, and later levels combine them.
+gradually. A level introduces at most one new mechanic, and later levels combine them. Planned expansions: three more
+arcs (Caves, Space, Workshop), a bonus arc where the snake moves on its own, and one-off levels (see
+[Expansion](#expansion)).
 
 Ground rules:
 
@@ -69,6 +71,67 @@ Ground rules:
 
 `Weapon.next_pattern()` already returns a list of projectiles. The rest needs projectile behaviors (pierce, bounce,
 home, explode, lifetime), weapon pickups and switching, and ammo/cooldown in the footer HUD.
+
+## Expansion
+
+Ideas for after the first 20 levels. The level tables are drafts, and the order is open: Ouroboros may move to the end
+as the finale.
+
+### Arc 5: The Caves (darkness and digging)
+
+Builds on `darkness` and the hunters. New: a map that changes while playing (walls dug away or caving in).
+
+| #  | Level                 | Twist                                                              | Goal              |
+|----|-----------------------|--------------------------------------------------------------------|-------------------|
+| 21 | Webs                  | Spiders spin webs that slow the snake or hold it for a moment      | collect all       |
+| 22 | Moles                 | Moles dig new tunnels through the walls, opening shortcuts for enemies | defeat N      |
+| 23 | Collapse              | Tunnels cave in behind the snake; there is no way back              | reach the exit    |
+| 24 | Bats                  | Bats sleep in the dark and wake up in the snake's light             | survive N seconds |
+| 25 | **Boss: The Brood Mother** | A giant spider that webs the cave shut and calls in its young | defeat the boss   |
+
+### Arc 6: Space (oxygen and inertia)
+
+Builds on The Hunger's meter (oxygen drains, tanks refill it, the light shrinks as it runs low) and the ice drift
+(little grip everywhere: the snake keeps its momentum).
+
+| #  | Level                  | Twist                                                             | Goal              |
+|----|------------------------|-------------------------------------------------------------------|-------------------|
+| 26 | Airlock                | Oxygen drains; air tanks refill it                                | score             |
+| 27 | Zero-G                 | Inertia everywhere: turning only slowly bends the course          | reach the exit    |
+| 28 | Gravity Wells          | Planets pull on the snake's heading; slingshot around them        | collect all       |
+| 29 | Asteroids              | Map edges wrap around; asteroids split when shot                  | destroy all       |
+| 30 | **Boss: The Mothership** | A ship that circles through the gravity wells and drops raiders  | defeat the boss   |
+
+### Arc 7: The Workshop (puzzles)
+
+Sokoban for snakes: the level is a puzzle with one solution or a few, and timing matters less than the order of moves.
+New: pushable objects and switches.
+
+| #  | Level                  | Twist                                                             | Goal              |
+|----|------------------------|-------------------------------------------------------------------|-------------------|
+| 31 | Crates                 | The head pushes crates and boulders onto switches to open gates   | reach the exit    |
+| 32 | Pressure Plates        | Plates stay down only while the body lies on them: grow long enough to hold several | reach the exit |
+| 33 | Keys                   | Keys carried in the body (as segments) open matching doors        | reach the exit    |
+| 34 | Conveyors              | Belts carry crates and the snake; switches reverse them           | reach the exit    |
+| 35 | **Boss: The Clockwork** | A machine whose weak spot is opened only by solving its puzzle    | defeat the boss   |
+
+### Bonus arc: The Keeper (the snake moves on its own)
+
+Unlocked after the campaign. The bot (`PathController`) steers the snake, and the player shapes the world with the
+mouse: build and remove walls, plant apple trees, set decoys that lure enemies away. Needs a mouse input layer and a
+bot whose choices the player can read and predict. Goals as usual (score, length, survive), but reached for the snake.
+
+### One-off levels
+
+Crazy levels to fit into an arc (or into the bonus arc) where they fit:
+
+- **Shepherd:** critters flee from the snake (`map.flight`); the body is the fence that herds them into a pen. Goal:
+  pen N animals.
+- **Hydra:** a piece of tail that gets cut off comes alive as a hostile snake, so every hit makes a new enemy. Also a
+  boss idea: a hydra that splits when shot.
+- **Microscopic:** the snake is a virus inside a body: eating cells grows it, antibodies hunt it, and a fever (a timer)
+  speeds everything up.
+- **Paint:** the snake leaves colour on the floor, enemies paint over it. Goal: cover a share of the floor.
 
 ## Milestones
 
