@@ -341,17 +341,21 @@ class Map:
                 else:
                     new_pos: Vec2 = map.new_pos(snake=snake, away=description.get("away", 0))
                 ent_cls: Entity = ENTITY_NAMES[description["entity"]]
-                # optional cap: don't add more while `max` of them are on the map already
-                limit = description.get("max")
-                if limit is not None and sum(isinstance(e, ent_cls) and e.alive for e in map.entities) >= limit:
-                    return
-                ent = ent_cls.at_pos(new_pos)
-                # optional per-level tuning of the entity's settings, e.g. {SPEED: 1.1}
-                for name, value in description.get("with", {}).items():
-                    if not hasattr(ent_cls, name):
-                        raise ValueError(f"{description['entity']} has no setting {name!r}")
-                    setattr(ent, name, value)
-                map.entities.append(ent)
+                # optional: `count` at once (a wave), each at a spot of its own
+                for index in range(description.get("count", 1)):
+                    # optional cap: don't add more while `max` of them are on the map already
+                    limit = description.get("max")
+                    if limit is not None and sum(isinstance(e, ent_cls) and e.alive for e in map.entities) >= limit:
+                        return
+                    if index:
+                        new_pos = map.new_pos(snake=snake, away=description.get("away", 0))
+                    ent = ent_cls.at_pos(new_pos)
+                    # optional per-level tuning of the entity's settings, e.g. {SPEED: 1.1}
+                    for name, value in description.get("with", {}).items():
+                        if not hasattr(ent_cls, name):
+                            raise ValueError(f"{description['entity']} has no setting {name!r}")
+                        setattr(ent, name, value)
+                    map.entities.append(ent)
 
             return callback
         elif description["type"] == "grow":

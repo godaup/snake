@@ -106,7 +106,25 @@ class Gun(Weapon):
         start = snake.head.pos + Vec2(pyxel.cos(snake.orient), pyxel.sin(snake.orient)) * (snake.size + 1)
         return [Projectile(pos=start, orient=snake.orient, speed=self.SPEED, size=1, col=self.COL)]
 
+    FAN = 0  # degrees between the shots of a fan (bots aim this much wider)
+
     @property
     def range(self) -> float:
         """How far a shot flies, in px (24 frames per second)."""
         return self.SPEED * 24 * Projectile.LIFETIME
+
+
+class Spread(Gun):
+    """A fan of three shots, FAN degrees apart."""
+
+    name = "SPREAD"
+    COOLDOWN = 0.5
+    COL = 9
+    FAN = 14
+
+    def shots(self, snake):
+        start = snake.head.pos + Vec2(pyxel.cos(snake.orient), pyxel.sin(snake.orient)) * (snake.size + 1)
+        return [
+            Projectile(pos=start, orient=snake.orient + turn, speed=self.SPEED, size=1, col=self.COL)
+            for turn in (-self.FAN, 0, self.FAN)
+        ]

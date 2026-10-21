@@ -121,7 +121,7 @@ class PathController(Controller):
                 (self.SLEEPER if getattr(ent, "asleep", False) else self.THREAT) + max(ent.w, ent.h) - 8,
             )  # bigger entities (the Alpha) get a wider berth
             for ent in map.entities
-            if ent.alive and ent.hostile
+            if ent.alive and ent.hostile and ent.avoid
         ]
         self._shots = [(shot.pos, shot.dir * shot.speed) for shot in map.projectiles if shot.alive and shot.hostile]
         goal = self.target(snake, map)
@@ -206,7 +206,8 @@ class PathController(Controller):
             # one behind (chasing the tail) can't be faced in time, unless it holds still (or never moves: no state)
             if abs(turn) > self.AIM_AHEAD and getattr(ent, "state", "rest") not in ("rest", "asleep"):
                 continue
-            best = (distance, turn, max(self.AIM, math.degrees(math.atan2(ent.w / 2, distance))))
+            aim = self.AIM + getattr(weapon, "FAN", 0)  # a fan of shots hits more to the sides
+            best = (distance, turn, max(aim, math.degrees(math.atan2(ent.w / 2, distance))))
         return None if best is None else best[1:]
 
     def fire(self, snake, map):
@@ -239,7 +240,12 @@ class PathController(Controller):
             if (Vec2(cx * self.CELL + self.CELL / 2, cy * self.CELL + self.CELL / 2) - c).length() < r
         }
 
+        right, bottom = map.cfg.width // self.CELL, (map.header + map.cfg.height) // self.CELL
+        top = map.header // self.CELL
+
         def blocked(cell: tuple[int, int]) -> bool:
+            if not (0 <= cell[0] < right and top <= cell[1] < bottom):  # outside the level: no walls, but no way
+                return True
             if self._wall(map, cell) or cell in near_threat:
                 return True
             if cell in vacate:

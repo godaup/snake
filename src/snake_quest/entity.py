@@ -36,6 +36,7 @@ class Entity:
     name = "entity"  # set by @register
     light = 0  # radius in px it lights up in dark levels (see darkness.py)
     hostile = False  # bad for the snake: harder difficulties spawn it more often (see difficulty.py)
+    avoid = True  # bots steer around it when hostile (not around drones: a sting costs less than swerving)
     _img_x = None
     _img_y = None
 
@@ -166,24 +167,38 @@ class Firefly(Entity):
         self.alive = False
 
 
-@register("gun")
-class GunPickup(Entity):
-    """A gun lying around: the snake picks up the Gun with AMMO shots, or AMMO more for the gun it carries."""
+class WeaponPickup(Entity):
+    """A weapon lying around: the snake picks it up with AMMO shots, or AMMO more for the same kind of weapon it
+    carries. The snake carries one weapon, so another kind is dropped for it."""
 
-    _img_x = 2
-    _img_y = 11
     light = 10
     AMMO = 12
+    WEAPON = "Gun"  # class name in weapons.py
 
     def on_intersect(self, snake: "Snake", map: "Map"):
-        from snake_quest.weapons import Gun  # weapons need nothing from here, but keep entities importable first
+        from snake_quest import weapons  # weapons need nothing from here, but keep entities importable first
 
-        if isinstance(snake.weapon, Gun):
+        weapon_cls = getattr(weapons, self.WEAPON)
+        if type(snake.weapon) is weapon_cls:
             snake.weapon.ammo += self.AMMO
         else:
-            snake.weapon = Gun(ammo=self.AMMO)
+            snake.weapon = weapon_cls(ammo=self.AMMO)
         map.game.sm.effect("pickup")
         self.alive = False
+
+
+@register("gun")
+class GunPickup(WeaponPickup):
+    _img_x = 2
+    _img_y = 11
+
+
+@register("spread")
+class SpreadPickup(WeaponPickup):
+    _img_x = 2
+    _img_y = 13
+    AMMO = 12
+    WEAPON = "Spread"
 
 
 @register("critter")
@@ -545,6 +560,63 @@ class Turret(Entity):
         tip = center + Vec2(pyxel.cos(self.aim), pyxel.sin(self.aim)) * 7
         pyxel.line(center.x, center.y, tip.x, tip.y, self.COL_BARREL)
         super().draw(offset)
+
+
+@register("drone")
+class Drone(Entity):
+    """A small flying machine of The Fortress, one of a swarm. It flies over walls straight for the snake's head, but
+    turns only TURN degrees per frame, so it overshoots and loops back. Touching any part of the snake, it stings: STING
+    segments off the tail, and the drone is gone (only shot drones count as defeated). A sting the snake is too short
+    for is the end. One shot destroys it; its speed scales with the difficulty."""
+
+    _img_x = 6
+    _img_y = 13
+    hostile = True
+    avoid = False
+    SPEED = 1.5  # px per frame (the snake starts at 1.3)
+    TURN = 5  # degrees per frame
+    STING = 2  # segments
+    REACH = 3  # px from its centre to a segment's edge
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.health = 1
+        self.state = "fly"  # always moving (bots don't aim at it from behind)
+        self.heading = pyxel.rndf(0, 360)
+        self.phase = pyxel.rndf(0, 360)  # wing beat, so a swarm doesn't flap in sync
+
+    @property
+    def center(self) -> Vec2:
+        return self.pos + Vec2(self.w / 2, self.h / 2)
+
+    def update(self, snake: "Snake", map: "Map"):
+        to_head = snake.head.pos - self.center
+        turn = (pyxel.atan2(to_head.y, to_head.x) - self.heading + 180) % 360 - 180
+        self.heading = (self.heading + max(-self.TURN, min(self.TURN, turn))) % 360
+        speed = self.SPEED * map.game.difficulty.speed
+        pos = self.pos + Vec2(pyxel.cos(self.heading), pyxel.sin(self.heading)) * speed
+        # over the walls, but never out of the level
+        self.pos = Vec2(
+            min(max(pos.x, 0), map.cfg.width - self.w),
+            min(max(pos.y, map.header), map.header + map.cfg.height - self.h),
+        )
+        if snake.segment_at(self.center, self.REACH) is not None:
+            self.sting(snake, map)
+
+    def sting(self, snake: "Snake", map: "Map") -> None:
+        map.game.sm.effect("hurt")
+        self.alive = False
+        if not snake.cut(self.STING):
+            map.snake_killed = True
+
+    def on_intersect(self, snake: "Snake", map: "Map"):
+        if self.alive:
+            self.sting(snake, map)
+
+    def draw(self, offset: "Vec2"):
+        """Hover up and down with the wing beat."""
+        bob = Vec2(0, round(pyxel.sin(pyxel.frame_count * 30 + self.phase)))
+        super().draw(offset + bob)
 
 
 @register("enemy")

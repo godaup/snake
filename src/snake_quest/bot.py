@@ -9,18 +9,18 @@ from collections import Counter
 import pyxel
 
 from snake_quest.controls import PathController, nearest
-from snake_quest.entity import ENTITY_NAMES, Apple, Critter, GoldenApple, GunPickup, Turret
+from snake_quest.entity import ENTITY_NAMES, Apple, Critter, GoldenApple, Turret, WeaponPickup
 from snake_quest.goals import CollectAllGoal, DestroyAllGoal
 from snake_quest.states import StateID
 from snake_quest.states.running import RunningStateHandler
 
 # the levels the bot wins by eating apples. Not yummy: at 250 points (about 50 golden apples, ~1000 segments in the
 # small room) the bot bites its tail at 70-200 points, while a person won it at the first try (playtest).
-LEVELS = ("classic", "hunger", "hunted", "armed", "prey", "burrows", "alpha", "turrets")
+LEVELS = ("classic", "hunger", "hunted", "armed", "prey", "burrows", "alpha", "turrets", "swarm")
 
 HUNT_LENGTH = 16  # segments: shorter, the bot eats before it hunts
 food = nearest(Apple, GoldenApple, Critter)
-guns = nearest(GunPickup)
+guns = nearest(WeaponPickup)
 # turrets aren't hunted (driving at one runs into its shots), only shot at when they come into the line of fire
 foes = nearest(*(cls for cls in ENTITY_NAMES.values() if cls.hostile and cls is not Turret), clearance=0)
 
