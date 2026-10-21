@@ -308,3 +308,47 @@ level's planets: `path: [[x, y], ...]`, at `speed`), pulled by nothing. It has t
   Brood Mother stays arc 5's.
 - **Zero-G controls.** A "brake" would make low grip fairer, but the game has only steer and fire. The Tractor uses
   fire; a brake could be "fire with no weapon", but that is hidden. Probably no brake: wide corridors instead.
+
+## As built
+
+The arc is in the game (levels 26–30, M7 in the roadmap). Decisions taken, and where it differs from the design above:
+
+- **Decisions.** The wrap-around edges are left for later: Asteroids is a bordered sector whose rocks bounce off the
+  hull. The arc order stays (Ouroboros remains level 20). The airlock doors are in Airlock, the station level, where
+  corridors make them meaningful; oxygen is the pressure there, as the time limit is in Webs.
+- **Airlock.**
+  - No beetles: faster than the snake and with no gun to fight back, they ended every run within seconds.
+  - The suit holds 90 s of air at medium, a tank refills half of it, and up to three tanks are about.
+  - The goal is 10 points with five apples: the station is big, and every apple is a long way.
+  - Doors keep their sprites because walls are now autotiled only where `WALL_TILE` was painted.
+- **Zero-G.**
+  - The Tractor is a pulse per press (`TractorBeam`, 0.6 s), not a hold: the keyboard's fire is a press.
+  - Two drones, a length goal of 30, six apples.
+  - The grip per difficulty: easy 0.25, medium 0.15, hard 0.14, nightmare 0.12.
+- **Gravity Wells.**
+  - The pull turns where the snake points as well as where it moves; otherwise the steering undoes it the next frame.
+  - Planets are `solid`, a new entity flag: bots keep a few px clear of their surface instead of a hunter's growing
+    distance, which kept the stars beside them out of reach.
+  - The five planets are placed by hand, each with two stars in its skimming zone.
+  - Heavier planets don't trouble the bot (it plans with the same pull), so hard and nightmare also spawn 4 and 6 more
+    stars and have their own time limits (65 s and 55 s).
+- **Asteroids.**
+  - A small rock only stings, even the head: bots don't swerve for them, as for drones.
+  - Pieces are added through a new `Entity.pieces` the map picks up when it clears the dead.
+- **The Mothership.**
+  - Its pods sit clear of the hull, so shots at them aren't stopped by the shield.
+  - They reach 100 px, less than a gun: careful aim from afar is safe.
+  - The ship moves at 0.45 (0.3 in the last phase), has 10 health, two raiders at most, and its bay opens for 5 s.
+  - Hard has its own boss (8 health, the bay open for 6 s): scaled up, the bot needed seven minutes.
+- **Moles (arc 5).** Harder difficulties no longer make the moles surface more often (more targets made it easier);
+  they come up for a shorter time instead (`UP` times the square root of the hostile factor).
+
+Bot win rates (8 seeds; easy / medium / hard / nightmare):
+
+| Level | Easy | Medium | Hard | Nightmare |
+|---|---|---|---|---|
+| Airlock | 100% | 88% | 75% | 62% |
+| Zero-G | 100% | 100% | 75% | 62% |
+| Gravity Wells | 100% | 75% | 62% | 25% |
+| Asteroids | 88% | 88% | 88% | 50% |
+| Boss: The Mothership | 75% | 50% | 38% | 12% |

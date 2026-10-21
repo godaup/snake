@@ -14,12 +14,12 @@ boss:
   type: mothership
   path: [[220, 160], [740, 160], [820, 360], [740, 560], [220, 560], [140, 360]]  # its course, a loop
   speed: 0.45
-  health: 12
+  health: 10
   reload: 4
-  open: 4
+  open: 5
   closed: 3
-  call: 4
-  swarm: 3
+  call: 5
+  swarm: 2
   pull: 0
   reach: 140
   phases:
@@ -94,3 +94,6 @@ intro:
   - "engine pods to bring its shield down; then hit it"
   - "while its bay is open. Mind its raiders, and at"
   - "the end its tractor beam. Keep an eye on your air."
+
+difficulty:
+  hard: {boss: {health: 8, open: 6}}  # a shorter fight: at 11 health the bot needed 7 minutes
