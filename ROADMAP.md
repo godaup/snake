@@ -95,12 +95,13 @@ Designed in detail in [docs/arc5-caves.md](docs/arc5-caves.md); built (see M6).
 
 Builds on The Hunger's meter (oxygen drains, tanks refill it, the light shrinks as it runs low) and the ice drift
 (little grip everywhere: the snake keeps its momentum).
+Designed in detail in [docs/arc6-space.md](docs/arc6-space.md) (new weapon: the **Tractor**, which pulls pickups in).
 
 | #  | Level                  | Twist                                                             | Goal              |
 |----|------------------------|-------------------------------------------------------------------|-------------------|
 | 26 | Airlock                | Oxygen drains; air tanks refill it                                | score             |
-| 27 | Zero-G                 | Inertia everywhere: turning only slowly bends the course          | reach the exit    |
-| 28 | Gravity Wells          | Planets pull on the snake's heading; slingshot around them        | collect all       |
+| 27 | Zero-G                 | Inertia everywhere: turning only slowly bends the course; **Tractor** | grow, then the exit |
+| 28 | Gravity Wells          | Planets pull on the snake's heading; slingshot around them        | collect all stars, in time |
 | 29 | Asteroids              | Map edges wrap around; asteroids split when shot                  | destroy all       |
 | 30 | **Boss: The Mothership** | A ship that circles through the gravity wells and drops raiders  | defeat the boss   |
 
