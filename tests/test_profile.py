@@ -80,3 +80,28 @@ def test_snake_recolor():
     snake.recolor(ocean)
     assert snake.head.col == ocean.head
     assert snake.segs[1].col == ocean.body[1]
+
+
+def test_each_arc_has_its_own_table():
+    profile = Profile()
+    for score in range(1, MAX_HIGHSCORES + 3):
+        profile.add_highscore(score * 10, 1, arc="The Garden", date=DAY)
+    assert profile.add_highscore(5, 6, arc="The Wilds", date=DAY) == 1  # a full other table doesn't matter
+    assert len(profile.table("medium", "The Garden")) == MAX_HIGHSCORES
+    assert [h.score for h in profile.table("medium", "The Wilds")] == [5]
+    assert profile.add_highscore(15, 1, arc="The Garden", date=DAY) is None
+
+
+def test_old_scores_get_the_arc_of_their_level(tmp_path):
+    path = tmp_path / "profile.json"
+    path.write_text('{"highscores": {"medium": [{"score": 9, "level": 7, "date": "2026-10-01"}]}}')
+    profile = Profile.load(path)
+    profile.assign_arcs(lambda level: "The Wilds" if level > 5 else "The Garden")
+    assert [h.score for h in profile.table("medium", "The Wilds")] == [9]
+
+
+def test_arcs_seen_round_trip(tmp_path):
+    profile = Profile(path=tmp_path / "profile.json")
+    profile.see_arcs(["The Garden", "The Wilds"])
+    profile.see_arcs(["The Garden"])
+    assert Profile.load(tmp_path / "profile.json").arcs_seen == ["The Garden", "The Wilds"]

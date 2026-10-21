@@ -1,6 +1,6 @@
 """The campaign: arcs of levels in order of play, defined in levels/campaign.yaml."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import omegaconf
@@ -33,12 +33,14 @@ class Arc:
     name: str
     first: int  # campaign numbers of its first and last level
     last: int
+    theme: dict = field(default_factory=dict, compare=False)  # its look on the overview map (campaign.yaml `map`)
 
 
 @dataclass(frozen=True)
 class Campaign:
     sprites: Path
     levels: tuple[Level, ...]
+    themes: dict[str, dict] = field(default_factory=dict, compare=False)  # arc name -> its `map` section
 
     def __len__(self) -> int:
         return len(self.levels)
@@ -55,9 +57,9 @@ class Campaign:
         arcs: list[Arc] = []
         for level in self.levels:
             if arcs and arcs[-1].name == level.arc:
-                arcs[-1] = Arc(level.arc, arcs[-1].first, level.number)
+                arcs[-1] = Arc(level.arc, arcs[-1].first, level.number, arcs[-1].theme)
             else:
-                arcs.append(Arc(level.arc, level.number, level.number))
+                arcs.append(Arc(level.arc, level.number, level.number, self.themes.get(level.arc, {})))
         return arcs
 
     def arc_of(self, number: int) -> Arc:
@@ -82,9 +84,10 @@ class Campaign:
 def load_campaign(path: Path = CAMPAIGN_FILE) -> Campaign:
     cfg = omegaconf.OmegaConf.load(path)
     levels = []
+    themes = {arc.name: omegaconf.OmegaConf.to_container(arc.map) if "map" in arc else {} for arc in cfg.arcs}
     for arc in cfg.arcs:
         for name in arc.levels:
             levels.append(
                 Level(name=name, number=len(levels) + 1, arc=arc.name, resources=RESOURCES_DIR / arc.resources)
             )
-    return Campaign(sprites=RESOURCES_DIR / cfg.sprites, levels=tuple(levels))
+    return Campaign(sprites=RESOURCES_DIR / cfg.sprites, levels=tuple(levels), themes=themes)

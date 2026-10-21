@@ -166,7 +166,7 @@ def test_menu_switches_difficulty(game, monkeypatch):
 
 
 def test_highscores_screen_pages_through_the_tables(assets, game, monkeypatch):
-    game.profile.add_highscore(77, 3, "nightmare", date=DAY)
+    game.profile.add_highscore(77, 3, "nightmare", "The Garden", date=DAY)
     game.profile.difficulty = "hard"
     screen = HighscoresStateHandler(game)
     screen.on_enter()

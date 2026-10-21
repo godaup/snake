@@ -61,9 +61,22 @@ def test_theme_song_is_in_the_sprites_file(assets):
 def test_highscore_rows(game):
     screen = HighscoresStateHandler(game)
     assert screen.rows() == []
-    game.profile.add_highscore(1234, 4, date=datetime.date(2026, 10, 18))
+    game.profile.add_highscore(1234, 4, arc="The Garden", date=datetime.date(2026, 10, 18))
+    game.profile.add_highscore(99, 7, arc="The Wilds")
     (row,) = screen.rows()
     assert "1234" in row and "LEVEL 4" in row and "2026-10-18" in row
+
+
+def test_highscores_screen_pages_through_the_arcs(game, monkeypatch):
+    second = game.campaign.arcs[1]
+    game.profile.add_highscore(99, second.first, arc=second.name)
+    game.level_counter = second.first
+    screen = HighscoresStateHandler(game)
+    screen.on_enter()  # starts at the arc played
+    assert "99" in screen.rows()[0]
+    monkeypatch.setattr(pyxel, "btnp", lambda key, hold=0, repeat=0: key == pyxel.KEY_UP)
+    screen.update()
+    assert screen.arc == 0 and screen.rows() == []
 
 
 def test_customize_cycles_palettes_and_recolors_backdrop(game):
@@ -95,9 +108,10 @@ def test_game_over_records_highscore(game):
     game.level_counter = 2
     death.on_enter()
     assert death.rank == 1
-    assert "NEW MEDIUM HIGHSCORE #1!" in death.wdg.text
+    assert "NEW MEDIUM HIGHSCORE #1" in death.wdg.text
+    assert "IN THE GARDEN!" in death.wdg.text
     assert "SCORE 42" in death.wdg.text
-    assert game.profile.table("medium")[0].score == 42
+    assert game.profile.table("medium", "The Garden")[0].score == 42
 
 
 def test_game_over_without_points_records_nothing(game):
@@ -158,19 +172,60 @@ def test_campaign_still_loads():
     assert len(load_campaign()) >= 1
 
 
-def test_level_select_lists_the_arcs_and_locks_the_unreached(assets, game):
+def test_level_select_shows_the_arcs_and_locks_the_unreached(assets, game):
     select = SelectStateHandler(game)
     first, second = game.campaign.arcs[:2]
-    assert select.label(0) == f"1  {first.name.upper()}   LEVEL {first.first}"
-    assert select.label(1).endswith("LOCKED")
+    select.on_enter()
+    assert select.selected == 0
+    assert select.info_lines(0) == [f"ARC 1   LEVELS {first.first}-{first.last}", "NO MEDIUM SCORE YET"]
+    assert select.info_lines(1)[0].endswith("LOCKED")
+    assert select.info_lines(1)[1] == f"FINISH {first.name.upper()} TO OPEN IT"
     select.choose(1)  # locked: nothing happens
     assert getattr(game, "started_arcs", []) == []
     game.profile.arcs_done.append(first.name)
+    game.profile.add_highscore(345, first.last, arc=first.name)
     select.on_enter()
     assert select.selected == 1  # the furthest open arc
-    assert select.label(1) == f"2  {second.name.upper()}   LEVEL {second.first}"
+    assert select.info_lines(0) == [f"ARC 1   LEVELS {first.first}-{first.last}   DONE", "MEDIUM BEST 345"]
     select.choose(1)
     assert game.started_arcs == [second]
+
+
+def test_a_newly_opened_arc_comes_out_of_the_fog_once(assets, game):
+    select = SelectStateHandler(game)
+    first = game.campaign.arcs[0]
+    select.on_enter()
+    assert select.fog[0] == 0 and select.fog[1] == 1 and select.lifting == []
+    game.profile.arcs_done.append(first.name)
+    select.on_enter()
+    assert select.lifting == [1] and select.fog[1] == 1
+    game.dt = datetime.timedelta(seconds=0.1)
+    for _ in range(40):
+        select.update()
+    assert select.fog[1] == 0
+    assert game.profile.arcs_seen == [first.name, game.campaign.arcs[1].name]
+    select.on_enter()  # seen before: no fog this time
+    assert select.lifting == [] and select.fog[1] == 0
+
+
+def test_the_map_snake_crawls_over_to_the_chosen_arc(assets, game):
+    select = SelectStateHandler(game)
+    game.profile.arcs_done.append(game.campaign.arcs[0].name)
+    game.profile.arcs_seen = [arc.name for arc in game.campaign.arcs[:2]]
+    select.on_enter()
+    select.selected = 0
+    game.dt = datetime.timedelta(seconds=1 / 24)
+    for _ in range(24 * 20):
+        select.update()
+        select.draw()
+    region = select.atlas.region_x
+    assert region(0) <= select.snake.head.pos.x < region(1)
+    assert select.cam_x == pytest.approx(select.cam_target(0), abs=1)
+
+
+def test_every_arc_has_a_map_theme():
+    for arc in load_campaign().arcs:
+        assert {"ground", "decor", "props"} <= set(arc.theme), arc.name
 
 
 def test_finished_arcs_are_saved(tmp_path):

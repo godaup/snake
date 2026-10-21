@@ -1,8 +1,10 @@
-"""The player's saved state: snake palette, difficulty and one highscore table per difficulty, stored as JSON in
-Pyxel's per-user data directory."""
+"""The player's saved state: snake palette, difficulty, finished arcs and highscores (one top-10 table per arc and
+difficulty: a score counts the points made in one arc), stored as JSON in Pyxel's per-user data directory."""
 
+import contextlib
 import datetime
 import json
+from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
@@ -18,14 +20,16 @@ class Highscore:
     score: int
     level: int
     date: str  # ISO date
+    arc: str = ""  # name of the arc played; empty in profiles from before arcs had their own tables
 
 
 @dataclass
 class Profile:
     palette: str = DEFAULT_PALETTE
     difficulty: str = DEFAULT_DIFFICULTY
-    highscores: dict[str, list[Highscore]] = field(default_factory=dict)  # difficulty name -> its table
+    highscores: dict[str, list[Highscore]] = field(default_factory=dict)  # difficulty name -> its arcs' tables
     arcs_done: list[str] = field(default_factory=list)  # names of the arcs played through (checkpoints)
+    arcs_seen: list[str] = field(default_factory=list)  # arcs seen open on the map (their fog has lifted)
     path: Path | None = field(default=None, compare=False, repr=False)
 
     @classmethod
@@ -50,13 +54,12 @@ class Profile:
                 difficulty=chosen if chosen in DIFFICULTIES else DEFAULT_DIFFICULTY,
                 highscores=highscores,
                 arcs_done=[name for name in data.get("arcs_done", []) if isinstance(name, str)],
+                arcs_seen=[name for name in data.get("arcs_seen", []) if isinstance(name, str)],
             )
         except (OSError, ValueError, TypeError):
             profile = cls()
         profile.path = path
-        profile.highscores = {
-            name: sorted(table, key=lambda h: -h.score)[:MAX_HIGHSCORES] for name, table in profile.highscores.items()
-        }
+        profile.highscores = {name: _capped(table) for name, table in profile.highscores.items()}
         return profile
 
     def save(self) -> None:
@@ -66,6 +69,7 @@ class Profile:
             "palette": self.palette,
             "difficulty": self.difficulty,
             "arcs_done": self.arcs_done,
+            "arcs_seen": self.arcs_seen,
             "highscores": {name: [asdict(h) for h in table] for name, table in self.highscores.items()},
         }
         try:
@@ -80,23 +84,55 @@ class Profile:
             self.arcs_done.append(name)
             self.save()
 
-    def table(self, name: str) -> list[Highscore]:
-        """The highscores played at difficulty `name`, best first."""
-        return self.highscores.get(name, [])
+    def see_arcs(self, names: list[str]) -> None:
+        """Remember arcs seen open on the map, so their fog lifts only once. Saves when that changes anything."""
+        new = [name for name in names if name not in self.arcs_seen]
+        if new:
+            self.arcs_seen.extend(new)
+            self.save()
+
+    def assign_arcs(self, arc_of: Callable[[int], str]) -> None:
+        """Give entries from before arcs had their own tables the arc of the level they reached."""
+        for table in self.highscores.values():
+            for entry in table:
+                if not entry.arc:
+                    with contextlib.suppress(IndexError, StopIteration):  # a level the campaign no longer has
+                        entry.arc = arc_of(entry.level)
+        self.highscores = {name: _capped(table) for name, table in self.highscores.items()}
+
+    def table(self, name: str, arc: str | None = None) -> list[Highscore]:
+        """The highscores of `arc` played at difficulty `name`, best first (all arcs' when `arc` is None)."""
+        table = self.highscores.get(name, [])
+        return table if arc is None else [h for h in table if h.arc == arc]
 
     def add_highscore(
-        self, score: int, level: int, difficulty: str = DEFAULT_DIFFICULTY, date: datetime.date | None = None
+        self,
+        score: int,
+        level: int,
+        difficulty: str = DEFAULT_DIFFICULTY,
+        arc: str = "",
+        date: datetime.date | None = None,
     ) -> int | None:
-        """Record a score in the table of its difficulty; returns its 1-based rank if it made the table, else None.
-        Saves the profile."""
+        """Record a score in the table of its arc and difficulty; returns its 1-based rank if it made the table,
+        else None. Saves the profile."""
         if score <= 0:
             return None
-        entry = Highscore(score=score, level=level, date=(date or datetime.date.today()).isoformat())
+        entry = Highscore(score=score, level=level, date=(date or datetime.date.today()).isoformat(), arc=arc)
         # stable sort: a tie ranks below the older entry
-        ranked = sorted([*self.table(difficulty), entry], key=lambda h: -h.score)
+        ranked = sorted([*self.table(difficulty, arc), entry], key=lambda h: -h.score)
         rank = next(i for i, h in enumerate(ranked) if h is entry)  # identity: an equal old entry may exist
         if rank >= MAX_HIGHSCORES:
             return None
-        self.highscores[difficulty] = ranked[:MAX_HIGHSCORES]
+        others = [h for h in self.table(difficulty) if h.arc != arc]
+        self.highscores[difficulty] = _capped([*others, *ranked])
         self.save()
         return rank + 1
+
+
+def _capped(table: list[Highscore]) -> list[Highscore]:
+    """Best first, at most MAX_HIGHSCORES per arc."""
+    kept: list[Highscore] = []
+    for entry in sorted(table, key=lambda h: -h.score):
+        if sum(h.arc == entry.arc for h in kept) < MAX_HIGHSCORES:
+            kept.append(entry)
+    return kept

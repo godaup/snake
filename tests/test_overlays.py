@@ -88,3 +88,20 @@ def test_running_counts_only_playing_time(assets, game):
     running.update()
     running.update()
     assert running.elapsed == pytest.approx(1.0)
+
+
+def test_finishing_an_arc_records_its_score(assets, game):
+    arc = CAMPAIGN.arcs[0]
+    game.level_counter = arc.last
+    game.score = 300
+    screen = LevelCompleteStateHandler(game)
+    screen.on_enter()
+    assert screen.stats.rank == 1
+    assert dict(screen.stat_rows())["HIGHSCORE"] == "NEW #1"
+    assert [h.score for h in game.profile.table("medium", arc.name)] == [300]
+
+
+def test_levels_within_an_arc_record_nothing(assets, game):
+    game.score = 300
+    LevelCompleteStateHandler(game).on_enter()
+    assert game.profile.table("medium") == []

@@ -21,6 +21,7 @@ class LevelStats:
     length: int
     score: int
     last_level: bool
+    rank: int | None = None  # the arc's score made its highscores (recorded after its last level)
 
 
 def format_time(seconds: float) -> str:
@@ -39,13 +40,20 @@ class LevelCompleteStateHandler(OverlayStateHandler):
         """Snapshot the finished level, so the numbers don't change while the screen is shown."""
         running = self.running
         self.t = 0.0
+        last_level = self.game.level_counter == len(self.game.campaign)
+        arc = self.game.campaign.arc_of(self.game.level_counter)
+        rank = None
+        if self.game.level_counter == arc.last and not last_level:  # after the very last one the victory screen does
+            played = self.game.difficulty.name
+            rank = self.game.profile.add_highscore(self.game.score, self.game.level_counter, played, arc.name)
         self.stats = LevelStats(
             goals=[goal.status(running.map, running.snake) for goal in running.map.goals],
             seconds=running.elapsed,
             points=self.game.score - running.score_at_start,
             length=len(running.snake),
             score=self.game.score,
-            last_level=self.game.level_counter == len(self.game.campaign),
+            last_level=last_level,
+            rank=rank,
         )
         self.game.sm.effect("win")
 
@@ -62,6 +70,7 @@ class LevelCompleteStateHandler(OverlayStateHandler):
             ("POINTS", f"+{stats.points}"),
             ("LENGTH", str(stats.length)),
             ("SCORE", f"{stats.score:05}"),
+            *([("HIGHSCORE", f"NEW #{stats.rank}")] if stats.rank else []),
         ]
 
     def draw_overlay(self) -> None:

@@ -18,13 +18,15 @@ class DeathStateHandler(GameStateHandler):
         self.wdg = self.build_widget([self.TITLE, "(R)ESTART", "(M)ENU", "(Q)UIT"])
 
     def on_enter(self) -> None:
-        """Record the score and show it, with the highscore rank if it made the table."""
+        """Record the score in the table of the arc played and show it, with the highscore rank if it made the
+        table."""
         played = self.game.difficulty
-        self.rank = self.game.profile.add_highscore(self.game.score, self.game.level_counter, played.name)
+        arc = self.game.campaign.arc_of(self.game.level_counter).name
+        self.rank = self.game.profile.add_highscore(self.game.score, self.game.level_counter, played.name, arc)
         self.game.sm.effect("death")
         lines = [self.TITLE, f"SCORE {self.game.score}"]
         if self.rank:
-            lines.append(f"NEW {played.label} HIGHSCORE #{self.rank}!")
+            lines += [f"NEW {played.label} HIGHSCORE #{self.rank}", f"IN {arc.upper()}!"]
         self.wdg = self.build_widget([*lines, "", "(R)ESTART", "(M)ENU", "(Q)UIT"])
 
     def build_widget(self, text: list[str]) -> Widget:

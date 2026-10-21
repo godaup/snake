@@ -83,7 +83,8 @@ class Hud:
         if self.snake.boost_left > 0:
             percent = round((self.snake.boost_factor - 1) * 100)
             return f"SPEED {percent:+}% {self.snake.boost_left:.1f}s", length
-        scores = self.game.profile.table(self.game.difficulty.name)
+        arc = self.game.campaign.arc_of(self.game.level_counter).name
+        scores = self.game.profile.table(self.game.difficulty.name, arc)
         best = max(scores[0].score if scores else 0, self.game.score)
         return f"BEST {best}", length
 

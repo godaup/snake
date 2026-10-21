@@ -23,7 +23,9 @@ def test_header_texts(assets, game):
 
 def test_best_is_the_better_of_table_and_current_score(assets, game):
     hud = make_hud(game)
-    game.profile.add_highscore(500, 1)
+    arc = game.campaign.arc_of(game.level_counter).name
+    game.profile.add_highscore(500, 1, arc=arc)
+    game.profile.add_highscore(800, 7, arc="another arc")  # each arc has its own best
     game.score = 120
     assert hud.right_lines()[0] == "BEST 500"
     game.score = 900  # beating the record shows live

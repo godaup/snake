@@ -73,6 +73,7 @@ class Game:
         self.initialized = True
         self.campaign.load_sprites()
         self.profile = Profile.load(Path(pyxel.user_data_dir(*USER_DATA)) / "profile.json")
+        self.profile.assign_arcs(lambda level: self.campaign.arc_of(level).name)
         self.backdrop = Backdrop(self)
         self.stateID = StateID.DEATH
         self._state_handlers: dict[StateID, GameStateHandler] = {
@@ -149,11 +150,8 @@ class Game:
         return [arc for i, arc in enumerate(arcs) if i == 0 or arcs[i - 1].name in self.profile.arcs_done]
 
     def play(self) -> None:
-        """PLAY in the menu: the level select once more than the first arc is open, else straight to the first level."""
-        if len(self.unlocked_arcs()) > 1:
-            self.change_state(StateID.SELECT)
-        else:
-            self.restart()
+        """PLAY in the menu: the overview map, where an open arc is chosen."""
+        self.change_state(StateID.SELECT)
 
     def start_arc(self, arc) -> None:
         """A new game from the first level of `arc` (also where it restarts after a game over)."""
@@ -163,12 +161,14 @@ class Game:
     def level_up(self):
         """Go on from the level complete screen: the next level (it opens with its mission) or the victory screen.
         Finishing an arc's last level remembers the arc (checkpoint), and a game over in the next arc restarts at its
-        first level."""
+        first level. Each arc has its own highscores, so the score starts again from 0 in the next arc (the level
+        complete screen has recorded it)."""
         arc = self.campaign.arc_of(self.level_counter)
         if self.level_counter == arc.last:
             self.profile.complete_arc(arc.name)
             if self.level_counter < len(self.campaign):
                 self.start_level = self.level_counter + 1
+                self.score = 0
         if self.level_counter == len(self.campaign):
             self.change_state(StateID.VICTORY)
             return
