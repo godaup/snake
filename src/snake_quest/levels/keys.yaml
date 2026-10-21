@@ -1,0 +1,75 @@
+tm: 2  # tools/draft_workshop.py arc7.pyxres --tm 2 tools/puzzles/keys.txt
+width: 960
+height: 224
+tint: {3: 4, 11: 10}  # the hedges as brass and copper
+
+start:
+  x: 56
+  y: 76
+
+timers:  # apples to grow on (a key near the tail is a mouse's)
+  apple1:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+  apple2:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+  apple3:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+
+goal:
+  exit: true
+
+# harder: more clockwork mice about the rooms, and faster ones, against the clock
+difficulty:
+  hard:
+    goal: {time_limit: 60}
+    timers:
+      mice:
+        duration: 6
+        frequency: 10
+        fire_n: 0
+        callback: {type: spawn, entity: mouse, max: 3, away: 120, with: {SPEED: 1.6}}
+  nightmare:
+    goal: {time_limit: 90}
+    timers:
+      mice:
+        duration: 4
+        frequency: 6
+        fire_n: 0
+        callback: {type: spawn, entity: mouse, max: 4, away: 120, with: {SPEED: 1.7}}
+
+title: "Keys"
+intro:
+  - "A key you eat rides in your body, at the tail."
+  - "Bring it to a lock of its colour to open it."
+  - "Clockwork mice bite off what is behind a key;"
+  - "eat, and the key sits deeper. Thorns break mice."
+
+# for bots: the steps of a solution (see workshop.Plan), room by room
+plan:
+  - reset: null
+    steps:
+      - key: red
+      - unlock: [13, 6]
+  - reset: null
+    steps:
+      - key: yellow
+      - unlock: [31, 3]
+  - reset: null
+    steps:
+      - key: blue
+      - unlock: [47, 9]

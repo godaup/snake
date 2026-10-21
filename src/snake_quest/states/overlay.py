@@ -21,7 +21,7 @@ class OverlayStateHandler(GameStateHandler):
     def running(self):
         return self.game.running_handler
 
-    def get_music(self) -> int | None:
+    def get_music(self) -> int | tuple[int, ...] | None:
         """The level's music plays on (so it doesn't start over after the briefing or a pause)."""
         return self.running.get_music()
 

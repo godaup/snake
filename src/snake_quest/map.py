@@ -13,16 +13,21 @@ from snake_quest.darkness import Darkness
 from snake_quest.entity import ENTITY_NAMES, ENTITY_TILES, Entity
 from snake_quest.goals import Goal, load_goals
 from snake_quest.tiles import (
+    BELT_TILES,
     DOOR_OPEN_TILE,
     DOOR_TILE,
     EMPTY_TILE,
     FLOOR_TILES,
+    GATE_TILES,
     HAZARD_CUT,
     HAZARD_TILE,
     ICE_GRIP,
     ICE_TILE,
+    LEVER_TILES,
+    LOCK_TILES,
     MIRROR_TILE,
     PATH_TILE,
+    PLATE_TILES,
     TORN_WEB_TILE,
     TRAIL_CRUMBLE,
     TRAIL_CRUMBLE_TILE,
@@ -39,6 +44,7 @@ from snake_quest.tiles import (
 )
 from snake_quest.timers import Timer
 from snake_quest.utils import Vec2
+from snake_quest.workshop import Works
 
 if TYPE_CHECKING:
     from snake_quest.game import Game
@@ -147,9 +153,15 @@ class Map:
         self.goals: list[Goal] = load_goals(self.cfg.goal, map=self)
         # optional: the play area is dark except around the head and glowing entities
         self.darkness = Darkness(self.cfg.darkness, game) if "darkness" in self.cfg else None
+        tilemap = pyxel.tilemaps[self.tm]
+        # the Workshop's machinery (arc 7: crates, plates, gates, locks, belts, levers), if the level has any
+        workshop = set(PLATE_TILES) | set(GATE_TILES) | set(LOCK_TILES) | set(BELT_TILES) | set(LEVER_TILES)
+        has_works = any(ent.block for ent in self.entities) or any(
+            tilemap.pget(x, y) in workshop for y in range(self.cfg.height // 8) for x in range(self.cfg.width // 8)
+        )
+        self.works: Works | None = Works(self) if has_works or "plan" in self.cfg else None
         self.boss: Boss | None = load_boss(self.cfg.boss, map=self) if "boss" in self.cfg else None
         # optional: airlock doors that take turns, `airlock: {cycle: s, warn: s}` (see _cycle_doors)
-        tilemap = pyxel.tilemaps[self.tm]
         self.doors = (
             [
                 (x, y)
@@ -183,6 +195,8 @@ class Map:
             self.projectiles.remove(dead)
         self._wells = None
         self._step_on_tiles(snake)
+        if self.works:
+            self.works.update(snake)
         if self.torn:
             self._regrow_webs(snake, self.game.dt.total_seconds())
         if self.doors:
@@ -247,6 +261,8 @@ class Map:
         for pos in self.path[:shown]:
             pyxel.blt(pos.x + offset.x, pos.y + offset.y, 0, PATH_TILE[0] * 8, PATH_TILE[1] * 8, 8, 8, colkey=0)
         pyxel.dither(1.0)
+        if self.works:
+            self.works.draw(offset)
         if self.closing and pyxel.frame_count % 6 < 3:  # doors about to shut blink
             for x, y in self.closing:
                 pyxel.rectb(x * 8 + offset.x, y * 8 + header + offset.y, 8, 8, COL_DOOR_WARN)
@@ -418,6 +434,10 @@ class Map:
         """Walking distances (tiles) from the snake's head, for prey running away from it; shared like chase."""
         return self._field("flight", snake.head.pos)
 
+    def field(self, name: str, origin: Vec2) -> dict[tuple[int, int], int]:
+        """Walking distances (tiles) from `origin`, shared under `name` like chase (e.g. the mice's way to a key)."""
+        return self._field(name, origin)
+
     def _field(self, name: str, origin: Vec2) -> dict[tuple[int, int], int]:
         if name not in self._fields or self._field_age[name] >= CHASE_EVERY:
             self._fields[name], self._field_age[name] = self.walking_distances(origin), 0.0
@@ -468,7 +488,10 @@ class Map:
         return pyxel.tilemaps[self.tm].pget(pos.x // 8, (pos.y - self.header) // 8)
 
     def check_on_wall(self, pos: Vec2) -> bool:
-        return self.tile_at(pos) in WALL_TILES
+        tile = self.tile_at(pos)
+        if tile not in WALL_TILES:
+            return False
+        return self.works is None or not self.works.unlocks(tile)  # a lock the snake has the key for opens
 
     def clear_line(self, a: Vec2, b: Vec2, step: float = 4) -> bool:
         """Whether no wall lies on the straight line from `a` to `b` (tested every `step` px)."""

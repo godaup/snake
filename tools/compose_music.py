@@ -650,6 +650,74 @@ TRACKS = {
             },
         },
     },
+    # The Workshop: mechanical and busy, C Mixolydian (the flat seventh, Bb, keeps it from sounding triumphant).
+    # A: C Bb F G C Bb F G, B: F G Am Bb F G Bb C
+    "workshop": {
+        "speed": 15,  # 120 bpm
+        "form": ["a", "a", "b", "a"],
+        "voices": {
+            "lead": {  # plucked, staccato: every note followed by a rest
+                "tone": "p",
+                "volume": 2,
+                "sections": {
+                    "a": [
+                        "c4 r e4 g4 r e4 c4 r",
+                        "a#3 r d4 f4 r d4 a#3 r",
+                        "a3 r c4 f4 r c4 a3 r",
+                        "g3 r b3 d4 r g4 r r",
+                        "c4 r e4 g4 r a#4 g4 r",
+                        "a#3 r d4 f4 r a#4 f4 r",
+                        "a3 r c4 f4 r a4 g4 r",
+                        "g4 r d4 b3 r g3 r r",
+                    ],
+                    "b": [
+                        "f4 r a4 c4 r a4 f4 r",
+                        "g4 r b4 d4 r b4 g4 r",
+                        "a4 r c4 e4 r c4 a3 r",
+                        "a#3 r d4 f4 r a#4 r r",
+                        "f4 r a4 c4 r f4 a4 r",
+                        "g4 r b4 d4 r g4 b4 r",
+                        "a#4 r f4 d4 r a#3 r r",
+                        "c4 r e4 g4 c4 - - r",
+                    ],
+                },
+            },
+            "bass": {  # walking up the chords
+                "tone": "t",
+                "volume": 1,
+                "sections": {
+                    "a": [
+                        "c2 - e2 - g2 - e2 -",
+                        "a#1 - d2 - f2 - d2 -",
+                        "f1 - a1 - c2 - a1 -",
+                        "g1 - b1 - d2 - g1 -",
+                        "c2 - e2 - g2 - e2 -",
+                        "a#1 - d2 - f2 - d2 -",
+                        "f1 - a1 - c2 - a1 -",
+                        "g1 - b1 - d2 - g1 -",
+                    ],
+                    "b": [
+                        "f1 - a1 - c2 - a1 -",
+                        "g1 - b1 - d2 - b1 -",
+                        "a1 - c2 - e2 - c2 -",
+                        "a#1 - d2 - f2 - d2 -",
+                        "f1 - a1 - c2 - a1 -",
+                        "g1 - b1 - d2 - b1 -",
+                        "a#1 - d2 - f2 - d2 -",
+                        "c2 - g1 - c2 - - -",
+                    ],
+                },
+            },
+            "drums": {  # the clock: a tick every eighth, a woodblock on the offbeats
+                "tone": "n",
+                "volume": {"4": 1, "3": 1, "0": 2},
+                "sections": {
+                    "a": ["a0 c3 e4 c3 e4 c3 e4 c3"] * 7 + ["a0 c3 e4 c3 a0 c3 e4 e4"],
+                    "b": ["a0 c3 e4 c3 a0 c3 e4 c3"] * 7 + ["a0 c3 a0 c3 a0 e4 e4 e4"],
+                },
+            },
+        },
+    },
 }
 
 
@@ -709,6 +777,10 @@ def main() -> None:
             channels.append([slot])
             print(f"sound {slot}: {name} {voice_name}, {pyxel.sounds[slot].total_sec():.1f} s")
             slot += 1
+        if isinstance(MUSIC[name], tuple):  # no music slot left: the game plays the sounds itself
+            assert list(MUSIC[name]) == [seq[0] for seq in channels], f"{name}: sound.MUSIC says {MUSIC[name]}"
+            print(f"{name}: sounds {MUSIC[name]}")
+            continue
         pyxel.musics[MUSIC[name]].set(*channels, *([[]] * (4 - len(channels))))
         print(f"music {MUSIC[name]}: {name}")
     pyxel.save(str(resources))

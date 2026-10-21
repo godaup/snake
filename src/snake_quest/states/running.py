@@ -42,7 +42,7 @@ class RunningStateHandler(GameStateHandler):
     def is_visible() -> bool:
         return False
 
-    def get_music(self) -> int | None:
+    def get_music(self) -> int | tuple[int, ...] | None:
         """The level's own music if it names one (bosses), else its arc's."""
         return MUSIC[self.map.cfg.get("music", self.map.level.music)]
 

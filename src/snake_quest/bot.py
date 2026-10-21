@@ -45,6 +45,11 @@ LEVELS = (
     "gravity",
     "asteroids",
     "mothership",
+    "crates",
+    "plates",
+    "keys",
+    "conveyors",
+    "clockwork",
 )
 
 HUNT_LENGTH = 16  # segments: shorter, the bot eats before it hunts
@@ -67,6 +72,10 @@ soft_foes = nearest(
 def target(snake, map):
     """What the level asks to collect first (the exit last); without ammo a weapon (or food); while short, a stock of
     ammo and then food, until long enough to afford a bite; then the hunt."""
+    # a puzzle: the steps of its solution (the level's plan, see workshop.Plan) before anything else
+    works = getattr(map, "works", None)
+    if works is not None and works.plan is not None and (step := works.plan.target(snake, map)) is not None:
+        return step
     # short of air: a tank first
     if any(isinstance(goal, OxygenGoal) and goal.left < AIR for goal in map.goals) and (tank := tanks(snake, map)):
         return tank

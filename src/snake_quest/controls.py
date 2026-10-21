@@ -119,6 +119,8 @@ class PathController(Controller):
         self._threats: list[tuple[Vec2, float]] = []  # centre and radius to keep away from, per frame
         self._solids: list[tuple[Vec2, float]] = []  # the same for what never moves (see SOLID)
         self._shots: list[tuple[Vec2, Vec2]] = []  # position and velocity (px per frame) of hostile shots, per frame
+        self._blocks: list[tuple[float, float, float, float]] = []  # boxes (crates) arcs keep out of, per frame
+        self._block_cells: list[tuple[float, float, float, float]] = []  # and the way-finding
         self._aiming = 0  # frames in a row spent turning to aim (and then counting down the pause)
 
     def steer(self, snake, map):
@@ -146,9 +148,32 @@ class PathController(Controller):
             threats.append((ent.pos + Vec2(ent.w / 2, ent.h / 2), radius))
         boss = getattr(map, "boss", None)
         danger = boss.danger() if boss is not None else None  # e.g. where the Brood Mother will land
-        if danger is not None:
+        if isinstance(danger, list):  # several (the Clockwork's hands)
+            threats += danger
+        elif danger is not None:
             threats.append(danger)
         return threats
+
+    def blocks(self, snake, map) -> tuple[list, list]:
+        """Boxes (x0, y0, x1, y1, grown by the head's size) of what the head would push or stop at (crates), but not the
+        one a plan pushes: for the way-finding, and for the arcs (without one the head touches already: it must be free
+        to turn away from it)."""
+        works = getattr(map, "works", None)
+        if works is None:
+            return [], []
+        crates = works.plan.blocks() if works.plan is not None else [crate for crate in works.crates if crate.alive]
+        head, size = snake.head.pos, snake.size + 1
+        boxes = [
+            (crate.pos.x - size, crate.pos.y - size, crate.pos.x + crate.w + size, crate.pos.y + crate.h + size)
+            for crate in crates
+        ]
+        if works.plan is not None:  # levers it isn't heading for
+            top = map.header
+            boxes += [
+                (x * 8 - size, y * 8 + top - size, x * 8 + 8 + size, y * 8 + top + 8 + size)
+                for x, y in works.plan.avoid()
+            ]
+        return [box for box in boxes if not (box[0] <= head.x <= box[2] and box[1] <= head.y <= box[3])], boxes
 
     def _steer(self, snake, map):
         self._threats = self.threats(snake, map)
@@ -158,7 +183,11 @@ class PathController(Controller):
             for ent in map.entities
             if ent.alive and ent.solid
         ]
+        boss = getattr(map, "boss", None)
+        if boss is not None:  # e.g. the Clockwork's hands
+            self._solids += boss.solids()
         self._shots = [(shot.pos, shot.dir * shot.speed) for shot in map.projectiles if shot.alive and shot.hostile]
+        self._blocks, self._block_cells = self.blocks(snake, map)
         goal = self.target(snake, map)
         if goal is None:
             self.mode = ""
@@ -308,6 +337,12 @@ class PathController(Controller):
             for cy in range(int(c.y - r) // self.CELL, int(c.y + r) // self.CELL + 1)
             if (Vec2(cx * self.CELL + self.CELL / 2, cy * self.CELL + self.CELL / 2) - c).length() < r
         }
+        near_threat |= {
+            (cx, cy)
+            for x0, y0, x1, y1 in self._block_cells
+            for cx in range(int(x0) // self.CELL, int(x1) // self.CELL + 1)
+            for cy in range(int(y0) // self.CELL, int(y1) // self.CELL + 1)
+        }
 
         right, bottom = map.cfg.width // self.CELL, (map.header + map.cfg.height) // self.CELL
         top = map.header // self.CELL
@@ -408,6 +443,8 @@ class PathController(Controller):
         skip = max(self.BODY_SKIP, snake.neck(self.BODY_SKIP))  # segments are ~1.3 px apart, closer while slowed
         speed, body = snake.effective_speed, snake.segs[skip::2]
         wells = getattr(map, "wells", None)
+        works = getattr(map, "works", None)
+        belts = works.drift_at if works is not None and works.belts else None
         for frame in range(1, frames + 1):
             orient = (orient + round(steering * snake.turn_speed)) % 360
             grip = map.grip_at(pos)
@@ -415,13 +452,15 @@ class PathController(Controller):
             if wells:  # as the snake is pulled (see Snake.update)
                 pull = map.pull(pos, heading)
                 orient, heading = (orient + pull) % 360, (heading + pull) % 360
-            pos = Vec2(pos.x + speed * pyxel.cos(heading), pos.y + speed * pyxel.sin(heading))
+            step = Vec2(speed * pyxel.cos(heading), speed * pyxel.sin(heading))
+            pos = pos + step + belts(pos) if belts else pos + step  # carried by belts, as the snake is
             p, q = collision_points(pos, heading, snake.size)
             near_body = frame % 2 == 0 and any((pos - seg.pos).length() < snake.size * 2 for seg in body)
             threatened = (
                 any((pos - c).length() < r + frame * self.THREAT_GROWTH for c, r in self._threats)
                 or any((pos - c).length() < r for c, r in self._solids)
                 or any((pos - (shot + velocity * frame)).length() < self.DODGE for shot, velocity in self._shots)
+                or any(x0 < pos.x < x1 and y0 < pos.y < y1 for x0, y0, x1, y1 in self._blocks)
             )
             if map.check_on_wall(p) or map.check_on_wall(q) or near_body or threatened:
                 return frame - 1, pos, orient, reached, heading

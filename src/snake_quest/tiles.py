@@ -16,6 +16,7 @@ class TileKind(Enum):
     ICE = "ice"  # walkable, but slippery: the snake's heading drifts after its steering (ICE_GRIP)
     MIRROR = "mirror"  # walkable, but left and right are swapped while the head is on it
     WEB = "web"  # walkable, but a web holds the snake for a moment (WEB_HOLD), then it is torn
+    MACHINE = "machine"  # walkable workshop terrain (plates, open gates, belts, levers; see workshop.py)
 
 
 EMPTY_TILE = (0, 0)
@@ -35,12 +36,24 @@ RUBBLE_TILE = (12, 10)
 # of a level take turns (see Map._cycle_doors)
 DOOR_TILE = (14, 10)
 DOOR_OPEN_TILE = (15, 10)
+# the Workshop (arc 7, see workshop.py), in three colours each (red, blue, yellow): a plate is down while a crate
+# rests on it or the snake lies on it; a gate is open while every plate of its colour is down; a lock opens for good
+# when the head brings a key of its colour. Belts carry what lies on them (right, down, left, up); a lever reverses
+# the belts of its room, the reset lever puts the room's crates back
+PLATE_TILES = ((16, 10), (17, 10), (18, 10))
+GATE_TILES = ((19, 10), (20, 10), (21, 10))
+GATE_OPEN_TILES = ((22, 10), (23, 10), (24, 10))
+LOCK_TILES = ((25, 10), (26, 10), (27, 10))
+BELT_TILES = {(28, 10): (1, 0), (29, 10): (0, 1), (30, 10): (-1, 0), (31, 10): (0, -1)}
+LEVER_TILES = ((0, 21), (1, 21))
+RESET_TILE = (2, 21)
 WALL_TILES = frozenset(
-    {WALL_TILE, TRAIL_TILE, TRAIL_CRUMBLE_TILE, RUBBLE_TILE, DOOR_TILE}
+    {WALL_TILE, TRAIL_TILE, TRAIL_CRUMBLE_TILE, RUBBLE_TILE, DOOR_TILE, *GATE_TILES, *LOCK_TILES}
     | {(mask, WALL_VARIANT_ROW) for mask in range(16)}
 )
 # floor decorations (grass, flowers, stones): drawn, but walkable and free for spawning
-DECOR_TILES = frozenset((k, 9) for k in range(10))  # 6, 7: the caves' pebbles and shards; 8, 9: stars, a galaxy
+# 6, 7: the caves' pebbles and shards; 8, 9: stars, a galaxy; 10, 11: the workshop's bench grid, an oil spot
+DECOR_TILES = frozenset((k, 9) for k in range(12))
 FLOOR_TILES = frozenset({EMPTY_TILE} | DECOR_TILES)
 # level design helper marking the intended route (e.g. through the maze); hidden until revealed
 PATH_TILE = (3, 0)
@@ -73,6 +86,7 @@ TILE_KINDS: dict[tuple[int, int], TileKind] = {
     TORN_WEB_TILE: TileKind.FLOOR,
     CRACK_TILE: TileKind.FLOOR,
     DOOR_OPEN_TILE: TileKind.FLOOR,
+    **{tile: TileKind.MACHINE for tile in (*PLATE_TILES, *GATE_OPEN_TILES, *BELT_TILES, *LEVER_TILES, RESET_TILE)},
 }
 # tiles that stay in the tilemap after loading (walls only as hedge variants)
 TERRAIN_TILES = frozenset(tile for tile, kind in TILE_KINDS.items() if kind != TileKind.PATH) - {WALL_TILE}

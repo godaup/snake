@@ -1,0 +1,72 @@
+tm: 1  # tools/draft_workshop.py arc7.pyxres --tm 1 tools/puzzles/plates.txt
+width: 992
+height: 224
+tint: {3: 4, 11: 10}  # the hedges as brass and copper
+
+start:
+  x: 56
+  y: 76
+
+timers:  # apples about the rooms, besides the golden ones in the tilemap
+  apple1:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+  apple2:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+  apple3:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+
+goal:
+  exit: true
+
+title: "Pressure Plates"
+intro:
+  - "These plates stay down while you lie on them."
+  - "A gate with more plates needs a longer snake:"
+  - "cover them all, and be in the gate before your"
+  - "tail lets go of the first. Eat to grow."
+
+# for bots: the steps of a solution (see workshop.Plan), room by room
+plan:
+  - reset: null
+    steps:
+      - grow: 58
+      - visit: [10, 6]
+      - visit: [14, 6]
+  - reset: null
+    steps:
+      - grow: 90
+      - visit: [26, 3]
+      - visit: [29, 3]
+      - visit: [32, 3]
+  - reset: [34, 11]
+    steps:
+      - push: [[36, 6], right, 5]
+      - visit: [44, 9]
+      - visit: [47, 9]
+      - visit: [50, 9]
+
+# harder: clockwork mice about, biting the tail short (a shorter body holds the plates for less long); nightmare
+# also against the clock
+difficulty:
+  hard:
+    timers:
+      mice: {duration: 6, frequency: 12, fire_n: 0, callback: {type: spawn, entity: mouse, max: 2, away: 120}}
+  nightmare:
+    goal: {time_limit: 60}
+    timers:
+      mice: {duration: 4, frequency: 8, fire_n: 0, callback: {type: spawn, entity: mouse, max: 3, away: 120}}

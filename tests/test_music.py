@@ -3,7 +3,7 @@ import pytest
 import pyxel
 
 from snake_quest.campaign import load_campaign
-from snake_quest.sound import EFFECT_CHANNEL, EFFECTS, MUSIC, MUSIC_CHANNELS
+from snake_quest.sound import EFFECT_CHANNEL, EFFECTS, MUSIC, MUSIC_CHANNELS, channels
 from snake_quest.states.countdown import CountdownHandler
 from snake_quest.states.level_complete import LevelCompleteStateHandler
 from snake_quest.states.menu_common import MENU_MUSIC
@@ -33,10 +33,15 @@ def test_the_menu_theme_has_its_own_slot():
     assert MENU_MUSIC not in MUSIC.values()
 
 
+def test_tracks_without_a_slot_use_sounds_of_their_own():
+    sounds = [snd for music in MUSIC.values() if isinstance(music, tuple) for snd in music]
+    assert len(sounds) == len(set(sounds)) and not set(sounds) & set(EFFECTS.values())
+
+
 @pytest.mark.parametrize("name", COMPOSED)
 def test_level_music_leaves_the_effect_channel_free(assets, name):
-    seqs = [list(seq) for seq in pyxel.musics[MUSIC[name]].seqs]
-    assert any(seqs[:MUSIC_CHANNELS]), "not composed"
+    seqs = channels(MUSIC[name])
+    assert any(seqs[:MUSIC_CHANNELS]) and all(pyxel.sounds[snd].notes for seq in seqs for snd in seq), "not composed"
     assert all(not seq for seq in seqs[MUSIC_CHANNELS:]) and EFFECT_CHANNEL >= MUSIC_CHANNELS
     sounds = {snd for seq in seqs for snd in seq}
     theme = {snd for seq in pyxel.musics[MENU_MUSIC].seqs for snd in seq}
@@ -45,7 +50,7 @@ def test_level_music_leaves_the_effect_channel_free(assets, name):
 
 def test_tracks_of_a_music_are_equally_long(assets):
     for name in COMPOSED:
-        lengths = {round(pyxel.sounds[seq[0]].total_sec(), 2) for seq in pyxel.musics[MUSIC[name]].seqs if seq}
+        lengths = {round(pyxel.sounds[seq[0]].total_sec(), 2) for seq in channels(MUSIC[name]) if seq}
         assert len(lengths) == 1, name  # the voices loop together
 
 

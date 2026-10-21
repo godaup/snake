@@ -28,8 +28,15 @@ class SnakeSeg:
         self.pos = pos
         self.size = size
         self.col = col
+        self.key: int | None = None  # the colour of a key it carries (the Workshop, see workshop.Key)
 
     def draw(self, offset: Vec2):
+        if self.key is not None:  # a key: bigger, in its colour
+            from snake_quest.workshop import KEY_COLS
+
+            pyxel.circ(self.pos.x + offset.x, self.pos.y + offset.y, self.size + 1, KEY_COLS[self.key])
+            pyxel.pset(self.pos.x + offset.x, self.pos.y + offset.y, 7)
+            return
         pyxel.circ(self.pos.x + offset.x, self.pos.y + offset.y, self.size, self.col)
 
 
@@ -51,6 +58,7 @@ class Snake:
         self.heading: float = orient  # where it moves: the same, except on ice (see drift)
         self.grip: float = 1.0  # set by the map from the ground under the head
         self.mirrored: bool = False  # steering swapped (mirrored floor under the head), set by the map
+        self.stalled: bool = False  # standing at a crate that can't move this frame (the Workshop)
         self._speed: float = speed
         self.boost_factor: float = 1.0  # temporary speed factor, see boost()
         self.boost_left: float = 0.0  # seconds
@@ -114,17 +122,18 @@ class Snake:
             pull = map.pull(self.head.pos, self.heading)
             self.orient, self.heading = (self.orient + pull) % 360, (self.heading + pull) % 360
         # move
-        previous = None
-        for ix, seg in enumerate(self.segs):
-            if ix == 0:
-                new = Vec2(
-                    x=self.head.pos.x + (self.effective_speed * (pyxel.cos(self.heading))),
-                    y=self.head.pos.y + (self.effective_speed * (pyxel.sin(self.heading))),
-                )
-            else:
-                new = previous
-            previous = copy(seg.pos)
-            seg.pos = new
+        step = Vec2(self.effective_speed * pyxel.cos(self.heading), self.effective_speed * pyxel.sin(self.heading))
+        works = getattr(map, "works", None)
+        if works is not None:  # the Workshop: belts carry the head, and a crate that can't move stops it (a stall)
+            step = works.push(self, step + works.drift_at(self.head.pos))
+            self.stalled = step is None
+        previous = copy(self.segs[-1].pos)
+        if not self.stalled:
+            previous = None
+            for ix, seg in enumerate(self.segs):
+                new = self.head.pos + step if ix == 0 else previous
+                previous = copy(seg.pos)
+                seg.pos = new
         # grow
         if self.grow > 0:
             if self.delay < SPAWN_DELAY:

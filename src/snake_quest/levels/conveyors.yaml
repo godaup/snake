@@ -1,0 +1,71 @@
+tm: 3  # tools/draft_workshop.py arc7.pyxres --tm 3 tools/puzzles/conveyors.txt
+width: 928
+height: 224
+tint: {3: 4, 11: 10}  # the hedges as brass and copper
+
+start:
+  x: 56
+  y: 188
+
+timers:  # apples about the rooms
+  apple1:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+  apple2:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+  apple3:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+
+goal:
+  exit: true
+
+# harder: more clockwork mice about the rooms; nightmare also against the clock
+difficulty:
+  hard:
+    timers:
+      mice: {duration: 6, frequency: 10, fire_n: 0, callback: {type: spawn, entity: mouse, max: 2, away: 120}}
+  nightmare:
+    goal: {time_limit: 100}
+    timers:
+      mice:
+        duration: 4
+        frequency: 6
+        fire_n: 0
+        callback: {type: spawn, entity: mouse, max: 3, away: 120, with: {SPEED: 1.7}}
+
+title: "Conveyors"
+intro:
+  - "The belts never stop: they carry crates, and they"
+  - "carry you (fast with them, slow against them)."
+  - "Run over a lever to turn the room's belts round."
+  - "The red lever still puts the crates back."
+
+# for bots: the steps of a solution (see workshop.Plan), room by room
+plan:
+  - reset: null
+    steps:
+      - lever: [6, 10]
+      - wait: {at: [6, 8], crate: [10, 5]}
+  - reset: [15, 2]
+    steps:
+      - push: [[17, 8], right, 4]
+      - wait: {at: [17, 11], crate: [21, 3]}
+  - reset: null
+    steps:
+      - lever: [37, 11]
+      - wait: {at: [37, 7], crate: [44, 4]}
+      - wait: {at: [37, 7], crate: [31, 9]}

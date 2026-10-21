@@ -1,0 +1,76 @@
+tm: 4  # tools/draft_workshop.py arc7.pyxres --tm 4 tools/puzzles/clockwork.txt
+width: 416
+height: 320
+tint: {3: 4, 11: 10}  # the hedges as brass and copper
+
+start:
+  x: 56
+  y: 76
+
+boss:
+  type: clockwork
+  pos: [192, 164]  # cells (12, 9)-(13, 10)
+  health: 9
+  tick: 6  # degrees per second (the short hand a quarter of that)
+  hands: [96, 64]  # px
+  open: 6
+  hold: 2  # blue plates to hold at once (phase 2)
+  locks: 2  # keys to bring (phase 3)
+  call: 6
+  mice: 2
+  phases:
+    - {below: 1}
+    - {below: 0.67, tick: 9, open: 8}
+    - {below: 0.34, tick: 9}
+
+timers:
+  first_gun:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: gun
+      pos: [40, 260]
+  guns:
+    duration: 10
+    frequency: 10
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: gun
+      max: 2
+  homing:
+    duration: 30
+    frequency: 20
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: homing
+      max: 1
+  apple1:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+  apple2:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+
+goal:
+  boss: defeated
+
+music: boss  # instead of the arc's
+
+title: "Boss: The Clockwork"
+intro:
+  - "The Clockwork winds the Workshop. Mind its hands."
+  - "Push crates onto the red plates to jam its gears,"
+  - "lie on the blue ones to hold its springs, bring"
+  - "keys to its locks. Shoot its face while it's open."

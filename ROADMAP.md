@@ -1,9 +1,9 @@
 # Roadmap
 
 Snake is the starting point, not the limit: **every level gives the game its own twist.** The campaign has
-**30 levels in 6 story arcs**, and each arc ends with a boss level (5, 10, 15, ..., 30). Difficulty and mechanics ramp
+**35 levels in 7 story arcs**, and each arc ends with a boss level (5, 10, 15, ..., 35). Difficulty and mechanics ramp
 up gradually. A level introduces at most one new mechanic, and later levels combine them. The first four arcs are below;
-the Caves and Space were built from the [Expansion](#expansion), which still plans the Workshop, a bonus arc where the
+the Caves, Space and the Workshop were built from the [Expansion](#expansion), which still plans a bonus arc where the
 snake moves on its own, and one-off levels.
 
 Ground rules:
@@ -112,15 +112,15 @@ Designed in detail in [docs/arc6-space.md](docs/arc6-space.md) (new weapon: the 
 Sokoban for snakes: the level is a puzzle with one solution or a few, and timing matters less than the order of moves.
 New: pushable objects and switches.
 Designed in detail in [docs/arc7-workshop.md](docs/arc7-workshop.md) (a blocked crate stops the snake instead of
-crashing it; bots follow a written solution, the level's `plan`).
+crashing it; bots follow a written solution, the level's `plan`); built (see M8).
 
 | #  | Level                  | Twist                                                             | Goal              |
 |----|------------------------|-------------------------------------------------------------------|-------------------|
-| 31 | Crates                 | The head pushes crates onto plates to open gates; a lever resets the room | reach the exit |
-| 32 | Pressure Plates        | Plates stay down only while the body lies on them: grow long enough to hold several | reach the exit |
-| 33 | Keys                   | Keys carried in the body (as segments) open matching locks; mice bite them off | reach the exit |
-| 34 | Conveyors              | Belts carry crates and the snake; levers reverse them             | reach the exit    |
-| 35 | **Boss: The Clockwork** | A machine opened only by jamming its gears, holding its springs and unlocking it | defeat the boss |
+| 31 | Crates                 | The head pushes crates onto plates to open gates; a lever resets the room | reach the exit (exists) |
+| 32 | Pressure Plates        | Plates stay down only while the body lies on them: grow long enough to hold several | reach the exit (exists) |
+| 33 | Keys                   | Keys carried in the body (as segments) open matching locks; mice bite them off | reach the exit (exists) |
+| 34 | Conveyors              | Belts carry crates and the snake; levers reverse them             | reach the exit (exists) |
+| 35 | **Boss: The Clockwork** | A machine opened only by jamming its gears, holding its springs and unlocking it | defeat the boss (exists) |
 
 ### Bonus arc: The Keeper (the snake moves on its own)
 
@@ -205,6 +205,15 @@ Done: `arc6.pyxres` with station and open-space layouts (`draft_garden.py statio
 Tractor), Gravity Wells (level 28: planets that pull the heading, `map.pull`), Asteroids (level 29: rocks that split and
 bounce), Boss: The Mothership (level 30: engine pods holding up a shield, a bay that opens and drops raiders, a tractor
 beam). Open: the wrap-around edges for Asteroids (see docs/arc6-space.md), playtesting.
+
+### M8: Arc 7
+
+Done: `arc7.pyxres` with layouts written from puzzle texts (`tools/draft_workshop.py`, `tools/puzzles/`), plans
+for bots checked by `tools/solve_workshop.py`, the Workshop music, Crates (level 31: crates the head pushes, a
+stall at one that can't move, plates and gates, reset levers), Pressure Plates (level 32: the body holds plates),
+Keys (level 33: keys as segments, locks, clockwork mice), Conveyors (level 34: belts and levers), Boss: The
+Clockwork (level 35: jam its gears, hold its springs, bring keys to its locks; its hands cut). Open: boulders
+(see docs/arc7-workshop.md), playtesting (puzzles need people more than any other arc).
 
 ### M5: Release
 

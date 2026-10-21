@@ -12,6 +12,8 @@ import pyxel
 
 from snake_quest.utils import Vec2
 
+CELL = 16  # px: the Workshop's bench grid (see workshop.py)
+
 if TYPE_CHECKING:
     from snake_quest.map import Map
     from snake_quest.snake import Snake
@@ -83,6 +85,10 @@ class Boss(ABC):
     def danger(self) -> "tuple[Vec2, float] | None":
         """A spot (centre, radius) for bots to keep away from, e.g. where something is about to land."""
         return None
+
+    def solids(self) -> "list[tuple[Vec2, float]]":
+        """Circles (centre, radius) bots keep just clear of, however far ahead (what only moves now and then)."""
+        return []
 
 
 class Hunger(Boss):
@@ -556,8 +562,283 @@ class MothershipBoss(Boss):
         return (self.ship.center, 24) if self.ship.alive else None
 
 
+class ClockworkBoss(Boss):
+    """The Clockwork (level 35): the Clockwork entity (a 32x32 block that never moves) at `pos` with `health`; the bar
+    is its health. Its two hands (`hands`: their lengths) tick round it once a second, `tick` degrees (the short hand a
+    quarter of that): what they sweep over or the head runs into is cut there, as by a shot. Its face is shut, so shots
+    glint off, except while it is open (`open` seconds). Phase by phase (by `below`, like the Core's):
+
+    1. Jam its gears: with crates on all the red plates (beside it), its hands stop and the face opens; then it throws
+       the crates back where they started.
+    2. Hold its springs: the crates are gone; with `hold` of the blue plates under the body at once, the face opens.
+    3. Its locks: it winds itself shut behind `locks` locks (up to three). Every `call` s it puts out the key the next
+       lock needs (where none is about) and a clockwork mouse while fewer than `mice` are about; the head brings a key
+       by touching it. With all of them open, the face stays open.
+
+        boss: {type: clockwork, pos: [x, y], health: 9, tick: 6, hands: [96, 64], open: 6, hold: 2, locks: 2, call: 6,
+               mice: 2,
+               phases: [{below: 1}, {below: 0.67, tick: 9, open: 8}, {below: 0.34}]}
+
+    Bots get a plan from it (see workshop.Plan), made anew whenever the last one is done: the pushes onto the red
+    plates, a run over the blue plates, the key to fetch and bring."""
+
+    key = "clockwork"
+    title = "THE CLOCKWORK"
+    pressure = ("health", "tick", "mice", "hold", "locks")
+    relief = ("open", "call")
+    REACH = 4  # px from a hand that the head touches it
+    HUB = 18  # px from the centre where the hands start (the face)
+    DANGER = 10  # px around the points along a hand bots keep clear of (now and up to two ticks on)
+    ARMED = 12  # shots: with fewer, bots fetch a weapon before they work the puzzle
+    SLACK = 1.4  # times the length a run over the blue plates needs, that bots grow to first
+    BURY = 6  # segments bots grow by after picking up a key
+    GRACE = 1.0  # seconds
+    TOUCH = 4  # px from the clock the head brings a key at
+
+    def __init__(self, cfg, map):
+        super().__init__(cfg, map)
+        from snake_quest.workshop import KEYS, Clockwork, Mouse
+
+        self._keys, self._mouse = KEYS, Mouse
+        self.map = map
+        self.clock = Clockwork.at_pos(Vec2(*cfg.pos))
+        self.clock.health = self.full = max(1, round(cfg.health))
+        map.entities.append(self.clock)
+        map.works.crates.append(self.clock)
+        self.angles = [270.0, 270.0]  # the long hand and the short one, pointing up (twelve o'clock)
+        self.tick_left = 1.0
+        self.open_left = 0.0
+        self.call_left = self.setting("call")
+        self.locks = list(range(min(3, max(1, round(cfg.get("locks", 3))))))  # colours still shut on the face
+        self.grace = 0.0  # seconds the hands still spare the snake after striking it
+        self._sync()
+
+    def _sync(self) -> None:
+        self.clock.hands = list(zip(self.angles, self.cfg.hands, strict=True))
+        self.clock.locks = list(self.locks) if self.phase == 2 else []
+
+    def next_phase_due(self, map, snake):
+        return self.clock.health <= self.full * self.phases[self.phase + 1]["below"] + 1e-6
+
+    def on_phase(self, map, snake):
+        self.clock.open, self.open_left = False, 0.0
+        if self.phase == 1:  # the crates are swept away
+            for crate in list(map.works.crates):
+                if crate is not self.clock:
+                    crate.alive = False
+                    map.works.crates.remove(crate)
+        map.works.plan = None
+
+    def act(self, map, snake, seconds):
+        clock = self.clock
+        if not clock.alive:
+            return
+        if clock.health <= 0:
+            clock.alive, clock.killed = False, True
+            return
+        works = map.works
+        self.grace = max(self.grace - seconds, 0.0)
+        # the face
+        if self.open_left > 0:
+            self.open_left -= seconds
+            if self.open_left <= 0 and self.phase < 2:
+                clock.open = False
+                if self.phase == 0:  # it throws the crates back
+                    for crate in works.crates:
+                        if crate is not clock and works.free(crate, crate.start, snake):
+                            crate.pos = Vec2(crate.start.x, crate.start.y)
+                works.plan = None
+        elif self._unlocked(works):
+            self._open()
+        elif self.phase == 2:
+            self._locks(map, snake, seconds)
+        # the hands tick (not while it is jammed open)
+        self.tick_left -= seconds
+        if self.tick_left <= 0:
+            self.tick_left += 1.0
+            if not (clock.open and self.phase == 0):
+                old = list(self.angles)
+                tick = self.setting("tick")
+                self.angles = [(self.angles[0] + tick) % 360, (self.angles[1] + tick / 4) % 360]
+                for before, after, length in zip(old, self.angles, self.cfg.hands, strict=True):
+                    self._sweep(map, snake, before, after, length)
+        self._touch(map, snake)
+        self._sync()
+        if works.plan is None or works.plan.done or (works.plan.index == 0 and works.plan.stage == 0):
+            works.plan = self._plan(map, snake)  # (made anew while it hasn't started, e.g. once armed)
+
+    def _open(self) -> None:
+        self.clock.open, self.open_left = True, self.setting("open")
+        self.map.works.plan = None
+        self.map.game.sm.effect("win")
+
+    def _unlocked(self, works) -> bool:
+        """Whether the puzzle of the phase is solved: all red plates down (1), enough blue ones (2)."""
+        if self.phase == 0:
+            return self._down(works, 0) == self._plates(works, 0) > 0
+        return self.phase == 1 and self._down(works, 1) >= round(self.setting("hold"))
+
+    def _plates(self, works, colour: int) -> int:
+        return sum(plate_colour == colour for plate_colour, _ in works.plates)
+
+    def _down(self, works, colour: int) -> int:
+        return sum(works.plates[index][0] == colour for index in works.down)
+
+    def _locks(self, map, snake, seconds) -> None:
+        """Phase 3: keys and mice come out; a key brought (the head stopped at the clock) opens a lock."""
+        works, clock = map.works, self.clock
+        if not self.locks:
+            clock.open = True
+            return
+        head, near = snake.head.pos, self.TOUCH
+        touching = clock.pos.x - near <= head.x <= clock.pos.x + clock.w + near and (
+            clock.pos.y - near <= head.y <= clock.pos.y + clock.h + near
+        )
+        if touching and works.keys & set(self.locks):
+            colour = next(c for c in self.locks if c in works.keys)
+            seg = next(seg for seg in snake.segs if seg.key == colour)
+            seg.key = None
+            works.carried[id(seg)] = (seg, None, seg.pos)
+            snake.segs.remove(seg)
+            works._recount()
+            self.locks.remove(colour)
+            works.plan = None
+            map.game.sm.effect("portal")
+        self.call_left -= seconds
+        if self.call_left > 0:
+            return
+        self.call_left = self.setting("call")
+        if (
+            self.locks
+            and not (set(self.locks) & works.keys)
+            and not any(isinstance(ent, self._keys[self.locks[0]]) and ent.alive for ent in map.entities)
+        ):
+            map.entities.append(self._keys[self.locks[0]].at_pos(map.new_pos(snake=snake, away=64)))
+        if sum(isinstance(ent, self._mouse) and ent.alive for ent in map.entities) < round(self.setting("mice")):
+            mouse = self._mouse.at_pos(map.new_pos(snake=snake, away=96))
+            mouse.asleep = False
+            map.entities.append(mouse)
+
+    def _sweep(self, map, snake, before: float, after: float, length: float) -> None:
+        """A hand ticked from `before` to `after`: the body in the swept wedge is cut there, the head is the end."""
+        center = self.clock.center
+        span = (after - before) % 360
+        for index, seg in enumerate(snake.segs):
+            offset = seg.pos - center
+            if not self.HUB <= offset.length() <= length:
+                continue
+            if (pyxel.atan2(offset.y, offset.x) - before) % 360 <= span:
+                self._hurt(map, snake, index)
+                return
+
+    def _touch(self, map, snake) -> None:
+        """The head running into a hand: as hit there."""
+        center, head = self.clock.center, snake.head.pos
+        for angle, length in zip(self.angles, self.cfg.hands, strict=True):
+            direction = Vec2(pyxel.cos(angle), pyxel.sin(angle))
+            along = (head.x - center.x) * direction.x + (head.y - center.y) * direction.y
+            if self.HUB <= along <= length and (head - (center + direction * along)).length() < self.REACH:
+                self._hurt(map, snake, 0)
+
+    def _hurt(self, map, snake, index: int) -> None:
+        """A hand strikes segment `index`: the body is cut there, as by a shot (the head: half of it; the end when the
+        snake is too short), and the hands spare it for GRACE seconds."""
+        if self.grace > 0:
+            return
+        self.grace = self.GRACE
+        map.game.sm.effect("hurt")
+        if not snake.wound(index):
+            map.snake_killed = True
+
+    def _plan(self, map, snake):
+        """The next errand for bots: the pushes onto the red plates (phase 1), a run over blue plates (2), the key the
+        next lock needs and bringing it (3); None while the face is open or there is nothing to do."""
+        import omegaconf
+
+        from snake_quest.workshop import DIRECTIONS, Plan
+
+        works = map.works
+        if self.clock.open:
+            return None
+        weapon = snake.weapon
+        armed = weapon is not None and weapon.ammo >= self.ARMED
+        if not armed and any(ent.alive and hasattr(ent, "WEAPON") for ent in map.entities):
+            return None  # a weapon first, for when the face opens
+        origin = works.origin
+
+        def cell_of(pos: Vec2) -> tuple[int, int]:
+            return int(pos.x - origin.x) // CELL, int(pos.y - origin.y) // CELL
+
+        def plates(colour: int) -> list[tuple[int, int]]:
+            return [(min(x for x, _ in t) // 2, min(y for _, y in t) // 2) for c, t in works.plates if c == colour]
+
+        steps = []
+        if self.phase == 0:
+            pressed = {cell_of(crate.center) for crate in works.crates if crate is not self.clock}
+            for plate in plates(0):
+                if plate in pressed:
+                    continue
+                for crate in works.crates:
+                    here = cell_of(crate.center)
+                    if crate is self.clock or here in plates(0):
+                        continue
+                    push = next(
+                        (
+                            [list(here), name, gap]
+                            for name, (dx, dy) in DIRECTIONS.items()
+                            if (gap := (plate[0] - here[0]) * dx + (plate[1] - here[1]) * dy) > 0
+                            and (here[0] + dx * gap, here[1] + dy * gap) == plate
+                        ),
+                        None,
+                    )
+                    if push is not None:
+                        steps.append({"push": push})
+                        break
+        elif self.phase == 1:
+            run, left = [cell_of(snake.head.pos)], plates(1)
+            for _ in range(min(len(left), max(1, round(self.setting("hold"))))):  # the nearest, then the next nearest
+                run.append(min(left, key=lambda plate, at=run[-1]: abs(plate[0] - at[0]) + abs(plate[1] - at[1])))
+                left.remove(run[-1])
+            run = run[1:]
+            gap = sum(abs(a[0] - b[0]) + abs(a[1] - b[1]) for a, b in zip(run, run[1:], strict=False)) * CELL
+            needed = int(gap / snake.effective_speed * self.SLACK) + 12  # the body must reach over the whole run
+            steps = ([{"grow": needed}] if len(snake) < needed else []) + [{"visit": list(plate)} for plate in run]
+        elif self.locks:  # the key, a meal or two (it sits deeper, away from the mice), then to the clock
+            steps = [
+                {"key": Plan.COLOURS[self.locks[0]]},
+                {"grow": len(snake) + self.BURY},
+                {"bring": list(cell_of(self.clock.center))},
+            ]
+        if not steps:
+            return None
+        return Plan(omegaconf.OmegaConf.create([{"reset": None, "steps": steps}]), works)
+
+    def bar(self, map, snake):
+        return max(self.clock.health, 0) / self.full
+
+    def phase_message(self):
+        return "THE CLOCKWORK SPRINGS LOOSE" if self.phase == 1 else "THE CLOCKWORK WINDS ITSELF SHUT"
+
+    def defeated(self, map):
+        return not self.clock.alive
+
+    def target(self):
+        """Its face while it is open."""
+        return self.clock.center if self.clock.alive and self.clock.open else None
+
+    def solids(self):
+        """Points along each hand where it is and will be after the next tick, for bots to keep clear of."""
+        center, circles = self.clock.center, []
+        tick = self.setting("tick")
+        for angle, length, step in zip(self.angles, self.cfg.hands, (tick, tick / 4), strict=True):
+            for a in (angle + step * k / 2 for k in range(5)):
+                direction = Vec2(pyxel.cos(a), pyxel.sin(a))
+                circles += [(center + direction * r, self.DANGER) for r in range(self.HUB, int(length) + 1, 10)]
+        return circles
+
+
 BOSSES: dict[str, type[Boss]] = {
-    cls.key: cls for cls in [Hunger, AlphaBoss, CoreBoss, OuroborosBoss, BroodMotherBoss, MothershipBoss]
+    cls.key: cls for cls in [Hunger, AlphaBoss, CoreBoss, OuroborosBoss, BroodMotherBoss, MothershipBoss, ClockworkBoss]
 }
 
 

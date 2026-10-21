@@ -347,3 +347,53 @@ Win rates are as relative as ever: the bot reads the solution, people find it. T
   one more rule; it would fit level 34 next to the belts, or a one-off level. Left out for now.
 - **Length in level 31.** Without apples the length is fixed, which keeps the body out of the plates' way. If it feels
   stingy, a few apples in the last room.
+
+## As built
+
+The arc is in the game (levels 31–35, M8 in the roadmap). Decisions taken, and where it differs from the design above:
+
+- **The rules.**
+  - The stall is built as designed, for crates only (and the Clockwork, a crate that never moves).
+  - A head that meets a crate at a glance (more along its face than into it) slides along instead of pushing: otherwise
+    a snake running beside a crate pushed it sideways or stalled for good.
+  - A gate whose plates are let go of blinks for 0.6 s before it shuts (`GATE_WARN`): shutting at once killed a head
+    arriving in the same moment, which wasn't fair.
+  - Plates count per bench grid cell, so plates side by side are separate.
+  - Levers and reset levers act once each time the head gets onto them (a cell has four of their tiles).
+- **Layouts.** Each level's puzzle text is in `tools/puzzles/`. A crate standing on a belt has its own characters
+  (`) V ( A`), since a cell holds one character.
+- **Bots.** They follow written plans (`plan:` in the level file), checked against the puzzle text by
+  `tools/solve_workshop.py check` (a test runs it). `solve` searches room by room for the fewest pushes; it is slow on
+  big levels (half a minute for Crates), so it is a design tool, not a test.
+  - A push is lined up by steering for a point on the push line a little ahead of the head (`LEAD`), then driven
+    through; the bot turns off when the crate is nearly there and lets it glide.
+  - Bots keep off levers and reset levers the plan isn't heading for.
+- **Difficulty.** Puzzles don't scale, so harder difficulties bring clockwork mice into the Workshop (spawned away
+  from the head, faster on nightmare in Keys and Conveyors), and nightmare has a time limit. Easy and medium play the
+  puzzles alone.
+- **Crates.** Three rooms (not four) with their gates; three apples about, for some length to manage.
+- **Pressure Plates.** Golden apples placed in the tilemap give the length; the plates of a room lie close enough
+  together that about 60 and 90 segments hold them (more made the snake too long to steer in the rooms).
+- **Keys.** The red, yellow and blue keys open their locks in turn; mouse holes in rooms 2 and 3, thorns on the way.
+- **Conveyors.** Three rooms: a lever that sends a crate onto its plate, a push onto a belt up to a plate, and one lever
+  turning two belts at once.
+- **Boss: The Clockwork.**
+  - Its hands cut what they sweep over or the head runs into, as a shot does (half the body at the head), with a second
+    of grace afterwards; they don't kill outright, since the puzzles lie right beside them.
+  - Phase 2's blue plates come in pairs off the clock's corners: holding two plates five cells apart needed a snake so
+    long it couldn't move round the clock.
+  - Phase 3 has two locks (`locks`, a pressure setting) instead of three, and a key counts as brought when the head
+    touches the clock.
+  - Bots get their plan from the boss, made anew as the fight goes; they fetch a weapon first.
+- **Music.** Pyxel has only eight music slots, all taken, so the Workshop's track is a tuple of sounds in `sound.MUSIC`
+  and `sound.channels()` plays either kind.
+
+Bot win rates (8 seeds; easy / medium / hard / nightmare):
+
+| Level | Easy | Medium | Hard | Nightmare |
+|---|---|---|---|---|
+| Crates | 100% | 100% | 38% | 25% |
+| Pressure Plates | 100% | 100% | 75% | 50% |
+| Keys | 100% | 100% | 75% | 62% |
+| Conveyors | 100% | 100% | 88% | 62% |
+| Boss: The Clockwork | 88% | 62% | 50% | 12% |

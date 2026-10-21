@@ -1,0 +1,67 @@
+tm: 0  # tools/draft_workshop.py arc7.pyxres --tm 0 tools/puzzles/crates.txt
+width: 864
+height: 224
+tint: {3: 4, 11: 10}  # the hedges as brass and copper
+
+start:
+  x: 56
+  y: 76
+
+timers:  # a snack or two about the rooms
+  apple1:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+  apple2:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+  apple3:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+
+goal:
+  exit: true
+
+# harder: clockwork mice about the rooms; nightmare also against the clock
+difficulty:
+  hard:
+    timers:
+      mice: {duration: 8, frequency: 15, fire_n: 0, callback: {type: spawn, entity: mouse, max: 2, away: 120}}
+  nightmare:
+    goal: {time_limit: 210}
+    timers:
+      mice: {duration: 5, frequency: 8, fire_n: 0, callback: {type: spawn, entity: mouse, max: 2, away: 120}}
+
+title: "Crates"
+intro:
+  - "The Workshop's gates are worked by plates. Push"
+  - "the crates onto them: run into a crate and it moves."
+  - "One that can't move stops you; turn along it."
+  - "Stuck? The red lever puts the room's crates back."
+
+# for bots: the steps of a solution (see workshop.Plan), room by room
+plan:
+  - reset: [1, 11]
+    steps:
+      - push: [[4, 5], right, 4]
+  - reset: [13, 11]
+    steps:
+      - push: [[15, 5], up, 2]
+      - push: [[16, 5], right, 7]
+  - reset: [28, 11]
+    steps:
+      - push: [[31, 6], right, 6]
+      - push: [[37, 6], up, 4]
+      - push: [[34, 9], right, 3]
+      - push: [[37, 9], up, 6]

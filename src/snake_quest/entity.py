@@ -44,6 +44,7 @@ class Entity:
     pullable = False  # a pickup the Tractor pulls in (see weapons.TractorBeam)
     solid = False  # never moves, a crash to touch, round (RADIUS): bots keep just clear of it (planets)
     pieces: tuple = ()  # what it leaves behind once dead (the map adds them: asteroids break up)
+    block = False  # a box the head pushes or stops at (crates): bots keep out of it unless they push it
     _img_x = None
     _img_y = None
 
@@ -447,9 +448,14 @@ class Hunter(Entity):
         if self.state == "detour":
             self._move(self._next_step(self._detour, None, map) - self.center, self.DETOUR_SPEED * speed)
             return
-        self._move(self._next_step(map.chase(snake), snake.segs[-1].pos, map) - self.center, self.SPEED * speed)
+        field, goal = self.quarry(snake, map)
+        self._move(self._next_step(field, goal, map) - self.center, self.SPEED * speed)
         if any((seg.pos - self.center).length() < self.BITE for seg in snake.segs[1:]):
             self.bite(snake, map)
+
+    def quarry(self, snake: "Snake", map: "Map") -> tuple[dict[tuple[int, int], int], Vec2]:
+        """What it hunts: walking distances to it and its position (the tail)."""
+        return map.chase(snake), snake.segs[-1].pos
 
     def _next_step(self, distance: dict[tuple[int, int], int], goal: Vec2 | None, map: "Map") -> Vec2:
         """Where to head for along `distance` (walking distances to where it is going): the centre of the neighbouring
@@ -1045,5 +1051,6 @@ class Enemy(Entity):
             self.wdg.draw()
 
 
-# the later arcs' entities (caves: arc 5, space: arc 6) register themselves; they build on the classes above
-from snake_quest import caves, space  # noqa: E402, F401
+# the later arcs' entities (caves: arc 5, space: arc 6, workshop: arc 7) register themselves; they build on the
+# classes above
+from snake_quest import caves, space, workshop  # noqa: E402, F401

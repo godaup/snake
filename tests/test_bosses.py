@@ -8,6 +8,7 @@ from snake_quest.bosses import (
     BOSSES,
     AlphaBoss,
     BroodMotherBoss,
+    ClockworkBoss,
     CoreBoss,
     Hunger,
     MothershipBoss,
@@ -46,7 +47,7 @@ def long_snake(n=30):
 
 def test_registry_and_unknown_type(hunger_map):
     expected = {"hunger": Hunger, "alpha": AlphaBoss, "core": CoreBoss, "ouroboros": OuroborosBoss}
-    assert {**expected, "brood": BroodMotherBoss, "mothership": MothershipBoss} == BOSSES
+    assert {**expected, "brood": BroodMotherBoss, "mothership": MothershipBoss, "clockwork": ClockworkBoss} == BOSSES
     with pytest.raises(ValueError, match="unknown boss"):
         load_boss(omegaconf.OmegaConf.create({"type": "dragon"}), hunger_map)
 

@@ -20,7 +20,7 @@ class GameStateHandler(ABC):
     def on_enter(self) -> None:  # noqa: B027 (optional hook)
         """Called when the game switches to this state, before its first update."""
 
-    def get_music(self) -> int | None:
+    def get_music(self) -> int | tuple[int, ...] | None:
         """if music should be played return id"""
         return None
 

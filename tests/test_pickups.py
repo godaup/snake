@@ -9,7 +9,7 @@ from snake_quest.entity import ENTITY_NAMES, Firefly, GoldenApple, SpeedApple
 from snake_quest.hud import Hud
 from snake_quest.map import Map
 from snake_quest.snake import INIT_SPEED, MAX_SPEED, Snake
-from snake_quest.tiles import WALL_TILES
+from snake_quest.tiles import GATE_OPEN_TILES, GATE_TILES, LOCK_TILES, WALL_TILES
 from snake_quest.utils import Vec2
 from tests.conftest import FakeSounds
 
@@ -131,10 +131,15 @@ def test_firefly_flies_to_a_snake_nearby_but_ignores_one_far_away():
 
 @pytest.mark.parametrize("level", CAMPAIGN.levels, ids=lambda lv: lv.name)
 def test_no_closed_floor_pockets(assets, game, level):
-    """Everything not a wall is reachable from the start, so spawns can't land out of reach."""
+    """Everything not a wall is reachable from the start, so spawns can't land out of reach (the Workshop's gates and
+    locks counted open: they open while playing)."""
     level_map = Map(level=level, game=game)
-    reachable = level_map.walking_distances(level_map.start)
     tilemap = pyxel.tilemaps[level_map.cfg.tm]
+    for y in range(level_map.cfg.height // 8):
+        for x in range(level_map.cfg.width // 8):
+            if tilemap.pget(x, y) in (*GATE_TILES, *LOCK_TILES):
+                tilemap.pset(x, y, GATE_OPEN_TILES[0])
+    reachable = level_map.walking_distances(level_map.start)
     width, height = level_map.cfg.width // 8, level_map.cfg.height // 8
     pockets = [
         (x, y)
