@@ -80,14 +80,15 @@ as the finale.
 ### Arc 5: The Caves (darkness and digging)
 
 Builds on `darkness` and the hunters. New: a map that changes while playing (walls dug away or caving in).
+Designed in detail in [docs/arc5-caves.md](docs/arc5-caves.md).
 
 | #  | Level                 | Twist                                                              | Goal              |
 |----|-----------------------|--------------------------------------------------------------------|-------------------|
-| 21 | Webs                  | Spiders spin webs that slow the snake or hold it for a moment      | collect all       |
+| 21 | Webs                  | Spiders spin webs that hold the snake for a moment                 | collect all crystals |
 | 22 | Moles                 | Moles dig new tunnels through the walls, opening shortcuts for enemies | defeat N      |
-| 23 | Collapse              | Tunnels cave in behind the snake; there is no way back              | reach the exit    |
-| 24 | Bats                  | Bats sleep in the dark and wake up in the snake's light             | survive N seconds |
-| 25 | **Boss: The Brood Mother** | A giant spider that webs the cave shut and calls in its young | defeat the boss   |
+| 23 | Collapse              | A cave-in front chases the snake through a long tunnel              | reach the exit    |
+| 24 | Bats                  | Bats wake up in any light; **Flare** shots light the way and scare them | survive N seconds |
+| 25 | **Boss: The Brood Mother** | A giant spider: egg sacs, then drops from the dark ceiling, webs the cave shut | defeat the boss |
 
 ### Arc 6: Space (oxygen and inertia)
 
@@ -192,6 +193,7 @@ Open: playtesting.
       (`states/select.py`, `states/worldmap.py`: fog over the unopened ones); highscores per arc and difficulty
 - [x] Level music: one track per arc and one for the bosses (`tools/compose_music.py`, channels 0-2; the effects keep
       channel 3)
+- [x] Settings screen: music and sound volume, fullscreen, screen filter (saved in the profile)
 - [ ] Initials for highscores
 - [ ] A winnability test per level (`PathController` bot in `tests/test_winnable.py`: Classic, The Hunger; input layer, later `pyxel-mcp` once the upstream GitHub account is restored)
 - [ ] `snake-quest` 0.x on PyPI
