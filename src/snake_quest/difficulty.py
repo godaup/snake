@@ -21,7 +21,14 @@ import omegaconf
 NAMES = ("easy", "medium", "hard", "nightmare")
 DEFAULT = "medium"
 # goals with a number to scale: key -> the scaled fields (None: the value itself)
-SCALED_GOALS = {"score": None, "length": None, "survive": None, "defeat": None, "hold_length": ("length", "seconds")}
+SCALED_GOALS = {
+    "score": None,
+    "length": None,
+    "survive": None,
+    "defeat": None,
+    "hold_length": ("length", "seconds"),
+    "collapse": ("speed",),  # the cave-in comes faster
+}
 LIMITS = ("time_limit",)  # goals that get easier with more: divided by the goals factor
 
 

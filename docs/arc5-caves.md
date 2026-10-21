@@ -299,3 +299,50 @@ Ouroboros stays the finale as level 20 for now; the roadmap's open question (mov
 - Should moles also eat apples, so the Moles level has hunger pressure? (Probably not: one idea per level.)
 - Should darkness levels show a minimap of explored tunnels? It is a nice aid, but only worth it if playtests say
   Webs or Bats feel lost.
+
+## As built
+
+The arc is in the game (levels 21–25, M6 in the roadmap). Where it differs from the design above, and why:
+
+- **The neck.** Slowed by a web, the body bunches up behind the head, and the self-bite test (three segments) took
+  that for a bite. `Snake.neck()` now measures the part that can't be bitten by distance along the body (3 px: still
+  three segments at any normal speed); the bot's look-ahead does the same.
+- **Webs.**
+  - Spiders are more dangerous than designed: running into one head first is the end (as with a beetle), and one
+    crawling into the body bites 4 segments off.
+  - The level has a time limit (150 s at medium), and hard and nightmare spawn 2 and 4 extra crystals and more
+    spiders; without that the bot won hard and nightmare nearly every time.
+  - The bot needed no web costs in its way-finding: it beats the level and the bands without them.
+- **Moles.**
+  - Moles dig a tunnel five tiles wide (`SPADE`), not one. A one- or three-tile tunnel is a dead end the snake can't
+    turn in.
+  - The goal is `defeat: 8`, counting every kill (one sleeping beetle besides the moles).
+  - Underground moles are not `exposed`, a new entity flag: shots and bot aims skip them.
+- **Collapse.**
+  - The cave-in is a goal type (`collapse: {speed, start, warn}`), like `time_limit`: always done, it is the pressure,
+    and the footer shows its lead for free.
+  - Its distances are octile (diagonal steps), not the four-way walking steps, which overcount bends so much that the
+    front fell far behind its speed.
+  - The settings are speed 30 px/s and start 4 s; the speed scales with the goals factor, and hard has its own 38.
+- **Bats.**
+  - The Flare is a short `Gun` whose shot becomes a `Burning` light where it comes to rest; it hurts what it hits.
+  - The bot doesn't throw flares ahead: it shoots them at bats like any gun, and that is enough for the bands.
+- **The Brood Mother.**
+  - In her lair she hangs out of reach (shots fly underneath, she can't be touched), not armoured. Otherwise she
+    stands in the line of fire of the egg sacs around her and every shot at them glances off her.
+  - Dazed on the ground she can't bite, and bots don't avoid her then (otherwise they couldn't turn to shoot her).
+  - No flares in the boss level: a flare pickup replaces the gun, and its four slow shots are no match for her.
+  - Egg sacs are placed with open floor around them, so there is always a line of fire.
+  - Bosses gained `danger()`, a circle bots keep out of: her shadow.
+  - The bot stocks up on ammo while a boss offers nothing to shoot.
+  - Settings: `health` 10, `drop` 5 s, `warn` 1.8 s, `stun` 5 s; one spiderling hatches per landing in the last phase.
+
+Bot win rates (8 seeds; easy / medium / hard / nightmare):
+
+| Level | Easy | Medium | Hard | Nightmare |
+|---|---|---|---|---|
+| Webs | 88% | 100% | 75% | 25% |
+| Moles | 75% | 75% | 88% | 38% |
+| Collapse | 100% | 100% | 38% | 25% |
+| Bats | 88% | 88% | 25% | 25% |
+| The Brood Mother | 75% | 75% | 38% | 12% |

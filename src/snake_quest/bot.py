@@ -34,6 +34,11 @@ LEVELS = (
     "armored",
     "gauntlet",
     "ouroboros",
+    "webs",
+    "moles",
+    "collapse",
+    "bats",
+    "brood",
 )
 
 HUNT_LENGTH = 16  # segments: shorter, the bot eats before it hunts
@@ -77,6 +82,9 @@ def target(snake, map):
     # the boss first, then what the level asks to destroy (nests), then the foes they send out
     if map.boss is not None and (body := map.boss.target()) is not None:
         return body
+    # a boss out of reach for now (the Brood Mother up in the dark): stock up for when it comes down
+    if map.boss is not None and snake.weapon.ammo < STOCK and (more := more_ammo(snake, map)):
+        return more
     targets = [goal.entity_cls for goal in map.goals if isinstance(goal, DestroyAllGoal)]
     aimed = nearest(*targets, clearance=0)(snake, map) if targets else None
     hunted = foes if getattr(snake.weapon, "PIERCE", False) else soft_foes

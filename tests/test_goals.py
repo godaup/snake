@@ -160,6 +160,7 @@ def test_every_registered_goal_is_tested():
         "time_limit",
         "defeat",
         "hold_length",
+        "collapse",
         "collect_all",
         "destroy_all",
         "boss",

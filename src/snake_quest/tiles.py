@@ -15,6 +15,7 @@ class TileKind(Enum):
     HAZARD = "hazard"  # walkable, but every hazard tile the head enters cuts HAZARD_CUT segments off the tail
     ICE = "ice"  # walkable, but slippery: the snake's heading drifts after its steering (ICE_GRIP)
     MIRROR = "mirror"  # walkable, but left and right are swapped while the head is on it
+    WEB = "web"  # walkable, but a web holds the snake for a moment (WEB_HOLD), then it is torn
 
 
 EMPTY_TILE = (0, 0)
@@ -26,9 +27,15 @@ WALL_VARIANT_ROW = 8
 TRAIL_TILE = (7, 10)
 TRAIL_CRUMBLE_TILE = (8, 10)  # its last TRAIL_CRUMBLE seconds
 TRAIL_CRUMBLE = 1.5
-WALL_TILES = frozenset({WALL_TILE, TRAIL_TILE, TRAIL_CRUMBLE_TILE} | {(mask, WALL_VARIANT_ROW) for mask in range(16)})
+# the cave-in (arc 5, the `collapse` goal): cracked ceiling (dust falling) on floor the front is about to reach, then
+# rubble, a wall for good
+CRACK_TILE = (13, 10)
+RUBBLE_TILE = (12, 10)
+WALL_TILES = frozenset(
+    {WALL_TILE, TRAIL_TILE, TRAIL_CRUMBLE_TILE, RUBBLE_TILE} | {(mask, WALL_VARIANT_ROW) for mask in range(16)}
+)
 # floor decorations (grass, flowers, stones): drawn, but walkable and free for spawning
-DECOR_TILES = frozenset((k, 9) for k in range(6))
+DECOR_TILES = frozenset((k, 9) for k in range(8))  # 6 and 7: the caves' pebbles and crystal shards
 FLOOR_TILES = frozenset({EMPTY_TILE} | DECOR_TILES)
 # level design helper marking the intended route (e.g. through the maze); hidden until revealed
 PATH_TILE = (3, 0)
@@ -40,6 +47,13 @@ HAZARD_CUT = 5
 ICE_TILE = (6, 10)
 ICE_GRIP = 0.12  # share of the way to where the snake points that its heading turns per frame on ice
 MIRROR_TILE = (9, 10)
+# webs (arc 5): the head entering one is held (slowed to WEB_SLOW for WEB_HOLD seconds) and tears it; a torn web
+# grows back after WEB_REGROW seconds. Spiders spin new ones (see caves.py)
+WEB_TILE = (10, 10)
+TORN_WEB_TILE = (11, 10)
+WEB_SLOW = 0.35
+WEB_HOLD = 1.2
+WEB_REGROW = 8.0
 
 TILE_KINDS: dict[tuple[int, int], TileKind] = {
     **{tile: TileKind.FLOOR for tile in FLOOR_TILES},
@@ -50,6 +64,9 @@ TILE_KINDS: dict[tuple[int, int], TileKind] = {
     HAZARD_TILE: TileKind.HAZARD,
     ICE_TILE: TileKind.ICE,
     MIRROR_TILE: TileKind.MIRROR,
+    WEB_TILE: TileKind.WEB,
+    TORN_WEB_TILE: TileKind.FLOOR,
+    CRACK_TILE: TileKind.FLOOR,
 }
 # tiles that stay in the tilemap after loading (walls only as hedge variants)
 TERRAIN_TILES = frozenset(tile for tile, kind in TILE_KINDS.items() if kind != TileKind.PATH) - {WALL_TILE}

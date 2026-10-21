@@ -1,0 +1,63 @@
+tm: 2  # tools/draft_garden.py cave --long (--src-tm 2 --dst-tm 2 --seed 2), webs (4), the exit at the far end
+width: 1536
+height: 256
+tint: {3: 4, 11: 15}  # the hedges as cave rock
+
+start:
+  x: 40
+  y: 140
+
+darkness:
+  light: 80
+
+timers:
+  speed1:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: speed
+  speed2:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: speed
+  more_speed:
+    duration: 10
+    frequency: 10
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: speed
+      max: 3
+  apple1:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+  apple2:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+
+goal:
+  exit: true
+  collapse: {speed: 30, start: 4, warn: 1.5}
+
+title: Collapse
+intro:
+  - "The cave is coming down behind you. Run for the"
+  - "exit at the far end. Where the dust falls, the rock"
+  - "follows. Side caverns hold treats, and dead ends."
+  - "Speed apples help. Webs don't."
+
+difficulty:  # scaling alone leaves hard close to medium: the front only just keeps up with the snake there
+  hard: {goal: {collapse: {speed: 38}}}

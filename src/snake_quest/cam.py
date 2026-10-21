@@ -31,6 +31,9 @@ class Cam:
         head = self.snake.head.pos
         self.offset.x = _follow(self.game.cfg.width, self.map.cfg.width, head.x)
         self.offset.y = _follow(self.game.cfg.area.h, self.map.cfg.height, head.y - header)
+        if self.map.shake:  # the ground trembles (a cave-in near)
+            self.offset.x += pyxel.rndi(-self.map.shake, self.map.shake)
+            self.offset.y += pyxel.rndi(-self.map.shake, self.map.shake)
 
     def draw(self):
         self.map.draw(self.offset)

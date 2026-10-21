@@ -40,6 +40,7 @@ class Entity:
     tally = True  # counted when gone: as defeated (killed) or eaten (see Map.update); not for the snake's own mines
     avoid = True  # bots steer around it when hostile (not around drones: a sting costs less than swerving)
     armored = False  # only piercing shots (the Laser) hurt it; others glance off (deflect)
+    exposed = True  # shots can hit it and bots aim at it (not at a mole underground)
     _img_x = None
     _img_y = None
 
@@ -531,6 +532,7 @@ class Nest(Entity):
     _img_x = 4
     _img_y = 11
     hostile = True
+    BROOD_CLS = Hunter  # what crawls out
     HEALTH = 2
     SPAWN = 9.0  # seconds
     BROOD = 2
@@ -555,7 +557,7 @@ class Nest(Entity):
         self.left = self.SPAWN * map.game.difficulty.hostile
         self.brood = [beetle for beetle in self.brood if beetle.alive]
         if len(self.brood) < self.BROOD:
-            beetle = Hunter.at_pos(Vec2(self.pos.x, self.pos.y))
+            beetle = self.BROOD_CLS.at_pos(Vec2(self.pos.x, self.pos.y))
             beetle.asleep = False  # out to hunt
             self.brood.append(beetle)
             map.entities.append(beetle)
@@ -1034,3 +1036,7 @@ class Enemy(Entity):
             self.wdg.x = self.pos.x + (self.w / 2) - (self.wdg.w / 2) + offset.x
             self.wdg.y = self.pos.y - self.wdg.h - WIDGET_MARGIN + offset.y
             self.wdg.draw()
+
+
+# arc 5's entities register themselves (they build on the classes above)
+from snake_quest import caves  # noqa: E402, F401

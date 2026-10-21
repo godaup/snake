@@ -1,0 +1,86 @@
+tm: 4  # tools/draft_garden.py cave (--src-tm 4 --dst-tm 4 --seed 6 --open 40 26 9): her lair, an open cavern in the middle
+width: 640
+height: 448
+tint: {3: 4, 11: 15}  # the hedges as cave rock
+
+start:
+  x: 60
+  y: 60
+
+darkness:
+  light: 64
+
+boss:
+  type: brood
+  pos: [320, 228]  # her lair
+  health: 10
+  sacs: 4
+  call: 7
+  drop: 5
+  warn: 1.8
+  stun: 5
+  hatch: 0
+  light: [64, 44]
+  phases:
+    - {below: 1}
+    - {below: 0.67}
+    - {below: 0.34, drop: 4.5, hatch: 1, dim: true}
+
+timers:
+  first_gun:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: gun
+      pos: [60, 80]
+  guns:
+    duration: 8
+    frequency: 8
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: gun
+      max: 2
+  spreads:
+    duration: 20
+    frequency: 15
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: spread
+      max: 1
+  apple1:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+  apple2:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+  apple3:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+
+goal:
+  boss: defeated
+
+music: boss  # instead of the arc's
+
+title: "Boss: The Brood Mother"
+intro:
+  - "The Brood Mother guards her egg sacs. Shoot them,"
+  - "and she climbs into the dark. Watch for her shadow:"
+  - "she drops where you are heading. Landed, she lies"
+  - "dazed for a moment: that is when shots hurt her."

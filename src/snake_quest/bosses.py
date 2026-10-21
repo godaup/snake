@@ -80,6 +80,10 @@ class Boss(ABC):
         """Where to shoot at, for bots: the boss's body if it has one."""
         return None
 
+    def danger(self) -> "tuple[Vec2, float] | None":
+        """A spot (centre, radius) for bots to keep away from, e.g. where something is about to land."""
+        return None
+
 
 class Hunger(Boss):
     """The Hunger (level 5): hunger rises all the time and the snake shrinks the hungrier it is, down to nothing;
@@ -305,7 +309,151 @@ class OuroborosBoss(Boss):
         return body.segs[-1].pos if body is not None and self.rival.lives > 0 else None
 
 
-BOSSES: dict[str, type[Boss]] = {cls.key: cls for cls in [Hunger, AlphaBoss, CoreBoss, OuroborosBoss]}
+class BroodMotherBoss(Boss):
+    """The Brood Mother (level 25): a giant spider (the BroodMother entity) in her lair at `pos` with `health`; the bar
+    is her health. First she hangs there out of reach (shots glance off), guarded by `sacs` egg sacs about the cave,
+    each sending out spiderlings every `call` seconds while the snake is near; every sac destroyed (shot, or burnt by a
+    flare) costs her a share of a third of her health. Then (phases by `below`, like the Alpha's) she climbs into the
+    dark: every `drop` seconds her shadow grows for `warn` seconds where the snake's head is heading, and she lands
+    there, crushing what lies under her (`snake.wound`: half the snake for its head) and spinning webs around her. For
+    `stun` seconds she is down and dazed, the only time shots hurt her; then she climbs again. Phases may set `hatch`
+    (spiderlings that hatch where she lands) and `dim` (the cave's light shrinks from `light[0]` to `light[1]`).
+
+        boss: {type: brood, pos: [x, y], health: 12, sacs: 4, call: 7, drop: 6, warn: 1.5, stun: 2.5, hatch: 0,
+               light: [64, 44], phases: [{below: 1}, {below: 0.67}, {below: 0.34, drop: 4.5, hatch: 2, dim: true}]}"""
+
+    key = "brood"
+    title = "THE BROOD MOTHER"
+    pressure = ("health", "sacs", "hatch")
+    relief = ("call", "drop", "warn", "stun")
+    lights = ("light",)
+    CRUSH = 12  # px from her centre
+    WEB_RING = (2.5, 3.5)  # tiles: webs she spins around where she lands
+    SAC_SPACING = 96  # px between the sacs and from her lair
+
+    def __init__(self, cfg, map):
+        super().__init__(cfg, map)
+        from snake_quest.caves import BroodMother, EggSac, Spiderling
+
+        self._sac, self._spiderling = EggSac, Spiderling
+        self.mother = BroodMother.at_pos(Vec2(*cfg.pos) - Vec2(8, 8))
+        self.mother.health = self.full = max(1, round(cfg.health))
+        map.entities.append(self.mother)
+        clear = [[*cfg.pos, self.SAC_SPACING]]
+        self.sacs = []
+        for _ in range(max(1, round(cfg.sacs))):
+            sac = EggSac.at_pos(self._open_spot(map, clear))
+            sac.SPAWN = self.setting("call")
+            clear.append([sac.pos.x + 4, sac.pos.y + 4, self.SAC_SPACING])
+            self.sacs.append(sac)
+        map.entities.extend(self.sacs)
+        self.sac_damage = self.full / 3 / len(self.sacs)
+        self.burst = 0  # sacs destroyed so far
+        self.left = 0.0  # seconds until the next step of the drop
+        self.target_pos: Vec2 | None = None
+
+    SAC_ROOM = 24  # px of open floor around a sac: room to shoot it from any side
+
+    def _open_spot(self, map, clear) -> Vec2:
+        """A free spot (see `map.new_pos`) with open floor SAC_ROOM px around it, if one turns up in a few tries."""
+        for _ in range(50):
+            pos = map.new_pos(clear=clear)
+            centre = pos + Vec2(4, 4)
+            ring = [Vec2(pyxel.cos(a), pyxel.sin(a)) * self.SAC_ROOM + centre for a in range(0, 360, 30)]
+            if not any(map.check_on_wall(point) or not map.clear_line(centre, point) for point in ring):
+                return pos
+        return pos
+
+    def next_phase_due(self, map, snake):
+        return self.mother.health <= self.full * self.phases[self.phase + 1]["below"] + 1e-6
+
+    def on_phase(self, map, snake):
+        if self.mother.state == "hang":
+            self.mother.state, self.left = "ceiling", self.setting("drop")
+
+    def _light(self, map) -> None:
+        if map.darkness is not None and "light" in self.cfg:
+            full, dim = self.setting("light")
+            map.darkness.light = dim if self.phases[self.phase].get("dim", False) else full
+
+    def act(self, map, snake, seconds):
+        self._light(map)
+        burst = sum(not sac.alive for sac in self.sacs)
+        if burst > self.burst:  # her brood is lost: it hurts her
+            self.mother.health -= (burst - self.burst) * self.sac_damage
+            self.burst = burst
+            self.mother.flash = self.mother.FLASH
+            map.game.sm.effect("hurt")
+        if self.mother.health <= 0 and self.mother.alive:
+            self.mother.alive, self.mother.killed = False, True
+        mother = self.mother
+        if mother.state == "hang" or not mother.alive:
+            return
+        self.left -= seconds
+        if mother.state == "ceiling" and self.left <= 0:
+            self._aim(map, snake)
+            mother.state, self.left = "shadow", self.setting("warn")
+        elif mother.state == "shadow":
+            mother.shadow = 1 - max(self.left, 0) / self.setting("warn")
+            if self.left <= 0:
+                self._land(map, snake)
+                mother.state, self.left = "rest", self.setting("stun")
+        elif mother.state == "rest" and self.left <= 0:
+            mother.state, self.left = "ceiling", self.setting("drop")
+
+    def _aim(self, map, snake) -> None:
+        """Where she will land: where the head will be when she does, if that is open floor, else where it is."""
+        velocity = Vec2(pyxel.cos(snake.heading), pyxel.sin(snake.heading)) * snake.effective_speed
+        ahead = snake.head.pos + velocity * (self.setting("warn") * map.game.cfg.fps)
+        spot = ahead if not map.check_on_wall(ahead) else snake.head.pos
+        self.mother.pos = spot - Vec2(8, 8)
+        self.mother.shadow = 0.0
+
+    def _land(self, map, snake) -> None:
+        centre = self.mother.center
+        map.game.sm.effect("boom")
+        index = snake.segment_at(centre, self.CRUSH - snake.size)
+        if index is not None:
+            map.game.sm.effect("hurt")
+            if not snake.wound(index):
+                map.snake_killed = True
+        x, y = map.tile_xy(centre)
+        low, high = self.WEB_RING
+        reach = int(high) + 1
+        for dx in range(-reach, reach + 1):
+            for dy in range(-reach, reach + 1):
+                if low <= (dx * dx + dy * dy) ** 0.5 <= high and pyxel.rndf(0, 1) < 0.5:
+                    tile = (x + dx, y + dy)
+                    if not any(map.tile_xy(seg.pos) == tile for seg in snake.segs):
+                        map.spin_web(tile)
+        for _ in range(round(self.phases[self.phase].get("hatch", self.cfg.get("hatch", 0)))):
+            young = self._spiderling.at_pos(centre - Vec2(4, 4) + Vec2(pyxel.rndf(-6, 6), pyxel.rndf(-6, 6)))
+            map.entities.append(young)
+
+    def bar(self, map, snake):
+        return max(self.mother.health, 0) / self.full
+
+    def phase_message(self):
+        return "THE BROOD MOTHER CLIMBS INTO THE DARK" if self.phase == 1 else "THE BROOD MOTHER SHROUDS THE CAVE"
+
+    def defeated(self, map):
+        return not self.mother.alive
+
+    def target(self):
+        """An egg sac while any stands, else her while she is down."""
+        sac = next((sac for sac in self.sacs if sac.alive), None)
+        if sac is not None:
+            return sac.pos + Vec2(4, 4)
+        return self.mother.center if self.mother.alive and self.mother.state == "rest" else None
+
+    def danger(self) -> "tuple[Vec2, float] | None":
+        """Where she is about to land, for bots to keep away from."""
+        if self.mother.state == "shadow":
+            return self.mother.center, self.CRUSH + 6
+        return None
+
+
+BOSSES: dict[str, type[Boss]] = {cls.key: cls for cls in [Hunger, AlphaBoss, CoreBoss, OuroborosBoss, BroodMotherBoss]}
 
 
 def load_boss(cfg, map: "Map") -> Boss:

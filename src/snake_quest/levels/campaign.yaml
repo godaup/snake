@@ -44,3 +44,13 @@ arcs:
       decor: [[0, 9], [5, 9], [5, 9]]
       props: [[7, 10], [8, 10], [9, 10], [11, 13], [11, 13], [10, 13]]
       boss: [13, 13]
+  - name: The Caves
+    resources: arc5.pyxres
+    music: caves
+    levels: [webs, moles, collapse, bats, brood]
+    map:
+      ground: 1
+      tint: {3: 4, 11: 15}
+      decor: [[6, 9], [6, 9], [7, 9]]
+      props: [[10, 15], [10, 15], [2, 15], [0, 15], [5, 15], [3, 15]]
+      boss: [12, 15]

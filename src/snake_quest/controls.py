@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Optional
 
 import pyxel
 
-from snake_quest.tiles import HAZARD_TILE, ICE_GRIP, ICE_TILE
+from snake_quest.tiles import CRACK_TILE, HAZARD_TILE, ICE_GRIP, ICE_TILE
 from snake_quest.utils import Vec2, collision_points, drift
 
 if TYPE_CHECKING:
@@ -90,7 +90,7 @@ class PathController(Controller):
     ESCAPES = (0.0, -1.0, 1.0)
     HORIZON = 16  # frames looked ahead
     ESCAPE = 20  # frames an arc's end must leave room for
-    BODY_SKIP = 6  # segments next to the head that can't be bitten
+    BODY_SKIP = 6  # segments next to the head that can't be bitten (more while slowed: see Snake.neck)
     LONG = 20  # segments: from this length on, arcs must also leave room to live in (see _room)
     ROOM = 8  # open cells needed per cell of body length
     CELL = 4  # px: grid of the room check
@@ -114,6 +114,7 @@ class PathController(Controller):
         self._age = 0  # frames since the distances were computed
         self._walls: dict[tuple[int, int], bool] = {}  # cell -> wall, cached per map
         self._walls_map = None
+        self._walls_version = 0  # the map's walls_version the cache is for
         self.mode = ""  # why the last steering was chosen: goal, aim, tail, escape or crash (for debugging)
         self._threats: list[tuple[Vec2, float]] = []  # centre and radius to keep away from, per frame
         self._shots: list[tuple[Vec2, Vec2]] = []  # position and velocity (px per frame) of hostile shots, per frame
@@ -141,6 +142,10 @@ class PathController(Controller):
                 continue
             radius = (self.SLEEPER if getattr(ent, "asleep", False) else self.THREAT) + max(ent.w, ent.h) - 8
             threats.append((ent.pos + Vec2(ent.w / 2, ent.h / 2), radius))
+        boss = getattr(map, "boss", None)
+        danger = boss.danger() if boss is not None else None  # e.g. where the Brood Mother will land
+        if danger is not None:
+            threats.append(danger)
         return threats
 
     def _steer(self, snake, map):
@@ -225,7 +230,7 @@ class PathController(Controller):
         head, best = snake.head.pos, None
         pierces = getattr(weapon, "PIERCE", False)
         for ent in map.entities:
-            if not (ent.alive and ent.hostile) or (ent.armored and not pierces):  # its shots would glance off
+            if not (ent.alive and ent.hostile and ent.exposed) or (ent.armored and not pierces):  # can't be hurt
                 continue
             to_ent = ent.pos + Vec2(ent.w / 2, ent.h / 2) - head
             distance = to_ent.length()
@@ -261,8 +266,8 @@ class PathController(Controller):
         return int(pos.x) // self.CELL, int(pos.y) // self.CELL
 
     def _wall(self, map: "Map", cell: tuple[int, int]) -> bool:
-        if map is not self._walls_map:
-            self._walls, self._walls_map = {}, map
+        if map is not self._walls_map or map.walls_version != self._walls_version:
+            self._walls, self._walls_map, self._walls_version = {}, map, map.walls_version
         if cell not in self._walls:
             center = Vec2(cell[0] * self.CELL + self.CELL / 2, cell[1] * self.CELL + self.CELL / 2)
             # cached: only the walls that stay (the trail comes and goes); thorns are walls for finding the way, though
@@ -272,6 +277,8 @@ class PathController(Controller):
             )
         if map.trail and not self._walls[cell]:
             return map.tile_xy(Vec2(cell[0] * self.CELL, cell[1] * self.CELL)) in map.trail
+        if map.walls_version and not self._walls[cell]:  # a cave-in's warning: never back into it
+            return map.tile_at(Vec2(cell[0] * self.CELL, cell[1] * self.CELL)) == CRACK_TILE
         return self._walls[cell]
 
     def _field(self, snake: "Snake", map: "Map", goal: tuple[int, int]) -> dict[tuple[int, int], int]:
@@ -384,7 +391,8 @@ class PathController(Controller):
         """Follow `steering` for `frames` (drifting on ice like the snake, see `drift`): (frames survived, end position,
         end orientation, first frame within REACH of `goal` or None, end heading)."""
         reached, heading = None, orient if heading is None else heading
-        speed, body = snake.effective_speed, snake.segs[self.BODY_SKIP :: 2]  # segments are ~1.3 px apart
+        skip = max(self.BODY_SKIP, snake.neck(self.BODY_SKIP))  # segments are ~1.3 px apart, closer while slowed
+        speed, body = snake.effective_speed, snake.segs[skip::2]
         for frame in range(1, frames + 1):
             orient = (orient + round(steering * snake.turn_speed)) % 360
             grip = ICE_GRIP if map.ice and map.tile_at(pos) == ICE_TILE else 1.0

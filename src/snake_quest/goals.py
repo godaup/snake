@@ -1,6 +1,7 @@
 """Win conditions of a level, built from the `goal` section of its YAML file. All goals must be met."""
 
 import datetime
+import heapq
 import math
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, ClassVar
@@ -8,7 +9,8 @@ from typing import TYPE_CHECKING, ClassVar
 import pyxel
 
 from snake_quest.entity import ENTITY_NAMES
-from snake_quest.tiles import EXIT_TILE
+from snake_quest.tiles import CRACK_TILE, EXIT_TILE, RUBBLE_TILE, WALL_TILES
+from snake_quest.utils import Vec2
 
 if TYPE_CHECKING:
     from snake_quest.map import Map
@@ -165,6 +167,103 @@ class TimeLimitGoal(Goal):
         return _fraction(self.left(), self.value)
 
 
+class CollapseGoal(Goal):
+    """`collapse: {speed: px/s, start: s, warn: s}`: the cave comes down behind the snake. After `start` seconds a front
+    moves out from the start at `speed` (along the ways through the cave, so side caverns and dead ends fill too): the
+    floor it reaches turns to rubble, a wall for good, the last `warn` seconds before it cracked (dust falling). Caught
+    by it, the snake's body is cut off there, and its head is the end. Always done: it is the pressure on the other
+    goals (an exit), like a time limit. The ground trembles while it is near."""
+
+    key = "collapse"
+    NEAR = 96  # px: closer, the camera shakes (and harder within half of it)
+
+    def __init__(self, value, map):
+        super().__init__(value, map)
+        self.speed, self.start, self.warn = float(value["speed"]), float(value["start"]), float(value["warn"])
+        self.elapsed = 0.0
+        # every tile the snake can reach, nearest first (px along the way from the start)
+        self.along = self._distances(map)
+        self.order = sorted(self.along, key=self.along.get)
+        self.filled = 0  # tiles of `order` turned to rubble
+        self.cracked = 0  # tiles of `order` cracked
+        self.lead = float("inf")  # px between the front and the snake's head
+
+    @staticmethod
+    def _distances(map) -> dict[tuple[int, int], float]:
+        """Px from the start to every reachable tile, moving straight or diagonally (diagonals only where both tiles
+        beside the corner are open): about the length of the way the snake takes, so the front keeps its speed in
+        bends too."""
+        tilemap = pyxel.tilemaps[map.tm]
+        width, height = map.cfg.width // 8, map.cfg.height // 8
+
+        def open_(tile):
+            return 0 <= tile[0] < width and 0 <= tile[1] < height and tilemap.pget(*tile) not in WALL_TILES
+
+        start = map.tile_xy(map.start)
+        along, queue = {start: 0.0}, [(0.0, start)]
+        while queue:
+            steps, (x, y) = heapq.heappop(queue)
+            if steps > along[x, y]:
+                continue
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1)):
+                nxt = (x + dx, y + dy)
+                if not open_(nxt) or (dx and dy and not (open_((x + dx, y)) and open_((x, y + dy)))):
+                    continue
+                cost = steps + (11.3 if dx and dy else 8.0)
+                if cost < along.get(nxt, float("inf")):
+                    along[nxt] = cost
+                    heapq.heappush(queue, (cost, nxt))
+        return along
+
+    def front(self) -> float:
+        """How far (px along the way) the cave has come down."""
+        return max(0.0, (self.elapsed - self.start) * self.speed)
+
+    def update(self, map, snake, dt):
+        self.elapsed += dt.total_seconds()
+        front = self.front()
+        tilemap = pyxel.tilemaps[map.tm]
+        while self.cracked < len(self.order) and self.along[self.order[self.cracked]] < front + self.speed * self.warn:
+            tile = self.order[self.cracked]
+            if tilemap.pget(*tile) not in WALL_TILES:
+                tilemap.pset(*tile, CRACK_TILE)
+            self.cracked += 1
+        caught = False
+        while self.filled < len(self.order) and self.along[self.order[self.filled]] < front:
+            tile = self.order[self.filled]
+            map.fill(tile, RUBBLE_TILE)
+            for ent in map.entities:
+                if ent.alive and map.tile_xy(ent.pos + Vec2(ent.w / 2, ent.h / 2)) == tile:
+                    ent.alive = False  # buried
+            self.filled += 1
+            caught = True
+        if caught:
+            index = next((i for i, seg in enumerate(snake.segs) if map.check_on_wall(seg.pos)), None)
+            if index == 0:
+                map.snake_killed = True
+            elif index is not None:
+                snake.segs = snake.segs[:index]
+                map.game.sm.effect("hurt")
+        head = self.along.get(map.tile_xy(snake.head.pos))
+        self.lead = head - front if head is not None and front > 0 else float("inf")
+        map.shake = 2 if self.lead < self.NEAR / 2 else 1 if self.lead < self.NEAR else 0
+
+    def done(self, map, snake):
+        return True
+
+    def describe(self):
+        return "Outrun the cave-in"
+
+    def status(self, map, snake):
+        if self.front() <= 0:
+            return f"CAVE-IN IN {math.ceil(self.start - self.elapsed)}s"
+        lead = "-" if self.lead == float("inf") else str(max(0, int(self.lead // 8)))
+        return f"CAVE-IN {lead}m BEHIND"
+
+    def progress(self, map, snake):
+        return None if self.lead == float("inf") else _fraction(self.lead, 4 * self.NEAR)
+
+
 class DefeatGoal(Goal):
     """`defeat: N`: kill N entities (eating does not count)."""
 
@@ -289,6 +388,7 @@ GOALS: dict[str, type[Goal]] = {
         TimeLimitGoal,
         DefeatGoal,
         HoldLengthGoal,
+        CollapseGoal,
         CollectAllGoal,
         DestroyAllGoal,
         BossGoal,

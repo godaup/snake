@@ -1,0 +1,77 @@
+tm: 3  # tools/draft_garden.py cave (--src-tm 3 --dst-tm 3 --seed 8), then scatter crystal (6) and mushroom (6)
+width: 640
+height: 512
+tint: {3: 4, 11: 15}  # the hedges as cave rock
+
+start:
+  x: 60
+  y: 60
+
+darkness:
+  light: 56
+
+timers:
+  roosts:  # bats asleep all over the cave
+    duration: 0
+    frequency: 0.05
+    fire_n: 12
+    callback:
+      type: spawn
+      entity: bat
+      away: 90
+  more_bats:
+    duration: 10
+    frequency: 8
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: bat
+      away: 120
+      max: 18
+  first_flare:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: flare
+      pos: [60, 80]
+  flares:
+    duration: 6
+    frequency: 8
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: flare
+      max: 2
+  apple1:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+  apple2:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+  apple3:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+
+goal:
+  survive: 75
+
+title: Bats
+intro:
+  - "Deep in the cave, bats hang asleep. Your light"
+  - "wakes them, and they bite. A FLARE burns on where"
+  - "it lands: light the way ahead, and they keep away"
+  - "from its fire. Survive."

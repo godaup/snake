@@ -17,6 +17,8 @@ MIN_SPEED = 1
 INIT_SPEED = 1.3
 SPAWN_DELAY = datetime.timedelta(microseconds=300)
 TURN_SPEED = 9  # degrees per frame at full steering
+NECK = 3.0  # px along the body from the head that it can't bite: 3 segments at any normal speed, more while
+# slowed (webs), when the segments lie closer
 
 
 class SnakeSeg:
@@ -160,10 +162,20 @@ class Snake:
             return True
         return len(self) >= 4 and self.cut(len(self) // 2)
 
+    def neck(self, length: float = NECK) -> int:
+        """Index of the first segment at least `length` px along the body from the head (segments lie as far apart as
+        the snake moved per frame when they were laid: closer while it was slowed)."""
+        along = 0.0
+        for index in range(1, len(self.segs)):
+            along += (self.segs[index].pos - self.segs[index - 1].pos).length()
+            if along >= length:
+                return index
+        return len(self.segs)
+
     def self_intersect(self) -> bool:
         if len(self) < 4:
             return False
-        return any([(self.head.pos - other.pos).length() < self.size for other in self.segs[3:]])
+        return any([(self.head.pos - other.pos).length() < self.size for other in self.segs[max(3, self.neck()) :]])
 
     def covers(self, point: Vec2) -> bool:
         return any([(point - seg.pos).length() < self.size for seg in self.segs])

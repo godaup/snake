@@ -49,7 +49,10 @@ def test_tracks_of_a_music_are_equally_long(assets):
         assert len(lengths) == 1, name  # the voices loop together
 
 
-@pytest.mark.parametrize(("level", "music"), [("classic", "garden"), ("hunger", "boss"), ("trail", "ouroboros")])
+LEVEL_MUSIC = [("classic", "garden"), ("hunger", "boss"), ("trail", "ouroboros"), ("webs", "caves")]
+
+
+@pytest.mark.parametrize(("level", "music"), LEVEL_MUSIC)
 def test_a_level_plays_its_music(assets, game, level, music):
     game.level_counter = CAMPAIGN.resolve(level)
     assert RunningStateHandler(game).get_music() == MUSIC[music]

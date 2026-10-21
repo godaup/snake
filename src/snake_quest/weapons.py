@@ -75,7 +75,8 @@ class Projectile:
         steps = max(1, math.ceil(self.speed / STEP))
         points = [before + (self.pos - before) * (i / steps) for i in range(1, steps + 1)]
         for ent in map.entities:
-            hits = ent.alive and ent.hostile and ent not in self.struck and any(ent.covers(p) for p in points)
+            hits = ent.alive and ent.hostile and ent.exposed and ent not in self.struck
+            hits = hits and any(ent.covers(p) for p in points)
             if hits:
                 if ent.armored and not self.pierce:
                     ent.deflect()
@@ -94,7 +95,7 @@ class Projectile:
         """Turn at most `homing` degrees towards the nearest hostile entity within HOMING_RANGE that it can hurt."""
         best, target = self.HOMING_RANGE, None
         for ent in map.entities:
-            if not ent.alive or not ent.hostile or (ent.armored and not self.pierce):
+            if not (ent.alive and ent.hostile and ent.exposed) or (ent.armored and not self.pierce):
                 continue
             to_ent = ent.pos + Vec2(ent.w / 2, ent.h / 2) - self.pos
             if to_ent.length() < best:
@@ -269,6 +270,40 @@ class Homing(Gun):
                 lifetime=self.LIFETIME,
                 homing=self.TURN,
             )
+        ]
+
+
+class FlareShot(Projectile):
+    """A flare in flight: where it comes to rest (at the end of its flight, before a wall, or on what it hits) it burns
+    on as a Burning light."""
+
+    def update(self, map: "Map", seconds: float, snake: "Snake | None" = None) -> None:
+        if not self.alive:  # burning already
+            return
+        before = self.pos
+        super().update(map, seconds, snake)
+        if not self.alive:
+            from snake_quest.caves import Burning  # entities import weapons lazily too
+
+            rest = before if map.check_on_wall(self.pos) else self.pos
+            if not map.check_on_wall(rest):
+                map.entities.append(Burning.at_pos(Vec2(rest.x - 4, rest.y - 4)))
+
+
+class Flare(Gun):
+    """A slow, short shot that burns on where it comes to rest (see FlareShot): a light in the dark that scares bats
+    away and burns webs; it hurts what it hits, too."""
+
+    name = "FLARE"
+    COOLDOWN = 1.0
+    SPEED = 3.0
+    COL = 9
+    LIFETIME = 0.8
+
+    def shots(self, snake):
+        start = snake.head.pos + Vec2(pyxel.cos(snake.orient), pyxel.sin(snake.orient)) * (snake.size + 1)
+        return [
+            FlareShot(pos=start, orient=snake.orient, speed=self.SPEED, size=1, col=self.COL, lifetime=self.LIFETIME)
         ]
 
 

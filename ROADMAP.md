@@ -68,6 +68,7 @@ Ground rules:
 | Mines    | 14         | dropped behind the tail, area damage (exists) |
 | Laser    | 18         | piercing beam (exists)                      |
 | Homing   | 19         | steers towards the nearest enemy (exists)   |
+| Flare    | 24         | burns on where it lands: a light that scares bats (exists) |
 
 `Weapon.next_pattern()` already returns a list of projectiles. The rest needs projectile behaviors (pierce, bounce,
 home, explode, lifetime), weapon pickups and switching, and ammo/cooldown in the footer HUD.
@@ -80,15 +81,15 @@ as the finale.
 ### Arc 5: The Caves (darkness and digging)
 
 Builds on `darkness` and the hunters. New: a map that changes while playing (walls dug away or caving in).
-Designed in detail in [docs/arc5-caves.md](docs/arc5-caves.md).
+Designed in detail in [docs/arc5-caves.md](docs/arc5-caves.md); built (see M6).
 
 | #  | Level                 | Twist                                                              | Goal              |
 |----|-----------------------|--------------------------------------------------------------------|-------------------|
-| 21 | Webs                  | Spiders spin webs that hold the snake for a moment                 | collect all crystals |
-| 22 | Moles                 | Moles dig new tunnels through the walls, opening shortcuts for enemies | defeat N      |
-| 23 | Collapse              | A cave-in front chases the snake through a long tunnel              | reach the exit    |
-| 24 | Bats                  | Bats wake up in any light; **Flare** shots light the way and scare them | survive N seconds |
-| 25 | **Boss: The Brood Mother** | A giant spider: egg sacs, then drops from the dark ceiling, webs the cave shut | defeat the boss |
+| 21 | Webs                  | Spiders spin webs that hold the snake for a moment                 | collect all crystals, in time (exists) |
+| 22 | Moles                 | Moles dig new tunnels through the walls, opening shortcuts for enemies | defeat N (exists) |
+| 23 | Collapse              | A cave-in front chases the snake through a long tunnel              | reach the exit (exists) |
+| 24 | Bats                  | Bats wake up in any light; **Flare** shots light the way and scare them | survive N seconds (exists) |
+| 25 | **Boss: The Brood Mother** | A giant spider: egg sacs, then drops from the dark ceiling, webs the cave shut | defeat the boss (exists) |
 
 ### Arc 6: Space (oxygen and inertia)
 
@@ -183,6 +184,14 @@ crumble, crawlers on the trail), Mirror (level 17: bands of mirrored floor acros
 armour, the Laser), Gauntlet (level 19: ice, mirrors and thorns against the clock, `time_limit`, Homing), Boss: Ouroboros (level
 20: a rival snake driven by the bot, with lives, that eats, grows, takes the guns and shoots). The campaign is complete.
 Open: playtesting.
+
+### M6: Arc 5
+
+Done: `arc5.pyxres` with cave layouts (`draft_garden.py cave`, `scatter`, `webs`), the Caves music, Webs (level 21:
+spiders spin webs that hold the snake, crystals against the clock), Moles (level 22: moles dig tunnels for good,
+`map.dig`, and come up to be shot), Collapse (level 23: the `collapse` goal, a cave-in front through a long tunnel),
+Bats (level 24: bats that wake in any light, the Flare), Boss: The Brood Mother (level 25: egg sacs, then drops from the
+dark with a warning shadow). Open: playtesting.
 
 ### M5: Release
 

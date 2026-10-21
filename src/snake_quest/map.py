@@ -21,11 +21,16 @@ from snake_quest.tiles import (
     ICE_TILE,
     MIRROR_TILE,
     PATH_TILE,
+    TORN_WEB_TILE,
     TRAIL_CRUMBLE,
     TRAIL_CRUMBLE_TILE,
     TRAIL_TILE,
     WALL_TILES,
     WALL_VARIANT_ROW,
+    WEB_HOLD,
+    WEB_REGROW,
+    WEB_SLOW,
+    WEB_TILE,
     TileKind,
     tile_kind,
 )
@@ -76,10 +81,14 @@ class Map:
         self._head_tile: tuple[int, int] | None = None
         self.ice = False  # any ice tiles (bots then simulate the drift)
         self.mirror = False  # any mirrored floor
+        self.web = False  # any webs (painted, or spun later by spiders: they set it); bots then weigh them
+        self.torn: dict[tuple[int, int], float] = {}  # torn web tile -> seconds until it grows back
         # optional: the tail leaves a wall behind for `trail.seconds` (tile -> [the tile it covers, seconds left])
         self.trail_seconds: float = float(self.cfg.trail.seconds) if "trail" in self.cfg else 0.0
         self.trail: dict[tuple[int, int], list] = {}
         self.snake_killed = False  # set when a hazard cuts more than the snake has, or a hunter bites the head
+        self.walls_version = 0  # raised whenever walls change for good (dig, fill): caches of walls start over
+        self.shake = 0  # px the camera trembles by (set by a cave-in coming near)
         # walking distances from the tail (see chase) and from the head (see flight), recomputed now and then
         self._fields: dict[str, dict[tuple[int, int], int]] = {}
         self._field_age: dict[str, float] = {}
@@ -90,6 +99,7 @@ class Map:
                 kind = tile_kind((img_x, img_y))
                 self.ice |= kind == TileKind.ICE
                 self.mirror |= kind == TileKind.MIRROR
+                self.web |= kind == TileKind.WEB
                 if kind == TileKind.PORTAL:
                     portal_colours.setdefault((img_x, img_y), []).append((tile_x, tile_y))
                     continue
@@ -148,6 +158,8 @@ class Map:
         for dead in deads:
             self.projectiles.remove(dead)
         self._step_on_tiles(snake)
+        if self.torn:
+            self._regrow_webs(snake, self.game.dt.total_seconds())
         if self.trail_seconds:
             self._lay_trail(snake, self.game.dt.total_seconds())
         # check snake intersections
@@ -248,7 +260,7 @@ class Map:
 
     def _step_on_tiles(self, snake: "Snake") -> None:
         """Effects of the tile under the snake's head: portals move it to their partner, thorns cut the tail, ice
-        makes it drift, mirrored floor swaps left and right."""
+        makes it drift, mirrored floor swaps left and right, webs hold it."""
         snake.grip = ICE_GRIP if self.ice and self.tile_at(snake.head.pos) == ICE_TILE else 1.0
         snake.mirrored = self.mirror and self.tile_at(snake.head.pos) == MIRROR_TILE
         tile = self.tile_xy(snake.head.pos)
@@ -265,6 +277,42 @@ class Map:
         if entered and self.tile_at(snake.head.pos) == HAZARD_TILE:
             self.game.sm.effect("hurt")
             self.snake_killed = not snake.cut(HAZARD_CUT)
+        if entered and self.web and self.tile_at(snake.head.pos) == WEB_TILE:
+            self.game.sm.effect("hurt")
+            snake.boost(WEB_SLOW, WEB_HOLD)
+            self.tear_web(tile)
+
+    def tear_web(self, tile: tuple[int, int]) -> None:
+        """A web is torn (the snake ran into it, a flare burnt it): it grows back after WEB_REGROW seconds."""
+        pyxel.tilemaps[self.tm].pset(*tile, TORN_WEB_TILE)
+        self.torn[tile] = WEB_REGROW
+
+    def spin_web(self, tile: tuple[int, int]) -> bool:
+        """A new web on a floor tile (a spider spins it); False where there is no plain floor."""
+        tilemap = pyxel.tilemaps[self.tm]
+        if tilemap.pget(*tile) not in FLOOR_TILES:
+            return False
+        tilemap.pset(*tile, WEB_TILE)
+        self.web = True
+        return True
+
+    def clear_web(self, tile: tuple[int, int]) -> None:
+        """Floor again where a web (whole or torn) was, e.g. a spider's oldest when it spins a new one."""
+        tilemap = pyxel.tilemaps[self.tm]
+        if tilemap.pget(*tile) in (WEB_TILE, TORN_WEB_TILE):
+            tilemap.pset(*tile, EMPTY_TILE)
+        self.torn.pop(tile, None)
+
+    def _regrow_webs(self, snake: "Snake", seconds: float) -> None:
+        """Torn webs grow back once their time is up and nothing of the snake lies on them."""
+        tilemap = pyxel.tilemaps[self.tm]
+        covered = {self.tile_xy(seg.pos) for seg in snake.segs}
+        for tile in list(self.torn):
+            self.torn[tile] -= seconds
+            if self.torn[tile] <= 0 and tile not in covered:
+                del self.torn[tile]
+                if tilemap.pget(*tile) == TORN_WEB_TILE:
+                    tilemap.pset(*tile, WEB_TILE)
 
     def _lay_trail(self, snake: "Snake", seconds: float) -> None:
         """The tail turns the floor it leaves into a wall, which crumbles (TRAIL_CRUMBLE_TILE) and is gone after
@@ -355,6 +403,38 @@ class Map:
         delta = b - a
         steps = int(delta.length() // step)
         return not any(self.check_on_wall(a + delta * (i / steps)) for i in range(1, steps))
+
+    def dig(self, tile: tuple[int, int]) -> bool:
+        """Rock dug away for good (moles): floor where a wall was, the walls around it autotiled again. The map's
+        border stays closed. False where there was nothing to dig."""
+        x, y = tile
+        tilemap = pyxel.tilemaps[self.tm]
+        inside = 0 < x < self.cfg.width // 8 - 1 and 0 < y < self.cfg.height // 8 - 1
+        if not inside or tilemap.pget(x, y) not in WALL_TILES:
+            return False
+        tilemap.pset(x, y, EMPTY_TILE)
+        self._walls_changed(tile)
+        return True
+
+    def fill(self, tile: tuple[int, int], wall: tuple[int, int]) -> None:
+        """A wall tile (e.g. rubble) put down for good where there was floor; the walls around it autotiled again."""
+        pyxel.tilemaps[self.tm].pset(*tile, wall)
+        self._walls_changed(tile)
+
+    def _walls_changed(self, tile: tuple[int, int]) -> None:
+        tilemap = pyxel.tilemaps[self.tm]
+        width, height = self.cfg.width // 8, self.cfg.height // 8
+
+        def is_wall(x: int, y: int) -> bool:
+            return not (0 <= x < width and 0 <= y < height) or tilemap.pget(x, y) in WALL_TILES
+
+        for x in range(tile[0] - 1, tile[0] + 2):
+            for y in range(tile[1] - 1, tile[1] + 2):
+                if 0 <= x < width and 0 <= y < height and tilemap.pget(x, y)[1] == WALL_VARIANT_ROW:
+                    mask = is_wall(x, y - 1) | is_wall(x + 1, y) << 1 | is_wall(x, y + 1) << 2 | is_wall(x - 1, y) << 3
+                    tilemap.pset(x, y, (mask, WALL_VARIANT_ROW))
+        self.walls_version += 1
+        self._fields.clear()  # hunters and prey find the new ways at once
 
     def _autotile_walls(self) -> None:
         """Replace every wall tile with the hedge variant matching its wall neighbours (outside the map counts

@@ -1,0 +1,92 @@
+tm: 1  # tools/draft_garden.py cave (--src-tm 1 --dst-tm 1 --seed 5 --fill 0.53): thick rock between the caverns
+width: 640
+height: 448
+tint: {3: 4, 11: 15}  # the hedges as cave rock
+
+start:
+  x: 60
+  y: 60
+
+darkness:
+  light: 80
+
+timers:
+  first_moles:
+    duration: 0
+    frequency: 0.05
+    fire_n: 3
+    callback:
+      type: spawn
+      entity: mole
+      away: 120
+  moles:
+    duration: 8
+    frequency: 8
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: mole
+      away: 120
+      max: 6
+  sleeper:  # a beetle asleep in a far cavern: the moles' tunnels lead it to you
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: hunter
+      away: 200
+  first_gun:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: gun
+      pos: [60, 80]
+  guns:
+    duration: 10
+    frequency: 10
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: gun
+      max: 2
+  apple1:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+  apple2:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+  apple3:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+  apple4:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+
+goal:
+  defeat: 8
+
+title: Moles
+intro:
+  - "Something digs beneath the cave: moles break"
+  - "through the rock, and the beetles use their tunnels."
+  - "A mole comes up for a moment only. Shoot it then."
+  - "Defeat the diggers."

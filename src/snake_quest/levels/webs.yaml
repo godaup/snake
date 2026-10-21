@@ -1,0 +1,72 @@
+tm: 0  # tools/draft_garden.py cave (--src-tm 0 --dst-tm 0 --seed 1), then scatter crystal (8) and mushroom (10)
+width: 768
+height: 512
+tint: {3: 4, 11: 15}  # the hedges as cave rock
+
+start:
+  x: 60
+  y: 60
+
+darkness:
+  light: 72
+
+timers:
+  first_spiders:
+    duration: 0
+    frequency: 0.05
+    fire_n: 3
+    callback:
+      type: spawn
+      entity: spider
+      away: 150
+  spiders:
+    duration: 10
+    frequency: 10
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: spider
+      away: 150
+      max: 5
+  apple1:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+  apple2:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+  apple3:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+
+goal:
+  collect_all: crystal
+  time_limit: 150
+
+title: Webs
+intro:
+  - "Deep in the dark, the crystals glow. Collect them"
+  - "all in time. Spiders crawl along the rock and spin"
+  - "webs: a web holds you for a moment, then tears."
+  - "Spiders bite. Never run into one."
+
+difficulty:  # more crystals to find (spawned, they count too) and more spiders
+  hard:
+    timers:
+      spiders: {callback: {max: 7}}
+      more_crystals: {duration: 0, frequency: 0.05, fire_n: 2, callback: {type: spawn, entity: crystal, away: 200}}
+  nightmare:
+    timers:
+      spiders: {callback: {max: 8}}
+      more_crystals: {duration: 0, frequency: 0.05, fire_n: 4, callback: {type: spawn, entity: crystal, away: 200}}
