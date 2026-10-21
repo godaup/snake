@@ -80,6 +80,8 @@ class Hud:
         length = f"LENGTH {len(self.snake)}"
         if self.snake.weapon is not None:
             length = f"{self.snake.weapon.name} {self.snake.weapon.ammo}  {length}"
+        if self.snake.mirrored:
+            return "MIRRORED!", length
         if self.snake.boost_left > 0:
             percent = round((self.snake.boost_factor - 1) * 100)
             return f"SPEED {percent:+}% {self.snake.boost_left:.1f}s", length
@@ -97,7 +99,7 @@ class Hud:
         pyxel.text(MARGIN, bottom, title, COL_VALUE)
         best, length = self.right_lines()
         for y, text in ((top, best), (bottom, length)):
-            col = COL_BOOST if text.startswith("SPEED") else COL_LABEL
+            col = COL_BOOST if text.startswith(("SPEED", "MIRRORED")) else COL_LABEL
             pyxel.text(self.width - MARGIN - len(text) * pyxel.FONT_WIDTH, y, text, col)
         # score in the middle, with an apple in front
         center_x, center_y = self.width / 2 + 6, (self.header_h - 1) / 2

@@ -120,6 +120,11 @@ class PathController(Controller):
         self._aiming = 0  # frames in a row spent turning to aim (and then counting down the pause)
 
     def steer(self, snake, map):
+        """The steering chosen for the snake; on mirrored floor the other way round, as a player who knows it would."""
+        steering = self._steer(snake, map)
+        return -steering if snake.mirrored else steering
+
+    def _steer(self, snake, map):
         self._threats = [
             (
                 ent.pos + Vec2(ent.w / 2, ent.h / 2),
@@ -206,8 +211,9 @@ class PathController(Controller):
         if weapon is None or weapon.ammo <= 0 or getattr(weapon, "DROPS", False):
             return None
         head, best = snake.head.pos, None
+        pierces = getattr(weapon, "PIERCE", False)
         for ent in map.entities:
-            if not (ent.alive and ent.hostile):
+            if not (ent.alive and ent.hostile) or (ent.armored and not pierces):  # its shots would glance off
                 continue
             to_ent = ent.pos + Vec2(ent.w / 2, ent.h / 2) - head
             distance = to_ent.length()
@@ -384,8 +390,11 @@ class PathController(Controller):
         return frames, pos, orient, reached, heading
 
 
-def nearest(*classes: type, clearance: int = 1, wary: float = 0) -> Callable[["Snake", "Map"], Vec2 | None]:
-    """Target for a ChaseController or PathController: the centre of the nearest live entity of these classes. Entities
+def nearest(
+    *classes: type, clearance: int = 1, wary: float = 0, exclude: tuple[type, ...] = ()
+) -> Callable[["Snake", "Map"], Vec2 | None]:
+    """Target for a ChaseController or PathController: the centre of the nearest live entity of these classes (but not
+    of the `exclude` ones, e.g. subclasses). Entities
     with a wall within `clearance` tiles (e.g. in a corner, hard to leave again) or within `wary` px of a hostile entity
     bots avoid (e.g. a pickup next to a turret) are only chosen when there is nothing else."""
 
@@ -395,7 +404,9 @@ def nearest(*classes: type, clearance: int = 1, wary: float = 0) -> Callable[["S
 
     def target(snake: "Snake", map: "Map") -> Vec2 | None:
         centres = [
-            ent.pos + Vec2(ent.w / 2, ent.h / 2) for ent in map.entities if ent.alive and isinstance(ent, classes)
+            ent.pos + Vec2(ent.w / 2, ent.h / 2)
+            for ent in map.entities
+            if ent.alive and isinstance(ent, classes) and not isinstance(ent, exclude)
         ]
         foes = [ent.pos + Vec2(ent.w / 2, ent.h / 2) for ent in map.entities if ent.alive and ent.hostile and ent.avoid]
         safe = [

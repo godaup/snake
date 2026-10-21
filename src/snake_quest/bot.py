@@ -10,7 +10,7 @@ import pyxel
 
 from snake_quest.controls import PathController, nearest
 from snake_quest.entity import ENTITY_NAMES, Apple, Critter, GoldenApple, Turret, WeaponPickup
-from snake_quest.goals import CollectAllGoal, DestroyAllGoal, ExitGoal
+from snake_quest.goals import CollectAllGoal, DefeatGoal, DestroyAllGoal, ExitGoal, LengthGoal, ScoreGoal
 from snake_quest.states import StateID
 from snake_quest.states.running import RunningStateHandler
 
@@ -30,6 +30,8 @@ LEVELS = (
     "minefield",
     "core",
     "trail",
+    "mirror",
+    "armored",
 )
 
 HUNT_LENGTH = 16  # segments: shorter, the bot eats before it hunts
@@ -37,8 +39,14 @@ STOCK = 24  # shots: fewer, a short bot fetches weapons before it eats (more wou
 WARY = 32  # px: pickups this close to a hostile entity (a turret) are left for last
 food = nearest(Apple, GoldenApple, Critter, wary=WARY)
 guns = nearest(WeaponPickup, wary=WARY)
-# turrets aren't hunted (driving at one runs into its shots), only shot at when they come into the line of fire
+# turrets aren't hunted (driving at one runs into its shots), only shot at when they come into the line of fire;
+# armoured ones only with a weapon that pierces
 foes = nearest(*(cls for cls in ENTITY_NAMES.values() if cls.hostile and cls is not Turret), clearance=0)
+soft_foes = nearest(
+    *(cls for cls in ENTITY_NAMES.values() if cls.hostile and cls is not Turret),
+    clearance=0,
+    exclude=tuple(cls for cls in ENTITY_NAMES.values() if cls.armored),
+)
 
 
 def target(snake, map):
@@ -59,12 +67,18 @@ def target(snake, map):
         return (snake.weapon.ammo < STOCK and more_ammo(snake, map)) or food(snake, map)
     if getattr(snake.weapon, "DROPS", False):  # mines: lead what follows the trail over them
         return food(snake, map)
+    # nothing to win by fighting while growing is still to do: eat (and shoot what comes into the line of fire)
+    fights = map.boss is not None or any(isinstance(goal, (DefeatGoal, DestroyAllGoal)) for goal in map.goals)
+    grows = any(isinstance(goal, (LengthGoal, ScoreGoal)) and not goal.done(map, snake) for goal in map.goals)
+    if grows and not fights:
+        return food(snake, map)
     # the boss first, then what the level asks to destroy (nests), then the foes they send out
     if map.boss is not None and (body := map.boss.target()) is not None:
         return body
     targets = [goal.entity_cls for goal in map.goals if isinstance(goal, DestroyAllGoal)]
     aimed = nearest(*targets, clearance=0)(snake, map) if targets else None
-    return aimed or foes(snake, map) or food(snake, map)
+    hunted = foes if getattr(snake.weapon, "PIERCE", False) else soft_foes
+    return aimed or hunted(snake, map) or food(snake, map)
 
 
 def more_ammo(snake, map):

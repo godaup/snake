@@ -38,6 +38,7 @@ class Entity:
     hostile = False  # bad for the snake: harder difficulties spawn it more often (see difficulty.py)
     tally = True  # counted when gone: as defeated (killed) or eaten (see Map.update); not for the snake's own mines
     avoid = True  # bots steer around it when hostile (not around drones: a sting costs less than swerving)
+    armored = False  # only piercing shots (the Laser) hurt it; others glance off (deflect)
     _img_x = None
     _img_y = None
 
@@ -83,6 +84,9 @@ class Entity:
         if self.health <= 0:
             self.alive = False
             self.killed = True
+
+    def deflect(self):
+        """A shot glanced off its armour."""
 
 
 @register("apple")
@@ -215,6 +219,14 @@ class MinesPickup(WeaponPickup):
     _img_y = 13
     AMMO = 8
     WEAPON = "Mines"
+
+
+@register("laser")
+class LaserPickup(WeaponPickup):
+    _img_x = 10
+    _img_y = 13
+    AMMO = 12
+    WEAPON = "Laser"
 
 
 @register("mine")
@@ -677,6 +689,50 @@ class Crawler(Hunter):
         if self.flash > 0 and pyxel.frame_count % 2:
             return
         super().draw(offset)
+
+
+@register("knight")
+class Knight(Hunter):
+    """A beetle of the temple guard in armour: it sleeps, wakes and hunts like a beetle (with breaks and detours), but
+    slower than the snake, and takes HEALTH hits, and only from the Laser, which pierces its armour; other shots glance
+    off with a glint (a mine's blast still hurts). It flashes when hit."""
+
+    _img_x = 11
+    _img_y = 13
+    ASLEEP_IMG_X = 11  # the visor stays down
+    armored = True
+    SPEED = 1.0  # the armour is heavy: slower than the snake
+    DETOUR_SPEED = 0.8
+    HEALTH = 2
+    FLASH = 0.15
+    GLINT = 0.12  # seconds a glanced shot shows
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.health = self.HEALTH
+        self.flash = 0.0
+        self.glint = 0.0
+
+    def update(self, snake: "Snake", map: "Map"):
+        seconds = map.game.dt.total_seconds()
+        self.flash = max(self.flash - seconds, 0.0)
+        self.glint = max(self.glint - seconds, 0.0)
+        super().update(snake, map)
+
+    def hit(self, dmg: int):
+        super().hit(dmg)
+        self.flash = self.FLASH
+
+    def deflect(self):
+        self.glint = self.GLINT
+
+    def draw(self, offset: "Vec2"):
+        if not (self.flash > 0 and pyxel.frame_count % 2):
+            super().draw(offset)
+        if self.glint > 0:
+            x, y = self.pos.x + offset.x + 4, self.pos.y + offset.y + 4
+            pyxel.line(x - 4, y, x + 4, y, 7)
+            pyxel.line(x, y - 4, x, y + 4, 7)
 
 
 @register("core")

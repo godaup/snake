@@ -1,0 +1,87 @@
+tm: 2  # tools/draft_garden.py temple (--src-tm 2 --dst-tm 2 --seed 5)
+width: 480
+height: 320
+tint: {3: 2, 11: 14}  # the hedges as temple stone
+
+start:
+  x: 60
+  y: 60
+
+timers:
+  knights:  # the temple guard marches in
+    duration: 4
+    frequency: 8
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: knight
+      away: 150
+      max: 5
+  sleepers:  # beetles without armour, asleep
+    duration: 0
+    frequency: 0.05
+    fire_n: 3
+    callback:
+      type: spawn
+      entity: hunter
+      away: 150
+  more_hunters:
+    duration: 20
+    frequency: 12
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: hunter
+      away: 150
+      max: 4
+  first_laser:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: laser
+      pos: [100, 76]
+  more_lasers:
+    duration: 10
+    frequency: 10
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: laser
+      max: 2
+  apple1:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+  apple2:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+  apple3:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+
+goal:
+  defeat: 8
+
+title: Armored
+intro:
+  - "The temple guard wears armour: shots glance off."
+  - "Only the LASER pierces it, and goes on through"
+  - "whatever stands behind. Its beam is short, though."
+  - "Defeat the guard."
+
+difficulty:  # every knight takes two beams: harder means faster and more often, not more knights or kills
+  hard: {goal: {defeat: 8}, timers: {knights: {callback: {max: 3}}}}
+  nightmare: {goal: {defeat: 9}, timers: {knights: {callback: {max: 4}}}}

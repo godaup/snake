@@ -48,6 +48,7 @@ class Snake:
         self.orient: int = orient  # where it points (steering turns this)
         self.heading: float = orient  # where it moves: the same, except on ice (see drift)
         self.grip: float = 1.0  # set by the map from the ground under the head
+        self.mirrored: bool = False  # steering swapped (mirrored floor under the head), set by the map
         self._speed: float = speed
         self.boost_factor: float = 1.0  # temporary speed factor, see boost()
         self.boost_left: float = 0.0  # seconds
@@ -104,7 +105,8 @@ class Snake:
     def update(self, dt: datetime.timedelta, map: "Map"):
         self.boost_left = max(self.boost_left - dt.total_seconds(), 0.0)
         # steer
-        self.turn(round(self.controller.steer(self, map) * self.turn_speed))
+        steering = self.controller.steer(self, map)
+        self.turn(round((-steering if self.mirrored else steering) * self.turn_speed))
         self.heading = drift(self.heading, self.orient, self.grip)
         # move
         previous = None

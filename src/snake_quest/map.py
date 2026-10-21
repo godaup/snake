@@ -19,6 +19,7 @@ from snake_quest.tiles import (
     HAZARD_TILE,
     ICE_GRIP,
     ICE_TILE,
+    MIRROR_TILE,
     PATH_TILE,
     TRAIL_CRUMBLE,
     TRAIL_CRUMBLE_TILE,
@@ -74,6 +75,7 @@ class Map:
         self._portal_lock: tuple[int, int] | None = None  # portal the head arrived on, inactive until it leaves
         self._head_tile: tuple[int, int] | None = None
         self.ice = False  # any ice tiles (bots then simulate the drift)
+        self.mirror = False  # any mirrored floor
         # optional: the tail leaves a wall behind for `trail.seconds` (tile -> [the tile it covers, seconds left])
         self.trail_seconds: float = float(self.cfg.trail.seconds) if "trail" in self.cfg else 0.0
         self.trail: dict[tuple[int, int], list] = {}
@@ -87,6 +89,7 @@ class Map:
                 img_x, img_y = pyxel.tilemaps[self.cfg.tm].pget(tile_x, tile_y)
                 kind = tile_kind((img_x, img_y))
                 self.ice |= kind == TileKind.ICE
+                self.mirror |= kind == TileKind.MIRROR
                 if kind == TileKind.PORTAL:
                     portal_colours.setdefault((img_x, img_y), []).append((tile_x, tile_y))
                     continue
@@ -245,8 +248,9 @@ class Map:
 
     def _step_on_tiles(self, snake: "Snake") -> None:
         """Effects of the tile under the snake's head: portals move it to their partner, thorns cut the tail, ice
-        makes it drift."""
+        makes it drift, mirrored floor swaps left and right."""
         snake.grip = ICE_GRIP if self.ice and self.tile_at(snake.head.pos) == ICE_TILE else 1.0
+        snake.mirrored = self.mirror and self.tile_at(snake.head.pos) == MIRROR_TILE
         tile = self.tile_xy(snake.head.pos)
         entered = tile != self._head_tile
         self._head_tile = tile

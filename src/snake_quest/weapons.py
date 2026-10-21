@@ -1,7 +1,9 @@
 """Weapons and their projectiles. The snake carries at most one weapon (`snake.weapon`, from a pickup such as
 `GunPickup`), and its controller's `fire()` shoots it. The snake's shots only hit hostile entities, never the snake or
-pickups; hostile shots (from turrets) only hit the snake."""
+pickups; hostile shots (from turrets) only hit the snake. Armoured entities (`armored`) only take piercing shots (the
+Laser); other shots glance off them."""
 
+import math
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, ClassVar
 
@@ -12,6 +14,8 @@ from snake_quest.utils import Vec2
 if TYPE_CHECKING:
     from snake_quest.map import Map
     from snake_quest.snake import Snake
+
+STEP = 4  # px: a shot tests for hits at least this often along its flight
 
 
 class Projectile:
@@ -28,6 +32,7 @@ class Projectile:
         hostile: bool = False,
         lifetime: float | None = None,
         bounces: int = 0,
+        pierce: bool = False,
     ):
         self.pos = pos
         self.dir = Vec2(x=pyxel.cos(orient), y=pyxel.sin(orient))
@@ -40,6 +45,8 @@ class Projectile:
         self.hostile = hostile  # fired at the snake: hits it, never an entity
         self.lifetime = self.LIFETIME if lifetime is None else lifetime  # seconds before it fizzles out
         self.bounces = bounces  # walls it bounces off before one stops it
+        self.pierce = pierce  # through armour, and on through every entity it hits (each once)
+        self.struck: list = []  # what a piercing shot has hit
 
     def update(self, map: "Map", seconds: float, snake: "Snake | None" = None) -> None:
         """Fly on; gone after its lifetime, outside the map, at a wall (after its bounces) or after a hit: the snake's
@@ -60,12 +67,22 @@ class Projectile:
                     map.snake_killed = True
                 self.alive = False
             return
+        # fast shots (the Laser) fly farther per frame than an entity is wide: test the way between, too
+        steps = max(1, math.ceil(self.speed / STEP))
+        points = [before + (self.pos - before) * (i / steps) for i in range(1, steps + 1)]
         for ent in map.entities:
-            if ent.alive and ent.hostile and ent.covers(self.pos):
+            hits = ent.alive and ent.hostile and ent not in self.struck and any(ent.covers(p) for p in points)
+            if hits:
+                if ent.armored and not self.pierce:
+                    ent.deflect()
+                    self.alive = False
+                    return
                 ent.hit(self.dmg)
                 map.game.sm.effect("hurt")
-                self.alive = False
-                return
+                if not self.pierce:
+                    self.alive = False
+                    return
+                self.struck.append(ent)
 
     def _bounce(self, map: "Map", before: Vec2) -> None:
         """Back to where it was before flying into the wall, turned around along the wall's side it hit (both ways in a
@@ -80,6 +97,10 @@ class Projectile:
         self.bounces -= 1
 
     def draw(self, offset: Vec2) -> None:
+        if self.pierce:  # a beam: a streak along its flight
+            tail = self.pos - self.dir * (self.speed * 2)
+            pyxel.line(tail.x + offset.x, tail.y + offset.y, self.pos.x + offset.x, self.pos.y + offset.y, self.col)
+            return
         pyxel.circ(self.pos.x + offset.x, self.pos.y + offset.y, self.size, self.col)
 
 
@@ -170,6 +191,31 @@ class Ricochet(Gun):
                 col=self.COL,
                 lifetime=self.LIFETIME,
                 bounces=self.BOUNCES,
+            )
+        ]
+
+
+class Laser(Gun):
+    """A fast beam that pierces: through armour, and on through everything in its way. Short range."""
+
+    name = "LASER"
+    COOLDOWN = 0.5
+    SPEED = 8.0
+    COL = 8
+    LIFETIME = 0.7
+    PIERCE = True  # bots aim it at armoured entities too
+
+    def shots(self, snake):
+        start = snake.head.pos + Vec2(pyxel.cos(snake.orient), pyxel.sin(snake.orient)) * (snake.size + 1)
+        return [
+            Projectile(
+                pos=start,
+                orient=snake.orient,
+                speed=self.SPEED,
+                size=1,
+                col=self.COL,
+                lifetime=self.LIFETIME,
+                pierce=self.PIERCE,
             )
         ]
 

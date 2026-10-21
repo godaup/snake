@@ -1,0 +1,75 @@
+tm: 1  # tools/draft_garden.py temple (--src-tm 1 --dst-tm 1 --seed 3, keeping the exit), then mirror (--bands 3 --seed 2)
+width: 800
+height: 400
+tint: {3: 2, 11: 14}  # the hedges as temple stone
+
+start:
+  x: 60
+  y: 60
+
+timers:
+  sleepers:  # beetles asleep in the halls
+    duration: 0
+    frequency: 0.05
+    fire_n: 5
+    callback:
+      type: spawn
+      entity: hunter
+      away: 160
+  more_hunters:
+    duration: 25
+    frequency: 15
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: hunter
+      away: 160
+      max: 8
+  first_gun:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: gun
+      pos: [100, 76]
+  more_guns:
+    duration: 12
+    frequency: 12
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: gun
+      max: 2
+  apple1:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+  apple2:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+  apple3:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+
+goal:
+  length: 30
+  exit: true
+
+title: Mirror
+intro:
+  - "The temple floor is a mirror in places: while the"
+  - "head is on it, left is right and right is left."
+  - "Grow, then find the way out."
+  - "Beetles sleep in the halls. Let them sleep!"

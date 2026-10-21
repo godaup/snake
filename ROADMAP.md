@@ -53,8 +53,8 @@ Ground rules:
 | #  | Level                | Twist                                                         | Goal                 |
 |----|----------------------|---------------------------------------------------------------|----------------------|
 | 16 | Trail                | The snake's path turns into walls                             | score (exists)       |
-| 17 | Mirror               | Inverted controls                                             | reach the exit       |
-| 18 | Armored              | Armored enemies that only the **Laser** pierces               | defeat N enemies     |
+| 17 | Mirror               | Mirrored floor swaps left and right                           | length, exit (exists) |
+| 18 | Armored              | Armored enemies that only the **Laser** pierces               | defeat N (exists)    |
 | 19 | Gauntlet             | Timed run through earlier twists; **Homing** shots            | reach the exit       |
 | 20 | **Boss: Ouroboros**  | A rival AI snake that eats, grows and shoots like the player  | defeat the boss      |
 
@@ -66,7 +66,7 @@ Ground rules:
 | Spread   | 12         | fan of three shots (exists)                 |
 | Ricochet | 13         | bounces off walls (exists)                  |
 | Mines    | 14         | dropped behind the tail, area damage (exists) |
-| Laser    | 18         | piercing beam                               |
+| Laser    | 18         | piercing beam (exists)                      |
 | Homing   | 19         | steers towards the nearest enemy            |
 
 `Weapon.next_pattern()` already returns a list of projectiles. The rest needs projectile behaviors (pierce, bounce,
@@ -177,7 +177,9 @@ trail, Mines), Boss: The Core (level 15: a shield held up by rings of turrets, d
 
 Trail walls, mirrored input, Laser and Homing, AI-controlled rival snake (reusing `Snake` through the input layer).
 
-Done: `arc4.pyxres` with temple layouts, Trail (level 16: the tail leaves walls that crumble, crawlers on the trail).
+Done: `arc4.pyxres` with temple layouts (`draft_garden.py temple`), Trail (level 16: the tail leaves walls that
+crumble, crawlers on the trail), Mirror (level 17: bands of mirrored floor across the halls swap left and right), Armored (level 18: knights in
+armour, the Laser).
 
 ### M5: Release
 

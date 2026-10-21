@@ -1,4 +1,4 @@
-"""Level layout helpers: decorate a level's floor, or generate a natural ("organic") or a fortress layout.
+"""Level layout helpers: decorate a level's floor, or generate a natural ("organic"), a fortress or a temple layout.
 
     # sprinkle grass, flowers and stones on a level's empty floor (in place)
     python tools/draft_garden.py decorate src/snake_quest/resources/garden.pyxres \\
@@ -16,6 +16,12 @@
     python tools/draft_garden.py fortress src/snake_quest/resources/arc3.pyxres \\
         --level src/snake_quest/levels/turrets.yaml --src-tm 0 --dst-tm 0 --seed 1
 
+    # the same with pillars and short walls (arc 4, the temple), and patches of mirrored floor
+    python tools/draft_garden.py temple src/snake_quest/resources/arc4.pyxres \\
+        --level src/snake_quest/levels/trail.yaml --src-tm 0 --dst-tm 0 --seed 1
+    python tools/draft_garden.py mirror src/snake_quest/resources/arc4.pyxres \\
+        --level src/snake_quest/levels/mirror.yaml --bands 3 --seed 1
+
 The organic layout is a hedge border plus rounded bushes (unions of circles) and gently curved hedge rows. Every
 obstacle keeps CLEARANCE tiles of open floor to the next one, the area around the start stays clear, and floor the snake
 cannot reach is filled in, so nothing spawns in a closed pocket. Review with `snake-quest --level NAME --preview x.png`.
@@ -31,7 +37,16 @@ import omegaconf
 import pyxel
 
 from snake_quest.entity import ENTITY_TILES
-from snake_quest.tiles import DECOR_TILES, EMPTY_TILE, EXIT_TILE, HAZARD_TILE, ICE_TILE, PORTAL_TILES, WALL_TILE
+from snake_quest.tiles import (
+    DECOR_TILES,
+    EMPTY_TILE,
+    EXIT_TILE,
+    HAZARD_TILE,
+    ICE_TILE,
+    MIRROR_TILE,
+    PORTAL_TILES,
+    WALL_TILE,
+)
 
 HEADER_H = 20  # world y of the map's top edge, see settings.yaml
 CLEARANCE = 3  # tiles of open floor between obstacles (the snake needs room to turn, also when boosted)
@@ -65,16 +80,32 @@ def decorate(tilemap, width, height, rng, avoid: set, density: float = 1.0) -> i
     return count
 
 
-def ice(tilemap, width, height, rng, avoid: set, patches: int) -> int:
-    """Paint `patches` rounded patches of ice on floor tiles that are not in `avoid`; returns how many tiles."""
+def ice(tilemap, width, height, rng, avoid: set, patches: int, tile=ICE_TILE) -> int:
+    """Paint `patches` rounded patches of ice (or another floor `tile`) on floor tiles that are not in `avoid`; returns
+    how many tiles."""
     count = 0
     for _ in range(patches):
         patch = bush(rng, rng.uniform(3, width - 4), rng.uniform(3, height - 4), rng.uniform(2.5, 6.0))
         for x, y in patch:
             if 0 <= x < width and 0 <= y < height and (x, y) not in avoid and tilemap.pget(x, y) in FLOOR:
-                tilemap.pset(x, y, ICE_TILE)
+                tilemap.pset(x, y, tile)
                 count += 1
     return count
+
+
+def bands(tilemap, width, height, rng, avoid: set, count: int, tile) -> int:
+    """Paint `count` wavy bands of `tile` from the top wall to the bottom one, evenly spread over the width, so every
+    way from left to right crosses them; returns how many tiles."""
+    painted = 0
+    for index in range(count):
+        center, phase, thickness = width * (index + 1) / (count + 1), rng.uniform(0, math.tau), rng.randint(5, 7)
+        for y in range(1, height - 1):
+            x0 = round(center + 3 * math.sin(y / 4 + phase) - thickness / 2)
+            for x in range(x0, x0 + thickness):
+                if (x, y) not in avoid and tilemap.pget(x, y) in FLOOR:
+                    tilemap.pset(x, y, tile)
+                    painted += 1
+    return painted
 
 
 def near(points, radius: int) -> set:
@@ -166,6 +197,15 @@ def fortress_shape(rng, width, height) -> set:
     return tiles
 
 
+def temple_shape(rng, width, height) -> set:
+    """A pillar (2x2) or a short wall, one tile thick."""
+    x0, y0 = rng.randint(4, width - 6), rng.randint(4, height - 6)
+    if rng.random() < 0.6:
+        return {(x0 + dx, y0 + dy) for dx in range(2) for dy in range(2)}
+    length, horizontal = rng.randint(3, 7), rng.random() < 0.5
+    return {(x0 + i, y0) if horizontal else (x0, y0 + i) for i in range(length)}
+
+
 def organic(
     tilemap, width, height, rng, start, keep: dict, shape_of=garden_shape, beds=True, open_areas=()
 ) -> tuple[int, int]:
@@ -226,13 +266,14 @@ def organic(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("command", choices=["decorate", "organic", "fortress", "ice"])
+    parser.add_argument("command", choices=["decorate", "organic", "fortress", "temple", "ice", "mirror"])
     parser.add_argument("resources", type=Path)
     parser.add_argument("--level", type=Path, required=True)
     parser.add_argument("--src-tm", type=int, help="organic: tilemap whose entity tiles are kept")
     parser.add_argument("--dst-tm", type=int, help="organic: tilemap to write (decorate uses the level's tm)")
     parser.add_argument("--seed", type=int, default=1)
-    parser.add_argument("--patches", type=int, default=12, help="ice: how many patches")
+    parser.add_argument("--patches", type=int, default=12, help="ice/mirror: how many patches")
+    parser.add_argument("--bands", type=int, default=0, help="mirror: bands across the level instead of patches")
     parser.add_argument(
         "--open",
         type=int,
@@ -251,13 +292,18 @@ def main() -> None:
     width, height = level.width // 8, level.height // 8
     start = start_tile(level)
     # entities and special terrain survive a new layout
-    entity_sprites = set(ENTITY_TILES) | set(PORTAL_TILES) | {EXIT_TILE, HAZARD_TILE, ICE_TILE}
+    entity_sprites = set(ENTITY_TILES) | set(PORTAL_TILES) | {EXIT_TILE, HAZARD_TILE, ICE_TILE, MIRROR_TILE}
 
-    if args.command == "ice":
+    if args.command in ("ice", "mirror"):
         tilemap = pyxel.tilemaps[level.tm]
         kept = [(x, y) for y in range(height) for x in range(width) if tilemap.pget(x, y) in entity_sprites]
-        count = ice(tilemap, width, height, rng, near([start], START_CLEAR) | near(kept, 3), args.patches)
-        print(f"tilemap {level.tm}: {count} ice tiles")
+        tile = ICE_TILE if args.command == "ice" else MIRROR_TILE
+        avoid = near([start], START_CLEAR) | near(kept, 3)
+        if args.bands:
+            count = bands(tilemap, width, height, rng, avoid, args.bands, tile)
+        else:
+            count = ice(tilemap, width, height, rng, avoid, args.patches, tile)
+        print(f"tilemap {level.tm}: {count} {args.command} tiles")
     elif args.command == "decorate":
         tilemap = pyxel.tilemaps[level.tm]
         entities = [(x, y) for y in range(height) for x in range(width) if tilemap.pget(x, y) in entity_sprites]
@@ -266,9 +312,10 @@ def main() -> None:
     else:
         src, dst = pyxel.tilemaps[args.src_tm], pyxel.tilemaps[args.dst_tm]
         keep = {(x, y): src.pget(x, y) for y in range(height) for x in range(width) if src.pget(x, y) in entity_sprites}
-        if args.command == "fortress":  # sparse rubble instead of flower beds
+        if args.command in ("fortress", "temple"):  # sparse rubble instead of flower beds
+            shape_of = fortress_shape if args.command == "fortress" else temple_shape
             placed, filled = organic(
-                dst, width, height, rng, start, keep, shape_of=fortress_shape, beds=False, open_areas=args.open
+                dst, width, height, rng, start, keep, shape_of=shape_of, beds=False, open_areas=args.open
             )
             density = 0.4
         else:
