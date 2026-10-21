@@ -1,0 +1,57 @@
+tm: 0  # temple layout: border, pillars and short walls, floor from tools/draft_garden.py decorate
+width: 480
+height: 320
+tint: {3: 2, 11: 14}  # the hedges as temple stone
+trail:  # the tail leaves a wall behind that stands this long
+  seconds: 6
+
+start:
+  x: 60
+  y: 60
+
+timers:
+  crawlers:  # they follow the trail, and the trail stands in their way
+    duration: 15
+    frequency: 15
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: crawler
+      away: 160
+      max: 3
+  goldens:
+    duration: 12
+    frequency: 14
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: golden
+      max: 1
+  apple1:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+  apple2:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+
+goal:
+  score: 25
+
+title: Trail
+intro:
+  - "The temple remembers every step: the snake's path"
+  - "turns to stone behind its tail, and crumbles later."
+  - "Don't wall yourself in. Crawlers follow the trail,"
+  - "but they can't get through it either."
+
+difficulty:  # harder: the trail stands longer, more crawlers
+  hard: {trail: {seconds: 8}, timers: {crawlers: {callback: {max: 4}}}}
+  nightmare: {trail: {seconds: 9}}

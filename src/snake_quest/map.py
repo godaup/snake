@@ -20,6 +20,9 @@ from snake_quest.tiles import (
     ICE_GRIP,
     ICE_TILE,
     PATH_TILE,
+    TRAIL_CRUMBLE,
+    TRAIL_CRUMBLE_TILE,
+    TRAIL_TILE,
     WALL_TILES,
     WALL_VARIANT_ROW,
     TileKind,
@@ -39,6 +42,7 @@ NEW_POS_TRIES = 300  # attempts at keeping a spawn `away` from the snake before 
 CHASE_EVERY = 0.25  # seconds between updates of the hunters' way to the snake's tail
 CRUMBS_PER_SECOND = 6  # how fast a firefly lights the breadcrumbs
 CRUMBS_FADE = 3.0  # seconds a timed reveal takes to fade out at its end
+TRAIL_GAP = 16  # px: no trail is laid this close to the head (a snake that is still short would run into it)
 
 
 class Map:
@@ -70,6 +74,9 @@ class Map:
         self._portal_lock: tuple[int, int] | None = None  # portal the head arrived on, inactive until it leaves
         self._head_tile: tuple[int, int] | None = None
         self.ice = False  # any ice tiles (bots then simulate the drift)
+        # optional: the tail leaves a wall behind for `trail.seconds` (tile -> [the tile it covers, seconds left])
+        self.trail_seconds: float = float(self.cfg.trail.seconds) if "trail" in self.cfg else 0.0
+        self.trail: dict[tuple[int, int], list] = {}
         self.snake_killed = False  # set when a hazard cuts more than the snake has, or a hunter bites the head
         # walking distances from the tail (see chase) and from the head (see flight), recomputed now and then
         self._fields: dict[str, dict[tuple[int, int], int]] = {}
@@ -138,6 +145,8 @@ class Map:
         for dead in deads:
             self.projectiles.remove(dead)
         self._step_on_tiles(snake)
+        if self.trail_seconds:
+            self._lay_trail(snake, self.game.dt.total_seconds())
         # check snake intersections
         p, q = snake.get_collision_points()
         for ent in self.entities:
@@ -252,6 +261,26 @@ class Map:
         if entered and self.tile_at(snake.head.pos) == HAZARD_TILE:
             self.game.sm.effect("hurt")
             self.snake_killed = not snake.cut(HAZARD_CUT)
+
+    def _lay_trail(self, snake: "Snake", seconds: float) -> None:
+        """The tail turns the floor it leaves into a wall, which crumbles (TRAIL_CRUMBLE_TILE) and is gone after
+        `trail_seconds`. Only plain floor turns: portals, exits, thorns and ice stay as they are."""
+        tilemap = pyxel.tilemaps[self.tm]
+        for tile, entry in list(self.trail.items()):
+            entry[1] -= seconds
+            if entry[1] <= 0:
+                tilemap.pset(*tile, entry[0])
+                del self.trail[tile]
+            elif entry[1] <= TRAIL_CRUMBLE:
+                tilemap.pset(*tile, TRAIL_CRUMBLE_TILE)
+        tail = snake.segs[-1].pos
+        tile = self.tile_xy(tail)
+        if tile in self.trail or (tail - snake.head.pos).length() < TRAIL_GAP:
+            return
+        under = tilemap.pget(*tile)
+        if under in FLOOR_TILES:
+            self.trail[tile] = [under, self.trail_seconds]
+            tilemap.pset(*tile, TRAIL_TILE)
 
     def tile_center(self, tile: tuple[int, int]) -> Vec2:
         return Vec2(tile[0] * 8 + 4, tile[1] * 8 + 4 + self.header)

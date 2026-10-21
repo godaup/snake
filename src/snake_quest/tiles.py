@@ -21,7 +21,11 @@ EMPTY_TILE = (0, 0)
 WALL_TILE = (0, 3)
 # hedge variant for each combination of wall neighbours: tile (mask, 8) with mask bits N=1, E=2, S=4, W=8
 WALL_VARIANT_ROW = 8
-WALL_TILES = frozenset({WALL_TILE} | {(mask, WALL_VARIANT_ROW) for mask in range(16)})
+# the snake's trail in levels with `trail` (see Map._lay_trail): walls the map lays and lifts again while playing
+TRAIL_TILE = (7, 10)
+TRAIL_CRUMBLE_TILE = (8, 10)  # its last TRAIL_CRUMBLE seconds
+TRAIL_CRUMBLE = 1.5
+WALL_TILES = frozenset({WALL_TILE, TRAIL_TILE, TRAIL_CRUMBLE_TILE} | {(mask, WALL_VARIANT_ROW) for mask in range(16)})
 # floor decorations (grass, flowers, stones): drawn, but walkable and free for spawning
 DECOR_TILES = frozenset((k, 9) for k in range(6))
 FLOOR_TILES = frozenset({EMPTY_TILE} | DECOR_TILES)

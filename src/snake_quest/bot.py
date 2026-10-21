@@ -29,6 +29,7 @@ LEVELS = (
     "ice",
     "minefield",
     "core",
+    "trail",
 )
 
 HUNT_LENGTH = 16  # segments: shorter, the bot eats before it hunts

@@ -31,3 +31,11 @@ arcs:
       decor: [[5, 9], [5, 9], [6, 10]]
       props: [[0, 13], [0, 13], [6, 13], [7, 13], [5, 13]]
       boss: [8, 13]
+  - name: Ouroboros
+    resources: arc4.pyxres
+    levels: [trail]
+    map:
+      ground: 2
+      tint: {3: 1, 11: 14}
+      decor: [[0, 9], [5, 9], [5, 9]]
+      props: [[7, 10], [7, 10], [8, 10], [7, 13]]

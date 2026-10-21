@@ -183,7 +183,7 @@ class PathController(Controller):
         # the closest arc that leaves a way out (and, for a long snake, room to live in); the checks are the expensive
         # part, so only until one passes
         escapes, cramped = {}, []
-        vacate = self._vacate(snake) if len(snake) >= self.LONG else None
+        vacate = self._vacate(snake, map) if len(snake) >= self.LONG else None
         for steering in sorted(safe, key=distance):
             escapes[steering] = self._escape(snake, map, *arcs[steering][1:3], arcs[steering][4])
             if escapes[steering] < self.ESCAPE:
@@ -247,14 +247,17 @@ class PathController(Controller):
             self._walls, self._walls_map = {}, map
         if cell not in self._walls:
             center = Vec2(cell[0] * self.CELL + self.CELL / 2, cell[1] * self.CELL + self.CELL / 2)
-            self._walls[cell] = map.check_on_wall(center)
+            # cached: only the walls that stay (the trail comes and goes)
+            self._walls[cell] = map.check_on_wall(center) and map.tile_xy(center) not in map.trail
+        if map.trail and not self._walls[cell]:
+            return map.tile_xy(Vec2(cell[0] * self.CELL, cell[1] * self.CELL)) in map.trail
         return self._walls[cell]
 
     def _field(self, snake: "Snake", map: "Map", goal: tuple[int, int]) -> dict[tuple[int, int], int]:
         """Steps (cells) from every reachable cell to the target cell, breadth first from the target. Walls block;
         a body cell blocks unless its last segment will have moved on by the time the head, going straight, could be
         there. A portal leads to the other one's centre."""
-        vacate, head, speed = self._vacate(snake), snake.head.pos, snake.effective_speed
+        vacate, head, speed = self._vacate(snake, map), snake.head.pos, snake.effective_speed
 
         near_threat = {
             (cx, cy)
@@ -290,15 +293,17 @@ class PathController(Controller):
                     queue.append(nxt)
         return distance
 
-    def _vacate(self, snake: "Snake") -> dict[tuple[int, int], float]:
+    def _vacate(self, snake: "Snake", map: Optional["Map"] = None) -> dict[tuple[int, int], float]:
         """For every CELL-sized cell the body covers, and the cells next to it: frames until its last segment has moved
-        on (each frame the segments shift by one; while growing, the tail stays). Counting the neighbours too keeps the
-        bot out of gaps in its body that are too narrow to steer through."""
+        on (each frame the segments shift by one; while growing, the tail stays) and, in a level with a trail, until
+        the trail it leaves there has crumbled. Counting the neighbours too keeps the bot out of gaps in its body that
+        are too narrow to steer through."""
         vacate: dict[tuple[int, int], float] = {}
         n, grow = len(snake), max(snake.grow, 0)
+        linger = map.trail_seconds * map.game.cfg.fps if map is not None else 0
         for index, seg in enumerate(snake.segs[1:], start=1):
             x, y = int(seg.pos.x) // self.CELL, int(seg.pos.y) // self.CELL
-            frames = n - index + grow
+            frames = n - index + grow + linger
             for cell in ((x, y), (x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
                 if vacate.get(cell, 0) < frames:
                     vacate[cell] = frames

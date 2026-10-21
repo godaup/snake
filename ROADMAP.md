@@ -52,7 +52,7 @@ Ground rules:
 
 | #  | Level                | Twist                                                         | Goal                 |
 |----|----------------------|---------------------------------------------------------------|----------------------|
-| 16 | Trail                | The snake's path turns into walls                             | survive / score      |
+| 16 | Trail                | The snake's path turns into walls                             | score (exists)       |
 | 17 | Mirror               | Inverted controls                                             | reach the exit       |
 | 18 | Armored              | Armored enemies that only the **Laser** pierces               | defeat N enemies     |
 | 19 | Gauntlet             | Timed run through earlier twists; **Homing** shots            | reach the exit       |
@@ -176,6 +176,8 @@ trail, Mines), Boss: The Core (level 15: a shield held up by rings of turrets, d
 ### M4: Arc 4
 
 Trail walls, mirrored input, Laser and Homing, AI-controlled rival snake (reusing `Snake` through the input layer).
+
+Done: `arc4.pyxres` with temple layouts, Trail (level 16: the tail leaves walls that crumble, crawlers on the trail).
 
 ### M5: Release
 
