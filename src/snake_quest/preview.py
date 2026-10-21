@@ -35,7 +35,10 @@ def render(level: Level, filename: Path, scale: int = 2) -> None:
     header = game.cfg.header.h
     img = pyxel.Image(level_map.cfg.width, level_map.cfg.height)
     img.cls(game.cfg.area.bg)
+    for colour, replacement in level_map.tint.items():
+        img.pal(colour, replacement)
     img.bltm(0, 0, level_map.cfg.tm, 0, 0, level_map.cfg.width, level_map.cfg.height)
+    img.pal()
     for pos in level_map.path:
         img.circ(pos.x + 4, pos.y - header + 4, 2, COL_PATH)
         img.circb(pos.x + 4, pos.y - header + 4, 4, COL_PATH_RING)

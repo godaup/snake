@@ -139,6 +139,21 @@ class Snake:
         self.segs = self.segs[:-n]
         return True
 
+    def segment_at(self, point: Vec2, radius: float = 0) -> int | None:
+        """Index of the segment nearest the head that `point` touches (within the segment size plus `radius`)."""
+        for index, seg in enumerate(self.segs):
+            if (point - seg.pos).length() < self.size + radius:
+                return index
+        return None
+
+    def wound(self, index: int) -> bool:
+        """A shot hits segment `index`: the body from there to the tail falls off; a hit on the head costs half the
+        body. False (and nothing lost) when the snake is too short to lose half."""
+        if index > 0:
+            self.segs = self.segs[:index]
+            return True
+        return len(self) >= 4 and self.cut(len(self) // 2)
+
     def self_intersect(self) -> bool:
         if len(self) < 4:
             return False

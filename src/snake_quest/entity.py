@@ -462,6 +462,91 @@ class Nest(Entity):
         super().draw(offset)
 
 
+@register("turret")
+class Turret(Entity):
+    """A gun emplacement of The Fortress. While the snake's head is within RANGE px with no wall in between, it turns
+    towards it and every RELOAD seconds (fewer on harder difficulties: `hostile` factor) fires a slow shot where the
+    head is heading, its eye glowing for WARN seconds before. A shot cuts the snake where it strikes (on the head: half
+    of it, see `Snake.wound`). HEALTH shots destroy it (counted as defeated); it flashes when hit. Running into it is
+    the end."""
+
+    _img_x = 0
+    _img_y = 13
+    hostile = True
+    HOT_IMG_X = 1  # sprite tile next to it: the eye glowing before a shot
+    HEALTH = 3
+    RANGE = 120  # px
+    RELOAD = 2.5  # seconds between shots
+    WARN = 0.6  # seconds the eye glows before a shot
+    SHOT_SPEED = 2.0  # px per frame, scaled with the difficulty's speed
+    SHOT_RANGE = 160  # px a shot flies
+    FLASH = 0.2
+    COL_SHOT = 8
+    COL_BARREL = 5
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.health = self.HEALTH
+        self.left = pyxel.rndf(self.WARN, self.RELOAD)  # not all turrets at once
+        self.flash = 0.0
+        self.aim = 90.0  # degrees, where the barrel points
+        self.sees = False  # the snake's head is in range and in sight
+
+    @property
+    def center(self) -> Vec2:
+        return self.pos + Vec2(self.w / 2, self.h / 2)
+
+    def update(self, snake: "Snake", map: "Map"):
+        from snake_quest.weapons import Projectile  # weapons need nothing from here, see GunPickup
+
+        seconds = map.game.dt.total_seconds()
+        self.flash = max(self.flash - seconds, 0.0)
+        to_head = snake.head.pos - self.center
+        self.sees = to_head.length() <= self.RANGE and map.clear_line(self.center, snake.head.pos)
+        if not self.sees:
+            self.left = max(self.left, self.WARN)  # always a warning before a shot
+            return
+        speed = self.SHOT_SPEED * map.game.difficulty.speed
+        aim = self.intercept(snake, speed)
+        self.aim = pyxel.atan2(aim.y, aim.x)
+        self.left -= seconds
+        if self.left > 0:
+            return
+        self.left = self.RELOAD * map.game.difficulty.hostile
+        start = self.center + Vec2(pyxel.cos(self.aim), pyxel.sin(self.aim)) * 6
+        lifetime = self.SHOT_RANGE / speed / map.game.cfg.fps
+        map.projectiles.append(
+            Projectile(start, self.aim, speed, size=1, col=self.COL_SHOT, hostile=True, lifetime=lifetime)
+        )
+        map.game.sm.effect("shoot")
+
+    def intercept(self, snake: "Snake", speed: float) -> Vec2:
+        """Direction to shoot in to meet the head if it keeps its course (so turning dodges the shot, and the body,
+        following the head's actual way, isn't hit instead)."""
+        velocity = Vec2(pyxel.cos(snake.orient), pyxel.sin(snake.orient)) * snake.effective_speed
+        aim = snake.head.pos - self.center
+        for _ in range(3):  # the head moves while the shot flies: refine the meeting point
+            aim = snake.head.pos + velocity * (aim.length() / speed) - self.center
+        return aim
+
+    def hit(self, dmg: int):
+        super().hit(dmg)
+        self.flash = self.FLASH
+
+    def on_intersect(self, snake: "Snake", map: "Map"):
+        map.snake_killed = True
+
+    def draw(self, offset: "Vec2"):
+        if self.flash > 0 and pyxel.frame_count % 2:
+            return
+        hot = self.sees and self.left <= self.WARN and pyxel.frame_count % 4 < 2
+        self.img_x = 8 * (self.HOT_IMG_X if hot else self._img_x)
+        center = self.center + offset  # the barrel sticks out of the dome
+        tip = center + Vec2(pyxel.cos(self.aim), pyxel.sin(self.aim)) * 7
+        pyxel.line(center.x, center.y, tip.x, tip.y, self.COL_BARREL)
+        super().draw(offset)
+
+
 @register("enemy")
 class Enemy(Entity):
     _img_x = 3

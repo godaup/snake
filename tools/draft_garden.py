@@ -1,4 +1,4 @@
-"""Garden level helpers: decorate a level's floor, or generate a natural ("organic") layout.
+"""Level layout helpers: decorate a level's floor, or generate a natural ("organic") or a fortress layout.
 
     # sprinkle grass, flowers and stones on a level's empty floor (in place)
     python tools/draft_garden.py decorate src/snake_quest/resources/garden.pyxres \\
@@ -7,6 +7,10 @@
     # generate a natural layout into a free tilemap, keeping the level's entity, portal, exit and hazard tiles
     python tools/draft_garden.py organic src/snake_quest/resources/garden.pyxres \\
         --level src/snake_quest/levels/maneuver.yaml --src-tm 1 --dst-tm 4 --seed 3
+
+    # the same with straight walls and towers (arc 3; levels there tint the hedges into stone)
+    python tools/draft_garden.py fortress src/snake_quest/resources/arc3.pyxres \\
+        --level src/snake_quest/levels/turrets.yaml --src-tm 0 --dst-tm 0 --seed 1
 
 The organic layout is a hedge border plus rounded bushes (unions of circles) and gently curved hedge rows. Every
 obstacle keeps CLEARANCE tiles of open floor to the next one, the area around the start stays clear, and floor the snake
@@ -113,25 +117,46 @@ def hedge_row(rng, x0, y0, length, angle, thickness) -> set:
     return tiles
 
 
-def organic(tilemap, width, height, rng, start, keep: dict) -> tuple[int, int]:
+def garden_shape(rng, width, height) -> set:
+    """A rounded bush or a curved hedge row."""
+    if rng.random() < 0.3:
+        shape = hedge_row(
+            rng,
+            rng.uniform(4, width - 5),
+            rng.uniform(4, height - 5),
+            rng.randint(10, 20),
+            rng.uniform(0, math.tau),
+            2,
+        )
+    else:
+        shape = bush(rng, rng.uniform(5, width - 6), rng.uniform(5, height - 6), rng.uniform(2.5, 5.0))
+    return smooth(shape)
+
+
+def fortress_shape(rng, width, height) -> set:
+    """A tower (a block) or a straight wall, two tiles thick, which may turn a corner."""
+    x0, y0 = rng.randint(4, width - 6), rng.randint(4, height - 6)
+    if rng.random() < 0.35:
+        w, h = rng.randint(2, 5), rng.randint(2, 5)
+        return {(x0 + dx, y0 + dy) for dx in range(w) for dy in range(h)}
+    length, horizontal = rng.randint(6, 16), rng.random() < 0.5
+    tiles = {(x0 + i, y0 + t) if horizontal else (x0 + t, y0 + i) for i in range(length) for t in range(2)}
+    if rng.random() < 0.5:  # an L: a second wall from one end
+        end, turn, sign = rng.choice([0, length - 2]), rng.randint(4, 10), rng.choice([-1, 1])
+        for i in range(turn):
+            for t in range(2):
+                tiles.add((x0 + end + t, y0 + sign * i) if horizontal else (x0 + sign * i, y0 + end + t))
+    return tiles
+
+
+def organic(tilemap, width, height, rng, start, keep: dict, shape_of=garden_shape, beds=True) -> tuple[int, int]:
     walls = {(x, y) for y in range(height) for x in range(width) if x in (0, width - 1) or y in (0, height - 1)}
     blocked_start = near([start], START_CLEAR)
     placed = 0
     attempts = 0
     while attempts < 400:
         attempts += 1
-        if rng.random() < 0.3:
-            shape = hedge_row(
-                rng,
-                rng.uniform(4, width - 5),
-                rng.uniform(4, height - 5),
-                rng.randint(10, 20),
-                rng.uniform(0, math.tau),
-                2,
-            )
-        else:
-            shape = bush(rng, rng.uniform(5, width - 6), rng.uniform(5, height - 6), rng.uniform(2.5, 5.0))
-        shape = smooth(shape)
+        shape = shape_of(rng, width, height)
         if not shape:
             continue
         inside = all(CLEARANCE <= x < width - CLEARANCE and CLEARANCE <= y < height - CLEARANCE for x, y in shape)
@@ -159,9 +184,9 @@ def organic(tilemap, width, height, rng, start, keep: dict) -> tuple[int, int]:
     for (x, y), tile in keep.items():
         tilemap.pset(x, y, tile)
     # a few flower beds in open spots
-    beds = 0
-    for _ in range(60):
-        if beds >= max(3, width * height // 700):
+    count = 0
+    for _ in range(60 if beds else 0):
+        if count >= max(3, width * height // 700):
             break
         cx, cy = rng.uniform(4, width - 5), rng.uniform(4, height - 5)
         bed = flower_bed(rng, cx, cy)
@@ -169,13 +194,13 @@ def organic(tilemap, width, height, rng, start, keep: dict) -> tuple[int, int]:
             continue
         for (x, y), tile in bed.items():
             tilemap.pset(x, y, tile)
-        beds += 1
+        count += 1
     return placed, filled
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("command", choices=["decorate", "organic"])
+    parser.add_argument("command", choices=["decorate", "organic", "fortress"])
     parser.add_argument("resources", type=Path)
     parser.add_argument("--level", type=Path, required=True)
     parser.add_argument("--src-tm", type=int, help="organic: tilemap whose entity tiles are kept")
@@ -200,8 +225,13 @@ def main() -> None:
     else:
         src, dst = pyxel.tilemaps[args.src_tm], pyxel.tilemaps[args.dst_tm]
         keep = {(x, y): src.pget(x, y) for y in range(height) for x in range(width) if src.pget(x, y) in entity_sprites}
-        placed, filled = organic(dst, width, height, rng, start, keep)
-        count = decorate(dst, width, height, rng, avoid=near([start], START_CLEAR) | near(keep, 1))
+        if args.command == "fortress":  # sparse rubble instead of flower beds
+            placed, filled = organic(dst, width, height, rng, start, keep, shape_of=fortress_shape, beds=False)
+            density = 0.4
+        else:
+            placed, filled = organic(dst, width, height, rng, start, keep)
+            density = 1.0
+        count = decorate(dst, width, height, rng, avoid=near([start], START_CLEAR) | near(keep, 1), density=density)
         dst.imgsrc = src.imgsrc
         print(f"tilemap {args.dst_tm}: {placed} obstacles, {filled} unreachable tiles filled, {count} decorations")
     pyxel.save(str(resources))

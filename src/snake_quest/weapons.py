@@ -1,5 +1,6 @@
 """Weapons and their projectiles. The snake carries at most one weapon (`snake.weapon`, from a pickup such as
-`GunPickup`), and its controller's `fire()` shoots it. Shots only hit hostile entities, never the snake or pickups."""
+`GunPickup`), and its controller's `fire()` shoots it. The snake's shots only hit hostile entities, never the snake or
+pickups; hostile shots (from turrets) only hit the snake."""
 
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, ClassVar
@@ -16,7 +17,17 @@ if TYPE_CHECKING:
 class Projectile:
     LIFETIME = 1.2  # seconds before it fizzles out
 
-    def __init__(self, pos: Vec2, orient: float, speed: float, size: int, col: int, dmg: int = 1):
+    def __init__(
+        self,
+        pos: Vec2,
+        orient: float,
+        speed: float,
+        size: int,
+        col: int,
+        dmg: int = 1,
+        hostile: bool = False,
+        lifetime: float | None = None,
+    ):
         self.pos = pos
         self.dir = Vec2(x=pyxel.cos(orient), y=pyxel.sin(orient))
         self.speed = speed  # px per frame
@@ -25,14 +36,25 @@ class Projectile:
         self.dmg = dmg
         self.age = 0.0
         self.alive = True
+        self.hostile = hostile  # fired at the snake: hits it, never an entity
+        self.lifetime = self.LIFETIME if lifetime is None else lifetime  # seconds before it fizzles out
 
-    def update(self, map: "Map", seconds: float) -> None:
-        """Fly on; gone after LIFETIME, at a wall, outside the map or after hitting a hostile entity."""
+    def update(self, map: "Map", seconds: float, snake: "Snake | None" = None) -> None:
+        """Fly on; gone after its lifetime, at a wall, outside the map or after a hit: the snake's shots hit hostile
+        entities, hostile shots the snake (cutting it where they strike, see `Snake.wound`)."""
         self.pos = self.pos + self.dir * self.speed
         self.age += seconds
         outside = not (0 <= self.pos.x < map.cfg.width and map.header <= self.pos.y < map.header + map.cfg.height)
-        if self.age >= self.LIFETIME or outside or map.check_on_wall(self.pos):
+        if self.age >= self.lifetime or outside or map.check_on_wall(self.pos):
             self.alive = False
+            return
+        if self.hostile:
+            index = snake.segment_at(self.pos, self.size) if snake is not None else None
+            if index is not None:
+                map.game.sm.effect("hurt")
+                if not snake.wound(index):
+                    map.snake_killed = True
+                self.alive = False
             return
         for ent in map.entities:
             if ent.alive and ent.hostile and ent.covers(self.pos):

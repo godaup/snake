@@ -101,6 +101,7 @@ class PathController(Controller):
     SLEEPER = 10  # px kept from a sleeping one
     AIM = 8  # degrees: shoots at a hostile entity this close to straight ahead (wider when it is near)
     AIM_AHEAD = 100  # degrees: only entities about ahead are aimed at
+    DODGE = 5  # px kept from a hostile shot (turrets), along its flight
 
     def __init__(self, target: Callable[["Snake", "Map"], Vec2 | None]):
         self.target = target
@@ -111,6 +112,7 @@ class PathController(Controller):
         self._walls_map = None
         self.mode = ""  # why the last steering was chosen: goal, aim, tail, escape or crash (for debugging)
         self._threats: list[tuple[Vec2, float]] = []  # centre and radius to keep away from, per frame
+        self._shots: list[tuple[Vec2, Vec2]] = []  # position and velocity (px per frame) of hostile shots, per frame
 
     def steer(self, snake, map):
         self._threats = [
@@ -121,6 +123,7 @@ class PathController(Controller):
             for ent in map.entities
             if ent.alive and ent.hostile
         ]
+        self._shots = [(shot.pos, shot.dir * shot.speed) for shot in map.projectiles if shot.alive and shot.hostile]
         goal = self.target(snake, map)
         if goal is None:
             self.mode = ""
@@ -197,12 +200,11 @@ class PathController(Controller):
             distance = to_ent.length()
             if not 0 < distance <= getattr(weapon, "range", 100) or (best and distance >= best[0]):
                 continue
-            steps = int(distance // 4)
-            if any(map.check_on_wall(head + to_ent * (i / steps)) for i in range(1, steps)):
+            if not map.clear_line(head, head + to_ent):
                 continue
             turn = (pyxel.atan2(to_ent.y, to_ent.x) - snake.orient + 180) % 360 - 180
-            # one behind (chasing the tail) can't be faced in time, unless it holds still
-            if abs(turn) > self.AIM_AHEAD and getattr(ent, "state", "") not in ("rest", "asleep"):
+            # one behind (chasing the tail) can't be faced in time, unless it holds still (or never moves: no state)
+            if abs(turn) > self.AIM_AHEAD and getattr(ent, "state", "rest") not in ("rest", "asleep"):
                 continue
             best = (distance, turn, max(self.AIM, math.degrees(math.atan2(ent.w / 2, distance))))
         return None if best is None else best[1:]
@@ -324,7 +326,9 @@ class PathController(Controller):
             pos = Vec2(pos.x + speed * pyxel.cos(orient), pos.y + speed * pyxel.sin(orient))
             p, q = collision_points(pos, orient, snake.size)
             near_body = frame % 2 == 0 and any((pos - seg.pos).length() < snake.size * 2 for seg in body)
-            threatened = any((pos - c).length() < r + frame * self.THREAT_GROWTH for c, r in self._threats)
+            threatened = any((pos - c).length() < r + frame * self.THREAT_GROWTH for c, r in self._threats) or any(
+                (pos - (shot + velocity * frame)).length() < self.DODGE for shot, velocity in self._shots
+            )
             if map.check_on_wall(p) or map.check_on_wall(q) or near_body or threatened:
                 return frame - 1, pos, orient, reached
             if reached is None and goal is not None and (goal - pos).length() < self.REACH:

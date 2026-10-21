@@ -1,0 +1,77 @@
+tm: 0  # fortress layout from tools/draft_garden.py fortress (--src-tm 0 --dst-tm 0 --seed 1)
+width: 480
+height: 320
+tint: {3: 13, 11: 6}  # the hedges as stone walls
+
+start:
+  x: 60
+  y: 60
+
+timers:
+  turrets:  # gun emplacements, well away from the start
+    duration: 0
+    frequency: 0.05
+    fire_n: 6
+    callback:
+      type: spawn
+      entity: turret
+      away: 140
+  first_gun:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: gun
+      pos: [100, 76]
+  more_guns:
+    duration: 12
+    frequency: 12
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: gun
+      max: 2
+  goldens:  # a feast now and then, often where the turrets watch
+    duration: 10
+    frequency: 15
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: golden
+      max: 1
+  apple1:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+  apple2:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+  apple3:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+
+goal:
+  length: 60
+
+title: Turrets
+intro:
+  - "The fortress walls are guarded by turrets."
+  - "When an eye glows, a shot follows: dodge it!"
+  - "A hit cuts the snake where it strikes."
+  - "Grow long; shoot the turrets if they're in the way."
+
+difficulty:  # harder: more turrets, not just faster ones
+  hard: {timers: {turrets: {fire_n: 7}}}
+  nightmare: {timers: {turrets: {fire_n: 8}}}

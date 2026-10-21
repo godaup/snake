@@ -10,3 +10,6 @@ arcs:
   - name: The Wilds
     resources: arc2.pyxres
     levels: [hunted, armed, prey, burrows, alpha]
+  - name: The Fortress
+    resources: arc3.pyxres
+    levels: [turrets]

@@ -40,7 +40,7 @@ Ground rules:
 
 | #  | Level             | Twist                                                         | Goal               |
 |----|-------------------|---------------------------------------------------------------|--------------------|
-| 11 | Turrets           | Turrets shoot back; a hit cuts the snake at that segment      | length / score     |
+| 11 | Turrets           | Turrets shoot back; a hit cuts the snake at that segment      | length (exists)    |
 | 12 | Swarm             | Many small enemies; **Spread** shot                           | defeat N enemies   |
 | 13 | Ice               | Turning drifts; **Ricochet** shots bounce off walls           | reach the exit     |
 | 14 | Minefield         | **Mines** dropped from the tail; enemies follow the trail     | defeat N enemies   |

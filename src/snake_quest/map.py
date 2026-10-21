@@ -48,6 +48,8 @@ class Map:
         level.load_tilemaps()
 
         self.start = Vec2(self.cfg.start.x, self.cfg.start.y)
+        # optional colour swaps for drawing the tilemap, e.g. hedges as stone walls: {3: 5, 11: 13}
+        self.tint: dict[int, int] = {int(k): int(v) for k, v in self.cfg.get("tint", {}).items()}
         # plain copies of config values read in hot paths (OmegaConf lookups are slow, bots call tile_xy a lot)
         self.header: int = game.cfg.header.h
         self.tm: int = self.cfg.tm
@@ -144,7 +146,7 @@ class Map:
             ent.update(snake=snake, map=self)
         # update alive projectiles
         for proj in self.projectiles:
-            proj.update(map=self, seconds=self.game.dt.total_seconds())
+            proj.update(map=self, seconds=self.game.dt.total_seconds(), snake=snake)
         # update alive timers
         for tmr in self.timers:
             tmr.update(map=self, snake=snake)
@@ -165,6 +167,8 @@ class Map:
     def draw(self, offset: Vec2):
         if self.darkness and not self.game.cfg.debug:
             pyxel.pal(0, self.darkness.floor)
+        for colour, replacement in self.tint.items():
+            pyxel.pal(colour, replacement)
         pyxel.bltm(
             x=0,
             y=self.header,
@@ -302,6 +306,12 @@ class Map:
 
     def check_on_wall(self, pos: Vec2) -> bool:
         return self.tile_at(pos) in WALL_TILES
+
+    def clear_line(self, a: Vec2, b: Vec2, step: float = 4) -> bool:
+        """Whether no wall lies on the straight line from `a` to `b` (tested every `step` px)."""
+        delta = b - a
+        steps = int(delta.length() // step)
+        return not any(self.check_on_wall(a + delta * (i / steps)) for i in range(1, steps))
 
     def _autotile_walls(self) -> None:
         """Replace every wall tile with the hedge variant matching its wall neighbours (outside the map counts
