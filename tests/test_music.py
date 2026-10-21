@@ -12,7 +12,7 @@ from snake_quest.states.pause import PauseStateHandler
 from snake_quest.states.running import RunningStateHandler
 
 CAMPAIGN = load_campaign()
-COMPOSED = ("garden",)  # tracks written so far by tools/compose_music.py
+COMPOSED = tuple(MUSIC)  # every track, written by tools/compose_music.py
 
 
 def level_music(level) -> str:

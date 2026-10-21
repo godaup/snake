@@ -190,6 +190,8 @@ Open: playtesting.
       bot-checked win-rate bands (`tools/balance.py`, `tests/test_winnable.py`)
 - [x] Checkpoints and level select: a finished arc can be started directly, from an overview map of the arcs
       (`states/select.py`, `states/worldmap.py`: fog over the unopened ones); highscores per arc and difficulty
-- [ ] Level music, initials for highscores
+- [x] Level music: one track per arc and one for the bosses (`tools/compose_music.py`, channels 0-2; the effects keep
+      channel 3)
+- [ ] Initials for highscores
 - [ ] A winnability test per level (`PathController` bot in `tests/test_winnable.py`: Classic, The Hunger; input layer, later `pyxel-mcp` once the upstream GitHub account is restored)
 - [ ] `snake-quest` 0.x on PyPI
