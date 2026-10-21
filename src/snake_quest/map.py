@@ -13,6 +13,8 @@ from snake_quest.darkness import Darkness
 from snake_quest.entity import ENTITY_NAMES, ENTITY_TILES, Entity
 from snake_quest.goals import Goal, load_goals
 from snake_quest.tiles import (
+    DOOR_OPEN_TILE,
+    DOOR_TILE,
     EMPTY_TILE,
     FLOOR_TILES,
     HAZARD_CUT,
@@ -25,6 +27,7 @@ from snake_quest.tiles import (
     TRAIL_CRUMBLE,
     TRAIL_CRUMBLE_TILE,
     TRAIL_TILE,
+    WALL_TILE,
     WALL_TILES,
     WALL_VARIANT_ROW,
     WEB_HOLD,
@@ -44,6 +47,7 @@ if TYPE_CHECKING:
 
 PORTAL_SPIN = 12  # degrees per frame of the sparkle circling each portal
 COL_PORTAL_SPARK = 7
+COL_DOOR_WARN = 8
 NEW_POS_TRIES = 300  # attempts at keeping a spawn `away` from the snake before taking any free spot
 CHASE_EVERY = 0.25  # seconds between updates of the hunters' way to the snake's tail
 CRUMBS_PER_SECOND = 6  # how fast a firefly lights the breadcrumbs
@@ -81,6 +85,9 @@ class Map:
         self._head_tile: tuple[int, int] | None = None
         self.ice = False  # any ice tiles (bots then simulate the drift)
         self.mirror = False  # any mirrored floor
+        self.grip: float = float(self.cfg.get("grip", 1.0))  # the level's grip everywhere (zero gravity: low)
+        self.gravity: float = float(self.cfg.get("gravity", 1.0))  # times every planet's mass
+        self._wells: list | None = None  # see wells
         self.web = False  # any webs (painted, or spun later by spiders: they set it); bots then weigh them
         self.torn: dict[tuple[int, int], float] = {}  # torn web tile -> seconds until it grows back
         # optional: the tail leaves a wall behind for `trail.seconds` (tile -> [the tile it covers, seconds left])
@@ -141,6 +148,22 @@ class Map:
         # optional: the play area is dark except around the head and glowing entities
         self.darkness = Darkness(self.cfg.darkness, game) if "darkness" in self.cfg else None
         self.boss: Boss | None = load_boss(self.cfg.boss, map=self) if "boss" in self.cfg else None
+        # optional: airlock doors that take turns, `airlock: {cycle: s, warn: s}` (see _cycle_doors)
+        tilemap = pyxel.tilemaps[self.tm]
+        self.doors = (
+            [
+                (x, y)
+                for y in range(self.cfg.height // 8)
+                for x in range(self.cfg.width // 8)
+                if tilemap.pget(x, y) in (DOOR_TILE, DOOR_OPEN_TILE)
+            ]
+            if "airlock" in self.cfg
+            else []
+        )
+        self.door_cycle = float(self.cfg.airlock.cycle) if self.doors else 0.0
+        self.door_warn = float(self.cfg.airlock.warn) if self.doors else 0.0
+        self.door_left = self.door_cycle  # seconds until the doors swap
+        self.closing: set[tuple[int, int]] = set()  # open doors about to shut (blinking; bots keep out)
 
     def update(self, snake: "Snake"):
         # remove dead entities
@@ -149,6 +172,7 @@ class Map:
             self.defeated += dead.tally and dead.killed
             self.eaten += dead.tally and not dead.killed
             self.entities.remove(dead)
+            self.entities.extend(dead.pieces)  # what it broke into (asteroids)
         # remove dead timers
         deads = [tmr for tmr in self.timers if not tmr.alive]
         for dead in deads:
@@ -157,9 +181,12 @@ class Map:
         deads = [proj for proj in self.projectiles if not proj.alive]
         for dead in deads:
             self.projectiles.remove(dead)
+        self._wells = None
         self._step_on_tiles(snake)
         if self.torn:
             self._regrow_webs(snake, self.game.dt.total_seconds())
+        if self.doors:
+            self._cycle_doors(snake, self.game.dt.total_seconds())
         if self.trail_seconds:
             self._lay_trail(snake, self.game.dt.total_seconds())
         # check snake intersections
@@ -220,6 +247,9 @@ class Map:
         for pos in self.path[:shown]:
             pyxel.blt(pos.x + offset.x, pos.y + offset.y, 0, PATH_TILE[0] * 8, PATH_TILE[1] * 8, 8, 8, colkey=0)
         pyxel.dither(1.0)
+        if self.closing and pyxel.frame_count % 6 < 3:  # doors about to shut blink
+            for x, y in self.closing:
+                pyxel.rectb(x * 8 + offset.x, y * 8 + header + offset.y, 8, 8, COL_DOOR_WARN)
         for ent in self.entities:
             ent.draw(offset)
         for proj in self.projectiles:
@@ -261,7 +291,7 @@ class Map:
     def _step_on_tiles(self, snake: "Snake") -> None:
         """Effects of the tile under the snake's head: portals move it to their partner, thorns cut the tail, ice
         makes it drift, mirrored floor swaps left and right, webs hold it."""
-        snake.grip = ICE_GRIP if self.ice and self.tile_at(snake.head.pos) == ICE_TILE else 1.0
+        snake.grip = self.grip_at(snake.head.pos)
         snake.mirrored = self.mirror and self.tile_at(snake.head.pos) == MIRROR_TILE
         tile = self.tile_xy(snake.head.pos)
         entered = tile != self._head_tile
@@ -281,6 +311,31 @@ class Map:
             self.game.sm.effect("hurt")
             snake.boost(WEB_SLOW, WEB_HOLD)
             self.tear_web(tile)
+
+    def _cycle_doors(self, snake: "Snake", seconds: float) -> None:
+        """Every `cycle` seconds the airlock doors swap: the open ones shut (blinking for `warn` seconds before), the
+        shut ones open. A door shutting on the body cuts it there; on the head it is the end."""
+        tilemap = pyxel.tilemaps[self.tm]
+        self.door_left -= seconds
+        opened = [tile for tile in self.doors if tilemap.pget(*tile) == DOOR_OPEN_TILE]
+        self.closing = set(opened) if self.door_left <= self.door_warn else set()
+        if self.door_left > 0:
+            return
+        self.door_left = self.door_cycle
+        shut = [tile for tile in self.doors if tilemap.pget(*tile) == DOOR_TILE]
+        for tile in opened:
+            tilemap.pset(*tile, DOOR_TILE)
+            self._walls_changed(tile)
+        for tile in shut:
+            tilemap.pset(*tile, DOOR_OPEN_TILE)
+            self._walls_changed(tile)
+        self.closing = set()
+        index = next((i for i, seg in enumerate(snake.segs) if self.tile_xy(seg.pos) in set(opened)), None)
+        if index == 0:
+            self.snake_killed = True
+        elif index is not None:
+            snake.segs = snake.segs[:index]
+            self.game.sm.effect("hurt")
 
     def tear_web(self, tile: tuple[int, int]) -> None:
         """A web is torn (the snake ran into it, a flare burnt it): it grows back after WEB_REGROW seconds."""
@@ -333,6 +388,23 @@ class Map:
         if under in FLOOR_TILES:
             self.trail[tile] = [under, self.trail_seconds]
             tilemap.pset(*tile, TRAIL_TILE)
+
+    def pull(self, pos: Vec2, heading: float) -> float:
+        """Degrees the planets turn a heading at `pos` by this frame (see Planet); the snake and the bots' arcs both use
+        it."""
+        return sum(ent.pull(pos, heading, self.gravity) for ent in self.wells if ent.alive)
+
+    @property
+    def wells(self) -> list:
+        """What pulls: the planets on the map (looked up once per update: bots ask very often)."""
+        if self._wells is None:
+            self._wells = [ent for ent in self.entities if hasattr(ent, "pull")]
+        return self._wells
+
+    def grip_at(self, pos: Vec2) -> float:
+        """How well the snake's heading follows its steering there (see `utils.drift`): ice's ICE_GRIP, else the level's
+        `grip` (1: at once; low in zero gravity)."""
+        return ICE_GRIP if self.ice and self.tile_at(pos) == ICE_TILE else self.grip
 
     def tile_center(self, tile: tuple[int, int]) -> Vec2:
         return Vec2(tile[0] * 8 + 4, tile[1] * 8 + 4 + self.header)
@@ -448,7 +520,7 @@ class Map:
         variants = {}
         for y in range(height):
             for x in range(width):
-                if tilemap.pget(x, y) in WALL_TILES:
+                if tilemap.pget(x, y) == WALL_TILE:
                     mask = is_wall(x, y - 1) | is_wall(x + 1, y) << 1 | is_wall(x, y + 1) << 2 | is_wall(x - 1, y) << 3
                     variants[x, y] = (mask, WALL_VARIANT_ROW)
         for (x, y), tile in variants.items():

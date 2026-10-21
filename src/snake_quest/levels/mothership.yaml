@@ -1,0 +1,96 @@
+tm: 4  # tools/draft_garden.py void (--src-tm 4 --dst-tm 4 --seed 5 --count 0); three planets placed by hand inside its loop
+width: 960
+height: 640
+tint: {3: 5, 11: 12}  # the hedges as hull plating
+
+start:
+  x: 60
+  y: 60
+
+grip: 0.5  # space, but forgiving
+gravity: 0.6
+
+boss:
+  type: mothership
+  path: [[220, 160], [740, 160], [820, 360], [740, 560], [220, 560], [140, 360]]  # its course, a loop
+  speed: 0.45
+  health: 12
+  reload: 4
+  open: 4
+  closed: 3
+  call: 4
+  swarm: 3
+  pull: 0
+  reach: 140
+  phases:
+    - {below: 1}
+    - {below: 0.67}
+    - {below: 0.34, speed: 0.3, pull: 2500}
+
+timers:
+  first_gun:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: gun
+      pos: [100, 76]
+  guns:
+    duration: 8
+    frequency: 8
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: gun
+      max: 2
+  spreads:
+    duration: 20
+    frequency: 15
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: spread
+      max: 1
+  tanks:
+    duration: 10
+    frequency: 12
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: tank
+      max: 2
+  apple1:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+  apple2:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+  apple3:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+
+goal:
+  boss: defeated
+  oxygen: {drain: 120, tank: 0.5}
+
+music: boss  # instead of the arc's
+
+title: "Boss: The Mothership"
+intro:
+  - "The Mothership circles the sector. Shoot its three"
+  - "engine pods to bring its shield down; then hit it"
+  - "while its bay is open. Mind its raiders, and at"
+  - "the end its tractor beam. Keep an eye on your air."

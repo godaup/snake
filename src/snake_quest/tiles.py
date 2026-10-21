@@ -31,11 +31,16 @@ TRAIL_CRUMBLE = 1.5
 # rubble, a wall for good
 CRACK_TILE = (13, 10)
 RUBBLE_TILE = (12, 10)
+# airlock doors (arc 6, the `airlock` level option): shut, a wall; open, walkable (nothing spawns on it). The doors
+# of a level take turns (see Map._cycle_doors)
+DOOR_TILE = (14, 10)
+DOOR_OPEN_TILE = (15, 10)
 WALL_TILES = frozenset(
-    {WALL_TILE, TRAIL_TILE, TRAIL_CRUMBLE_TILE, RUBBLE_TILE} | {(mask, WALL_VARIANT_ROW) for mask in range(16)}
+    {WALL_TILE, TRAIL_TILE, TRAIL_CRUMBLE_TILE, RUBBLE_TILE, DOOR_TILE}
+    | {(mask, WALL_VARIANT_ROW) for mask in range(16)}
 )
 # floor decorations (grass, flowers, stones): drawn, but walkable and free for spawning
-DECOR_TILES = frozenset((k, 9) for k in range(8))  # 6 and 7: the caves' pebbles and crystal shards
+DECOR_TILES = frozenset((k, 9) for k in range(10))  # 6, 7: the caves' pebbles and shards; 8, 9: stars, a galaxy
 FLOOR_TILES = frozenset({EMPTY_TILE} | DECOR_TILES)
 # level design helper marking the intended route (e.g. through the maze); hidden until revealed
 PATH_TILE = (3, 0)
@@ -67,6 +72,7 @@ TILE_KINDS: dict[tuple[int, int], TileKind] = {
     WEB_TILE: TileKind.WEB,
     TORN_WEB_TILE: TileKind.FLOOR,
     CRACK_TILE: TileKind.FLOOR,
+    DOOR_OPEN_TILE: TileKind.FLOOR,
 }
 # tiles that stay in the tilemap after loading (walls only as hedge variants)
 TERRAIN_TILES = frozenset(tile for tile, kind in TILE_KINDS.items() if kind != TileKind.PATH) - {WALL_TILE}

@@ -453,7 +453,112 @@ class BroodMotherBoss(Boss):
         return None
 
 
-BOSSES: dict[str, type[Boss]] = {cls.key: cls for cls in [Hunger, AlphaBoss, CoreBoss, OuroborosBoss, BroodMotherBoss]}
+class MothershipBoss(Boss):
+    """The Mothership (level 30): the Mothership entity flies its course (`path`: [x, y] waypoints, a loop) at `speed`
+    px per frame, with `health`; the bar is its health. Phase by phase (by `below`, like the Core's):
+
+    1. Three engine pods ride on it (EnginePod turrets, firing every `reload` s) and keep its shield up; each pod
+       destroyed costs it a ninth of its health.
+    2. Its bay opens for `open` s, then shuts for `closed` s: open, shots hurt it, and every `call` s it drops a raider
+       while fewer than `swarm` are about.
+    3. As 2, slower (`speed` per phase), and its tractor beam pulls the snake's heading towards it with `pull` (like a
+       planet's mass) within `reach` px.
+
+        boss: {type: mothership, path: [[x, y], ...], speed: 0.6, health: 12, reload: 3, open: 4, closed: 3,
+               call: 4, swarm: 3, pull: 0, reach: 140,
+               phases: [{below: 1}, {below: 0.67}, {below: 0.34, speed: 0.4, pull: 2500}]}"""
+
+    key = "mothership"
+    title = "THE MOTHERSHIP"
+    pressure = ("health", "swarm", "pull")
+    relief = ("call", "reload", "closed")
+    PODS = ((-20, 5), (20, 5), (0, -13))  # px from its centre: an engine at each end, one on top (clear of the hull)
+
+    def __init__(self, cfg, map):
+        super().__init__(cfg, map)
+        from snake_quest.space import EnginePod, Mothership, Raider
+
+        self._raider = Raider
+        self.path = [Vec2(*point) for point in cfg.path]
+        self.ship = Mothership.at_pos(self.path[0] - Vec2(16, 8))
+        self.ship.health = self.full = max(1, round(cfg.health))
+        self.ship.reach = self.setting("reach")
+        map.entities.append(self.ship)
+        self.waypoint = 1
+        self.pods = []
+        for dx, dy in self.PODS:
+            pod = EnginePod.at_pos(self.ship.center + Vec2(dx - 4, dy - 4))
+            pod.RELOAD = self.setting("reload")
+            self.pods.append(pod)
+        map.entities.extend(self.pods)
+        self.lost = 0  # pods destroyed so far
+        self.left = self.setting("closed")  # seconds until the bay opens or shuts
+        self.call_left = self.setting("call")
+
+    def next_phase_due(self, map, snake):
+        return self.ship.health <= self.full * self.phases[self.phase + 1]["below"] + 1e-6
+
+    def act(self, map, snake, seconds):
+        ship = self.ship
+        if not ship.alive:
+            return
+        # fly the course
+        goal = self.path[self.waypoint]
+        to_goal = goal - ship.center
+        speed = self.setting("speed") * map.game.difficulty.speed
+        if to_goal.length() <= speed:
+            self.waypoint = (self.waypoint + 1) % len(self.path)
+        else:
+            ship.pos = ship.pos + to_goal * (speed / to_goal.length())
+        for pod, (dx, dy) in zip(self.pods, self.PODS, strict=True):
+            pod.pos = ship.center + Vec2(dx - 4, dy - 4)
+        lost = sum(not pod.alive for pod in self.pods)
+        if lost > self.lost:
+            ship.health -= (lost - self.lost) * self.full / 9
+            self.lost = lost
+            ship.flash = ship.FLASH
+        ship.shielded = lost < len(self.pods)
+        if ship.health <= 0:
+            ship.alive, ship.killed = False, True
+            return
+        ship.tractor = self.setting("pull")
+        if ship.shielded:
+            return
+        # the bay
+        self.left -= seconds
+        if self.left <= 0:
+            ship.open = not ship.open
+            self.left = self.setting("open") if ship.open else self.setting("closed")
+        self.call_left -= seconds
+        if ship.open and self.call_left <= 0:
+            self.call_left = self.setting("call")
+            if sum(ent.alive and isinstance(ent, self._raider) for ent in map.entities) < round(self.setting("swarm")):
+                map.entities.append(self._raider.at_pos(ship.center - Vec2(4, 4)))
+
+    def bar(self, map, snake):
+        return max(self.ship.health, 0) / self.full
+
+    def phase_message(self):
+        return "THE MOTHERSHIP OPENS ITS BAY" if self.phase == 1 else "THE MOTHERSHIP LOCKS ON"
+
+    def defeated(self, map):
+        return not self.ship.alive
+
+    def target(self):
+        """An engine pod while any stands, then the ship while its bay is open."""
+        pod = next((pod for pod in self.pods if pod.alive), None)
+        if pod is not None:
+            return pod.center
+        return self.ship.center if self.ship.alive and self.ship.open else None
+
+    def danger(self):
+        """The ship's hull, with room around it: bots never cut across its course."""
+        return (self.ship.center, 24) if self.ship.alive else None
+
+
+BOSSES: dict[str, type[Boss]] = {
+    cls.key: cls for cls in [Hunger, AlphaBoss, CoreBoss, OuroborosBoss, BroodMotherBoss, MothershipBoss]
+}
 
 
 def load_boss(cfg, map: "Map") -> Boss:

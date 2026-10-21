@@ -560,6 +560,96 @@ TRACKS = {
             },
         },
     },
+    # Space: floating, F Lydian (the raised fourth, b, shimmers). A: F G Am G F G Em F (A2 the same, the lead higher),
+    # B: Dm C G G Dm C G F
+    "space": {
+        "speed": 18,  # 100 bpm
+        "form": ["a", "a2", "b", "a"],
+        "voices": {
+            "lead": {  # arpeggios up the chords, held notes wavering
+                "tone": "s",
+                "volume": 2,
+                "vibrato": True,
+                "sections": {
+                    "a": [
+                        "f3 a3 c4 e4 - - c4 a3",
+                        "g3 b3 d4 f#4 - - d4 b3",
+                        "a3 c4 e4 a4 - - e4 c4",
+                        "b3 - d4 - g4 - - -",
+                        "f3 a3 c4 e4 - - c4 a3",
+                        "g3 b3 d4 g4 - - b4 -",
+                        "e4 g4 b4 - g4 - e4 -",
+                        "f4 - - - r - r -",
+                    ],
+                    "a2": [
+                        "c4 e4 f4 a4 - - f4 e4",
+                        "d4 g4 b4 - - - g4 d4",
+                        "e4 a4 c4 e4 - - a4 -",
+                        "b4 - a4 - g4 - d4 -",
+                        "c4 f4 a4 c4 - - a4 f4",
+                        "d4 g4 b4 d4 - - b4 g4",
+                        "e4 b3 e4 g4 b4 - g4 -",
+                        "a4 - - - f4 - r -",
+                    ],
+                    "b": [
+                        "d4 - f4 - a4 - - -",
+                        "c4 - e4 - g4 - - -",
+                        "b3 - d4 - g4 - b4 -",
+                        "a4 - g4 - d4 - - -",
+                        "d4 f4 a4 - f4 - d4 -",
+                        "c4 e4 g4 - e4 - c4 -",
+                        "b3 d4 g4 - b4 - - -",
+                        "a4 - - - c4 - r -",
+                    ],
+                },
+            },
+            "bass": {  # a slow pad on the roots
+                "tone": "t",
+                "volume": 1,
+                "sections": {
+                    "a": [
+                        "f1 - - - - - c1 -",
+                        "g1 - - - - - d1 -",
+                        "a1 - - - - - e1 -",
+                        "g1 - - - - - - -",
+                        "f1 - - - - - c1 -",
+                        "g1 - - - - - d1 -",
+                        "e1 - - - - - b0 -",
+                        "f1 - - - - - - -",
+                    ],
+                    "a2": [
+                        "f1 - - - - - c1 -",
+                        "g1 - - - - - d1 -",
+                        "a1 - - - - - e1 -",
+                        "g1 - - - - - - -",
+                        "f1 - - - - - c1 -",
+                        "g1 - - - - - d1 -",
+                        "e1 - - - - - b0 -",
+                        "f1 - - - - - - -",
+                    ],
+                    "b": [
+                        "d1 - - - - - a0 -",
+                        "c1 - - - - - g0 -",
+                        "g0 - - - - - d1 -",
+                        "g0 - - - - - - -",
+                        "d1 - - - - - a0 -",
+                        "c1 - - - - - g0 -",
+                        "g0 - - - - - d1 -",
+                        "f1 - - - - - - -",
+                    ],
+                },
+            },
+            "drums": {  # only hats, far away
+                "tone": "n",
+                "volume": {"4": 1, "0": 1},
+                "sections": {
+                    "a": ["r r e4 r r r e4 r"] * 7 + ["r r e4 r e4 r e4 e4"],
+                    "a2": ["a0 r e4 r r r e4 r"] * 7 + ["a0 r e4 r e4 r e4 e4"],
+                    "b": ["a0 r e4 r r e4 r e4"] * 7 + ["a0 r e4 e4 e4 e4 e4 e4"],
+                },
+            },
+        },
+    },
 }
 
 

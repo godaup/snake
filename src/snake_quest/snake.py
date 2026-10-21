@@ -110,6 +110,9 @@ class Snake:
         steering = self.controller.steer(self, map)
         self.turn(round((-steering if self.mirrored else steering) * self.turn_speed))
         self.heading = drift(self.heading, self.orient, self.grip)
+        if getattr(map, "wells", None):  # planets pull the snake round: where it points and where it moves
+            pull = map.pull(self.head.pos, self.heading)
+            self.orient, self.heading = (self.orient + pull) % 360, (self.heading + pull) % 360
         # move
         previous = None
         for ix, seg in enumerate(self.segs):

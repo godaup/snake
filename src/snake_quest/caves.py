@@ -20,6 +20,7 @@ class Crystal(Entity):
     _img_x = 2
     _img_y = 15
     light = 20
+    pullable = True
     POINTS = 3
     LENGTH = 2
 
@@ -153,8 +154,8 @@ class Mole(Entity):
     """A mole of the caves. Underground (a mound of earth moving along) it heads for a random spot about REACH tiles
     away, through floor and rock alike, and digs away the rock it passes, a tunnel five tiles wide (`map.dig`: the
     tunnels stay, and hunters use them), at most DIG_LIMIT tiles in its life; shots fly over it, and the snake passes
-    over it. Every SURFACE seconds (fewer on harder difficulties: `hostile` factor), if it is on floor away from the
-    snake, it comes up for UP seconds: then one shot kills it, and running into it costs BITE segments (it dives at
+    over it. Every SURFACE seconds, if it is on floor away from the snake, it comes up for UP seconds (fewer on harder
+    difficulties: `hostile` factor): then one shot kills it, and running into it costs BITE segments (it dives at
     once)."""
 
     _img_x = 3  # the mound; the mole itself is the sprite tile next to it
@@ -223,12 +224,12 @@ class Mole(Entity):
         if self.left <= 0:
             on_floor = not map.check_on_wall(self.center)
             if on_floor and (snake.head.pos - self.center).length() > self.CLEAR and not snake.covers(self.center):
-                self.state, self.left = "up", self.UP
+                self.state, self.left = "up", self.UP * map.game.difficulty.hostile**0.5  # harder: a shorter chance
             else:
                 self.left = 0.5  # try again in a moment
 
     def dive(self, map: "Map") -> None:
-        self.state, self.left = "under", pyxel.rndf(*self.SURFACE) * map.game.difficulty.hostile
+        self.state, self.left = "under", pyxel.rndf(*self.SURFACE)
 
     def on_intersect(self, snake: "Snake", map: "Map"):
         if self.state != "up":

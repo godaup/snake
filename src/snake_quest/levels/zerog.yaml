@@ -1,0 +1,95 @@
+tm: 1  # tools/draft_garden.py station (--src-tm 1 --dst-tm 1 --seed 3 --corridor 7 --cells 5 2), the exit at the far end
+width: 1024
+height: 384
+tint: {3: 5, 11: 12}  # the hedges as hull plating
+
+start:
+  x: 60
+  y: 60
+
+grip: 0.15  # no gravity: the heading only slowly follows the steering (ice is 0.12)
+
+timers:
+  first_tractor:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: tractor
+      pos: [100, 76]
+  tractors:
+    duration: 10
+    frequency: 10
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: tractor
+      max: 1
+  drones:
+    duration: 15
+    frequency: 12
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: drone
+      away: 150
+      max: 2
+  apple1:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+  apple2:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+  apple3:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+  apple4:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+  apple5:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+  apple6:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+
+goal:
+  length: 30
+  exit: true
+
+title: Zero-G
+intro:
+  - "The gravity is off: you drift on where you were"
+  - "going, and steering only slowly bends your way."
+  - "The TRACTOR pulls food and pickups in to you. Grow,"
+  - "then find the way out at the far end."
+
+difficulty:  # grip is no factor: set per difficulty
+  easy: {grip: 0.25}
+  hard: {grip: 0.14}
+  nightmare: {grip: 0.12}

@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Optional
 
 import pyxel
 
-from snake_quest.tiles import CRACK_TILE, HAZARD_TILE, ICE_GRIP, ICE_TILE
+from snake_quest.tiles import CRACK_TILE, HAZARD_TILE
 from snake_quest.utils import Vec2, collision_points, drift
 
 if TYPE_CHECKING:
@@ -117,6 +117,7 @@ class PathController(Controller):
         self._walls_version = 0  # the map's walls_version the cache is for
         self.mode = ""  # why the last steering was chosen: goal, aim, tail, escape or crash (for debugging)
         self._threats: list[tuple[Vec2, float]] = []  # centre and radius to keep away from, per frame
+        self._solids: list[tuple[Vec2, float]] = []  # the same for what never moves (see SOLID)
         self._shots: list[tuple[Vec2, Vec2]] = []  # position and velocity (px per frame) of hostile shots, per frame
         self._aiming = 0  # frames in a row spent turning to aim (and then counting down the pause)
 
@@ -126,6 +127,7 @@ class PathController(Controller):
         return -steering if snake.mirrored else steering
 
     BODY = 7  # px kept from every segment of another snake's body (a rival's)
+    SOLID = 5  # px kept from the surface of something solid (`Entity.solid`: planets)
 
     def threats(self, snake, map) -> list[tuple[Vec2, float]]:
         """Centres and radii to keep away from: awake and sleeping hostile entities (bigger ones get a wider berth) and
@@ -150,6 +152,12 @@ class PathController(Controller):
 
     def _steer(self, snake, map):
         self._threats = self.threats(snake, map)
+        # what never moves but is a crash to touch (planets): kept clear by SOLID px, however far ahead
+        self._solids = [
+            (ent.pos + Vec2(ent.w / 2, ent.h / 2), ent.RADIUS + self.SOLID)
+            for ent in map.entities
+            if ent.alive and ent.solid
+        ]
         self._shots = [(shot.pos, shot.dir * shot.speed) for shot in map.projectiles if shot.alive and shot.hostile]
         goal = self.target(snake, map)
         if goal is None:
@@ -253,6 +261,10 @@ class PathController(Controller):
         when one is on the snake's trail, within TRAIL px of the tail."""
         if snake.weapon is None or not snake.weapon.ready:
             return False
+        if getattr(snake.weapon, "PULLS", False):  # the Tractor: when a pickup is in its cone
+            from snake_quest.weapons import TractorBeam
+
+            return any(ent.alive and ent.pullable and TractorBeam.in_cone(snake, ent) for ent in map.entities)
         if getattr(snake.weapon, "DROPS", False):
             tail = snake.segs[-1].pos
             return any(
@@ -277,6 +289,8 @@ class PathController(Controller):
             )
         if map.trail and not self._walls[cell]:
             return map.tile_xy(Vec2(cell[0] * self.CELL, cell[1] * self.CELL)) in map.trail
+        if map.closing and not self._walls[cell]:  # an airlock door about to shut: never in it then
+            return map.tile_xy(Vec2(cell[0] * self.CELL, cell[1] * self.CELL)) in map.closing
         if map.walls_version and not self._walls[cell]:  # a cave-in's warning: never back into it
             return map.tile_at(Vec2(cell[0] * self.CELL, cell[1] * self.CELL)) == CRACK_TILE
         return self._walls[cell]
@@ -289,7 +303,7 @@ class PathController(Controller):
 
         near_threat = {
             (cx, cy)
-            for c, r in self._threats
+            for c, r in self._threats + self._solids
             for cx in range(int(c.x - r) // self.CELL, int(c.x + r) // self.CELL + 1)
             for cy in range(int(c.y - r) // self.CELL, int(c.y + r) // self.CELL + 1)
             if (Vec2(cx * self.CELL + self.CELL / 2, cy * self.CELL + self.CELL / 2) - c).length() < r
@@ -393,15 +407,21 @@ class PathController(Controller):
         reached, heading = None, orient if heading is None else heading
         skip = max(self.BODY_SKIP, snake.neck(self.BODY_SKIP))  # segments are ~1.3 px apart, closer while slowed
         speed, body = snake.effective_speed, snake.segs[skip::2]
+        wells = getattr(map, "wells", None)
         for frame in range(1, frames + 1):
             orient = (orient + round(steering * snake.turn_speed)) % 360
-            grip = ICE_GRIP if map.ice and map.tile_at(pos) == ICE_TILE else 1.0
+            grip = map.grip_at(pos)
             heading = drift(heading, orient, grip)
+            if wells:  # as the snake is pulled (see Snake.update)
+                pull = map.pull(pos, heading)
+                orient, heading = (orient + pull) % 360, (heading + pull) % 360
             pos = Vec2(pos.x + speed * pyxel.cos(heading), pos.y + speed * pyxel.sin(heading))
             p, q = collision_points(pos, heading, snake.size)
             near_body = frame % 2 == 0 and any((pos - seg.pos).length() < snake.size * 2 for seg in body)
-            threatened = any((pos - c).length() < r + frame * self.THREAT_GROWTH for c, r in self._threats) or any(
-                (pos - (shot + velocity * frame)).length() < self.DODGE for shot, velocity in self._shots
+            threatened = (
+                any((pos - c).length() < r + frame * self.THREAT_GROWTH for c, r in self._threats)
+                or any((pos - c).length() < r for c, r in self._solids)
+                or any((pos - (shot + velocity * frame)).length() < self.DODGE for shot, velocity in self._shots)
             )
             if map.check_on_wall(p) or map.check_on_wall(q) or near_body or threatened:
                 return frame - 1, pos, orient, reached, heading

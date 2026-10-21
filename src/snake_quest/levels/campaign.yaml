@@ -54,3 +54,13 @@ arcs:
       decor: [[6, 9], [6, 9], [7, 9]]
       props: [[10, 15], [10, 15], [2, 15], [0, 15], [5, 15], [3, 15]]
       boss: [12, 15]
+  - name: Space
+    resources: arc6.pyxres
+    music: space
+    levels: [airlock, zerog, gravity, asteroids, mothership]
+    map:
+      ground: 0
+      tint: {3: 5, 11: 12}
+      decor: [[8, 9], [8, 9], [8, 9], [9, 9]]
+      props: [[0, 17], [1, 17], [3, 17], [3, 17], [12, 17], [2, 17]]
+      boss: [14, 17]

@@ -10,7 +10,8 @@ import pyxel
 
 from snake_quest.controls import PathController, nearest
 from snake_quest.entity import ENTITY_NAMES, Apple, Critter, GoldenApple, Turret, WeaponPickup
-from snake_quest.goals import CollectAllGoal, DefeatGoal, DestroyAllGoal, ExitGoal, LengthGoal, ScoreGoal
+from snake_quest.goals import CollectAllGoal, DefeatGoal, DestroyAllGoal, ExitGoal, LengthGoal, OxygenGoal, ScoreGoal
+from snake_quest.space import AirTank
 from snake_quest.states import StateID
 from snake_quest.states.running import RunningStateHandler
 
@@ -39,6 +40,11 @@ LEVELS = (
     "collapse",
     "bats",
     "brood",
+    "airlock",
+    "zerog",
+    "gravity",
+    "asteroids",
+    "mothership",
 )
 
 HUNT_LENGTH = 16  # segments: shorter, the bot eats before it hunts
@@ -46,6 +52,8 @@ STOCK = 24  # shots: fewer, a short bot fetches weapons before it eats (more wou
 WARY = 32  # px: pickups this close to a hostile entity (a turret) are left for last
 food = nearest(Apple, GoldenApple, Critter, wary=WARY)
 guns = nearest(WeaponPickup, wary=WARY)
+tanks = nearest(AirTank)  # in the open first, like food
+AIR = 0.45  # oxygen below this share: fetch a tank first
 # turrets aren't hunted (driving at one runs into its shots), only shot at when they come into the line of fire;
 # armoured ones only with a weapon that pierces
 foes = nearest(*(cls for cls in ENTITY_NAMES.values() if cls.hostile and cls is not Turret), clearance=0)
@@ -59,6 +67,9 @@ soft_foes = nearest(
 def target(snake, map):
     """What the level asks to collect first (the exit last); without ammo a weapon (or food); while short, a stock of
     ammo and then food, until long enough to afford a bite; then the hunt."""
+    # short of air: a tank first
+    if any(isinstance(goal, OxygenGoal) and goal.left < AIR for goal in map.goals) and (tank := tanks(snake, map)):
+        return tank
     # what is to be shot (destroy_all) is hunted like any foe, below
     wanted = [goal.entity_cls for goal in map.goals if type(goal) is CollectAllGoal]
     if wanted and (goal := nearest(*wanted, clearance=0)(snake, map)):
@@ -70,6 +81,8 @@ def target(snake, map):
         return min(centres, key=lambda pos: (pos - snake.head.pos).length(), default=None)
     if snake.weapon is None or snake.weapon.ammo <= 0:
         return guns(snake, map) or food(snake, map)
+    if getattr(snake.weapon, "PULLS", False):  # the Tractor hurts nothing: eat (it pulls the food in)
+        return food(snake, map)
     if len(snake) < HUNT_LENGTH:  # (another kind of weapon would replace this one, not add to its ammo)
         return (snake.weapon.ammo < STOCK and more_ammo(snake, map)) or food(snake, map)
     if getattr(snake.weapon, "DROPS", False):  # mines: lead what follows the trail over them

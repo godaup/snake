@@ -1,0 +1,77 @@
+tm: 3  # tools/draft_garden.py void (--src-tm 3 --dst-tm 3 --seed 4 --count 0): an empty sector inside the hull
+width: 640
+height: 448
+tint: {3: 5, 11: 12}  # the hedges as hull plating
+
+start:
+  x: 60
+  y: 60
+
+timers:
+  rocks:  # three large ones; every piece they break into counts
+    duration: 0
+    frequency: 0.05
+    fire_n: 3
+    callback:
+      type: spawn
+      entity: asteroid
+      away: 160
+  first_gun:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: gun
+      pos: [100, 76]
+  guns:
+    duration: 8
+    frequency: 8
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: gun
+      max: 2
+  spreads:
+    duration: 15
+    frequency: 15
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: spread
+      max: 1
+  apple1:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+  apple2:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+  apple3:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+
+goal:
+  destroy_all: asteroid
+
+title: Asteroids
+intro:
+  - "Rocks drift through the sector and bounce off its"
+  - "hull. Shoot them: a big one breaks in two, and so"
+  - "do its pieces. Clear every last one. A rock on your"
+  - "head is the end; on your body it cuts."
+
+difficulty:  # more large rocks
+  hard: {timers: {rocks: {fire_n: 4}}}
+  nightmare: {timers: {rocks: {fire_n: 5}}}

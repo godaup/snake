@@ -41,6 +41,9 @@ class Entity:
     avoid = True  # bots steer around it when hostile (not around drones: a sting costs less than swerving)
     armored = False  # only piercing shots (the Laser) hurt it; others glance off (deflect)
     exposed = True  # shots can hit it and bots aim at it (not at a mole underground)
+    pullable = False  # a pickup the Tractor pulls in (see weapons.TractorBeam)
+    solid = False  # never moves, a crash to touch, round (RADIUS): bots keep just clear of it (planets)
+    pieces: tuple = ()  # what it leaves behind once dead (the map adds them: asteroids break up)
     _img_x = None
     _img_y = None
 
@@ -95,6 +98,7 @@ class Entity:
 class Apple(Entity):
     _img_x = 2
     _img_y = 0
+    pullable = True
     light = 10
 
     def on_intersect(self, snake: "Snake", map: "Map"):
@@ -113,6 +117,7 @@ class Apple(Entity):
 class GoldenApple(Entity):
     _img_x = 2
     _img_y = 1
+    pullable = True
     light = 14
 
     def on_intersect(self, snake: "Snake", map: "Map"):
@@ -131,6 +136,7 @@ class SpeedApple(Entity):
     _img_x = 4
     _img_y = 0
     light = 8
+    pullable = True
     BOOST = 1.5  # speed factor
     SECONDS = 5.0
 
@@ -179,6 +185,7 @@ class WeaponPickup(Entity):
     carries. The snake carries one weapon, so another kind is dropped for it."""
 
     light = 10
+    pullable = True
     AMMO = 12
     WEAPON = "Gun"  # class name in weapons.py
 
@@ -1038,5 +1045,5 @@ class Enemy(Entity):
             self.wdg.draw()
 
 
-# arc 5's entities register themselves (they build on the classes above)
-from snake_quest import caves  # noqa: E402, F401
+# the later arcs' entities (caves: arc 5, space: arc 6) register themselves; they build on the classes above
+from snake_quest import caves, space  # noqa: E402, F401

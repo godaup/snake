@@ -9,7 +9,7 @@ EFFECTS = {
 }
 # the level music of each arc and the bosses' (a level picks one by name: its arc's `music`, or its own), written by
 # tools/compose_music.py into the sprites file; music 1 is the menu theme (MENU_MUSIC in states/menu_common.py)
-MUSIC = {"garden": 0, "wilds": 2, "fortress": 3, "ouroboros": 4, "boss": 5, "caves": 6}
+MUSIC = {"garden": 0, "wilds": 2, "fortress": 3, "ouroboros": 4, "boss": 5, "caves": 6, "space": 7}
 MUSIC_CHANNELS = 3  # level music plays on channels 0-2 only
 # effects play on the last channel, which no music uses
 EFFECT_CHANNEL = 3

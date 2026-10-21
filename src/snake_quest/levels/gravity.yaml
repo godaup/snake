@@ -1,0 +1,46 @@
+tm: 2  # tools/draft_garden.py void (--src-tm 2 --dst-tm 2 --seed 2 --count 3); planets placed by hand, two stars by each
+width: 768
+height: 512
+tint: {3: 5, 11: 12}  # the hedges as hull plating
+
+start:
+  x: 60
+  y: 60
+
+timers:
+  apple1:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+  apple2:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+
+goal:
+  collect_all: star
+  time_limit: 120
+
+title: Gravity Wells
+intro:
+  - "Planets pull you in: the closer, the harder. Skim"
+  - "one and it swings you round; fly into one and you"
+  - "burn. Collect the stars in time. The faint ring"
+  - "shows where a planet's pull is strong."
+
+difficulty:  # heavier planets, and less time than the goals factor alone gives
+  easy: {gravity: 0.7}
+  hard:
+    gravity: 1.4
+    goal: {time_limit: 65}
+    timers: {more_stars: {duration: 0, frequency: 0.05, fire_n: 4, callback: {type: spawn, entity: star, away: 120}}}
+  nightmare:
+    gravity: 1.7
+    goal: {time_limit: 55}
+    timers: {more_stars: {duration: 0, frequency: 0.05, fire_n: 6, callback: {type: spawn, entity: star, away: 120}}}

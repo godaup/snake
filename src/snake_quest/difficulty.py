@@ -30,6 +30,7 @@ SCALED_GOALS = {
     "collapse": ("speed",),  # the cave-in comes faster
 }
 LIMITS = ("time_limit",)  # goals that get easier with more: divided by the goals factor
+LIMIT_FIELDS = {"oxygen": ("drain",)}  # the same for fields of a goal
 
 
 @dataclass(frozen=True)
@@ -86,6 +87,9 @@ def apply(cfg: omegaconf.DictConfig, difficulty: Difficulty) -> omegaconf.DictCo
     for key in LIMITS:
         if key in cfg.get("goal", {}):
             cfg.goal[key] = cfg.goal[key] / d.goals
+    for key, fields in LIMIT_FIELDS.items():
+        for name in fields if key in cfg.get("goal", {}) else ():
+            cfg.goal[key][name] = cfg.goal[key][name] / d.goals
     for timer in cfg.get("timers", {}).values():
         if timer.callback.type != "spawn":
             continue

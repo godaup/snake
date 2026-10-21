@@ -1,10 +1,10 @@
 # Roadmap
 
 Snake is the starting point, not the limit: **every level gives the game its own twist.** The campaign has
-**20 levels in 4 story arcs**, and each arc ends with a boss level (5, 10, 15, 20). Difficulty and mechanics ramp up
-gradually. A level introduces at most one new mechanic, and later levels combine them. Planned expansions: three more
-arcs (Caves, Space, Workshop), a bonus arc where the snake moves on its own, and one-off levels (see
-[Expansion](#expansion)).
+**30 levels in 6 story arcs**, and each arc ends with a boss level (5, 10, 15, ..., 30). Difficulty and mechanics ramp
+up gradually. A level introduces at most one new mechanic, and later levels combine them. The first four arcs are below;
+the Caves and Space were built from the [Expansion](#expansion), which still plans the Workshop, a bonus arc where the
+snake moves on its own, and one-off levels.
 
 Ground rules:
 
@@ -69,6 +69,7 @@ Ground rules:
 | Laser    | 18         | piercing beam (exists)                      |
 | Homing   | 19         | steers towards the nearest enemy (exists)   |
 | Flare    | 24         | burns on where it lands: a light that scares bats (exists) |
+| Tractor  | 27         | no shot: pulls the nearest pickup ahead in (exists) |
 
 `Weapon.next_pattern()` already returns a list of projectiles. The rest needs projectile behaviors (pierce, bounce,
 home, explode, lifetime), weapon pickups and switching, and ammo/cooldown in the footer HUD.
@@ -95,15 +96,16 @@ Designed in detail in [docs/arc5-caves.md](docs/arc5-caves.md); built (see M6).
 
 Builds on The Hunger's meter (oxygen drains, tanks refill it, the light shrinks as it runs low) and the ice drift
 (little grip everywhere: the snake keeps its momentum).
-Designed in detail in [docs/arc6-space.md](docs/arc6-space.md) (new weapon: the **Tractor**, which pulls pickups in).
+Designed in detail in [docs/arc6-space.md](docs/arc6-space.md) (new weapon: the **Tractor**, which pulls pickups in); built
+(see M7).
 
 | #  | Level                  | Twist                                                             | Goal              |
 |----|------------------------|-------------------------------------------------------------------|-------------------|
-| 26 | Airlock                | Oxygen drains; air tanks refill it                                | score             |
-| 27 | Zero-G                 | Inertia everywhere: turning only slowly bends the course; **Tractor** | grow, then the exit |
-| 28 | Gravity Wells          | Planets pull on the snake's heading; slingshot around them        | collect all stars, in time |
-| 29 | Asteroids              | Map edges wrap around; asteroids split when shot                  | destroy all       |
-| 30 | **Boss: The Mothership** | A ship that circles through the gravity wells and drops raiders  | defeat the boss   |
+| 26 | Airlock                | Oxygen drains; air tanks refill it; airlock doors take turns      | score (exists)    |
+| 27 | Zero-G                 | Inertia everywhere: turning only slowly bends the course; **Tractor** | grow, then the exit (exists) |
+| 28 | Gravity Wells          | Planets pull on the snake's heading; slingshot around them        | collect all stars, in time (exists) |
+| 29 | Asteroids              | Asteroids split when shot and bounce off the hull (wrap-around edges: later) | destroy all (exists) |
+| 30 | **Boss: The Mothership** | A ship that circles through the gravity wells and drops raiders  | defeat the boss (exists) |
 
 ### Arc 7: The Workshop (puzzles)
 
@@ -193,6 +195,14 @@ spiders spin webs that hold the snake, crystals against the clock), Moles (level
 `map.dig`, and come up to be shot), Collapse (level 23: the `collapse` goal, a cave-in front through a long tunnel),
 Bats (level 24: bats that wake in any light, the Flare), Boss: The Brood Mother (level 25: egg sacs, then drops from the
 dark with a warning shadow). Open: playtesting.
+
+### M7: Arc 6
+
+Done: `arc6.pyxres` with station and open-space layouts (`draft_garden.py station`, `void`), the Space music, Airlock
+(level 26: the `oxygen` goal, air tanks, airlock doors that take turns), Zero-G (level 27: low `grip` everywhere, the
+Tractor), Gravity Wells (level 28: planets that pull the heading, `map.pull`), Asteroids (level 29: rocks that split and
+bounce), Boss: The Mothership (level 30: engine pods holding up a shield, a bay that opens and drops raiders, a tractor
+beam). Open: the wrap-around edges for Asteroids (see docs/arc6-space.md), playtesting.
 
 ### M5: Release
 

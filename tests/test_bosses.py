@@ -4,7 +4,16 @@ import omegaconf
 import pytest
 import pyxel
 
-from snake_quest.bosses import BOSSES, AlphaBoss, BroodMotherBoss, CoreBoss, Hunger, OuroborosBoss, load_boss
+from snake_quest.bosses import (
+    BOSSES,
+    AlphaBoss,
+    BroodMotherBoss,
+    CoreBoss,
+    Hunger,
+    MothershipBoss,
+    OuroborosBoss,
+    load_boss,
+)
 from snake_quest.campaign import load_campaign
 from snake_quest.entity import Apple
 from snake_quest.hud import BOSS_BAR_W, COL_BOSS
@@ -37,7 +46,7 @@ def long_snake(n=30):
 
 def test_registry_and_unknown_type(hunger_map):
     expected = {"hunger": Hunger, "alpha": AlphaBoss, "core": CoreBoss, "ouroboros": OuroborosBoss}
-    assert {**expected, "brood": BroodMotherBoss} == BOSSES
+    assert {**expected, "brood": BroodMotherBoss, "mothership": MothershipBoss} == BOSSES
     with pytest.raises(ValueError, match="unknown boss"):
         load_boss(omegaconf.OmegaConf.create({"type": "dragon"}), hunger_map)
 

@@ -53,6 +53,8 @@ import pyxel
 from snake_quest.entity import ENTITY_TILES
 from snake_quest.tiles import (
     DECOR_TILES,
+    DOOR_OPEN_TILE,
+    DOOR_TILE,
     EMPTY_TILE,
     EXIT_TILE,
     HAZARD_TILE,
@@ -68,6 +70,7 @@ CLEARANCE = 3  # tiles of open floor between obstacles (the snake needs room to 
 START_CLEAR = 6  # tiles around the start kept free of obstacles and decorations
 GRASS, FLOWERS, STONE = sorted(DECOR_TILES)[:2], sorted(DECOR_TILES)[2:5], sorted(DECOR_TILES)[5]
 FLOOR = DECOR_TILES | {EMPTY_TILE}
+STAR_DECOR, GALAXY_DECOR = (8, 9), (9, 9)  # the void's floor
 
 
 def start_tile(level) -> tuple[int, int]:
@@ -458,11 +461,149 @@ def webs(tilemap, width, height, rng, start, count: int, spacing: int = 14, wide
     return len(placed)
 
 
+def station(tilemap, width, height, rng, start, keep: dict, corridor=5, doors=0, cells=(4, 3)) -> tuple[int, int]:
+    """A space station (arc 6): rooms on a grid of `cells`, joined by straight corridors `corridor` tiles wide (a random
+    spanning tree plus a few extra links, so there are loops), hull everywhere else. `doors` corridors get an airlock
+    door across their middle, in two groups that take turns (the first group open, the second shut). Returns (rooms,
+    doors)."""
+    cols, rows = cells
+    cw, ch = (width - 2) // cols, (height - 2) // rows
+    floor = set()
+    centres = {}
+    for cx in range(cols):
+        for cy in range(rows):
+            rw, rh = rng.randint(max(corridor + 2, cw // 2), cw - 2), rng.randint(max(corridor + 2, ch // 2), ch - 2)
+            x0 = 1 + cx * cw + rng.randint(1, cw - rw - 1)
+            y0 = 1 + cy * ch + rng.randint(1, ch - rh - 1)
+            floor |= {(x, y) for x in range(x0, x0 + rw) for y in range(y0, y0 + rh)}
+            centres[cx, cy] = (x0 + rw // 2, y0 + rh // 2)
+    # the start's room: the one nearest to it, stretched to cover it
+    home = min(centres, key=lambda c: math.dist(centres[c], start))
+    hx, hy = centres[home]
+    floor |= {
+        (x, y)
+        for x in range(min(hx, start[0]) - 3, max(hx, start[0]) + 4)
+        for y in range(min(hy, start[1]) - 3, max(hy, start[1]) + 4)
+    }
+    # corridors: a spanning tree (random depth first), then extra links
+    links, seen, stack = [], {home}, [home]
+    while stack:
+        cx, cy = stack[-1]
+        nexts = [(cx + dx, cy + dy) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)) if (cx + dx, cy + dy) in centres]
+        nexts = [n for n in nexts if n not in seen]
+        if not nexts:
+            stack.pop()
+            continue
+        nxt = rng.choice(nexts)
+        links.append(((cx, cy), nxt))
+        seen.add(nxt)
+        stack.append(nxt)
+    pairs = [(a, (a[0] + 1, a[1])) for a in centres if (a[0] + 1, a[1]) in centres]
+    pairs += [(a, (a[0], a[1] + 1)) for a in centres if (a[0], a[1] + 1) in centres]
+    extra = [p for p in pairs if p not in links and p[::-1] not in links]
+    rng.shuffle(extra)
+    links += extra[: max(1, len(extra) // 3)]
+    half = corridor // 2
+    corridors = []
+    for a, b in links:
+        (ax, ay), (bx, by) = centres[a], centres[b]
+        if ay == by or a[1] == b[1]:  # side by side: a horizontal corridor at the rooms' mean height
+            y = (ay + by) // 2
+            run = [(x, y) for x in range(min(ax, bx), max(ax, bx) + 1)]
+            floor |= {(x, y + dy) for x, _ in run for dy in range(-half, half + 1)}
+            floor |= {(ax, yy) for yy in range(min(ay, y), max(ay, y) + 1)} | {
+                (bx, yy) for yy in range(min(by, y), max(by, y) + 1)
+            }
+            for x, yy in [(ax, yy) for yy in range(min(ay, y), max(ay, y) + 1)] + [
+                (bx, yy) for yy in range(min(by, y), max(by, y) + 1)
+            ]:
+                floor |= {(x + dx, yy) for dx in range(-half, half + 1)}
+            corridors.append((run, (0, 1)))
+        else:  # one above the other: a vertical corridor
+            x = (ax + bx) // 2
+            run = [(x, y) for y in range(min(ay, by), max(ay, by) + 1)]
+            floor |= {(x + dx, y) for _, y in run for dx in range(-half, half + 1)}
+            for xx, y in [(xx, ay) for xx in range(min(ax, x), max(ax, x) + 1)] + [
+                (xx, by) for xx in range(min(bx, x), max(bx, x) + 1)
+            ]:
+                floor |= {(xx, y + dy) for dy in range(-half, half + 1)}
+            corridors.append((run, (1, 0)))
+    floor = {(x, y) for x, y in floor if 0 < x < width - 1 and 0 < y < height - 1}
+    for y in range(256):
+        for x in range(256):
+            tilemap.pset(x, y, EMPTY_TILE if (x, y) in floor else WALL_TILE)
+    for (x, y), tile in keep.items():
+        tilemap.pset(x, y, tile)
+    # doors across the middle of corridors (where a corridor runs between rooms: hull on both sides of the door)
+    placed = 0
+    rng.shuffle(corridors)
+    for run, (ax, ay) in corridors:
+        if placed >= doors:
+            break
+        mid = run[len(run) // 2]
+        line = [(mid[0] + ax * d, mid[1] + ay * d) for d in range(-half - 1, half + 2)]
+        inner, ends = line[1:-1], (line[0], line[-1])
+        if any(tile not in floor for tile in inner) or any(tile in floor for tile in ends):
+            continue  # not a plain stretch of corridor (a room or a crossing there)
+        for tile in inner:
+            tilemap.pset(*tile, DOOR_OPEN_TILE if placed % 2 == 0 else DOOR_TILE)
+        placed += 1
+    return len(centres), placed
+
+
+def void(tilemap, width, height, rng, start, keep: dict, rocks: int = 6, open_areas=()) -> tuple[int, int]:
+    """Open space (arc 6): a thin hull around, a few small rocks (rounded, CLEARANCE apart), stars on the floor.
+    Returns (rocks, stars)."""
+    placed = 0
+    walls = {(x, y) for y in range(height) for x in range(width) if x in (0, width - 1) or y in (0, height - 1)}
+    blocked = near([start], START_CLEAR) | {
+        (x, y)
+        for cx, cy, r in open_areas
+        for x in range(cx - r, cx + r + 1)
+        for y in range(cy - r, cy + r + 1)
+        if (x - cx) ** 2 + (y - cy) ** 2 <= r * r
+    }
+    for _ in range(200):
+        if placed >= rocks:
+            break
+        shape = smooth(bush(rng, rng.uniform(5, width - 6), rng.uniform(5, height - 6), rng.uniform(1.5, 3.0)))
+        if not shape or shape & blocked or near(shape, CLEARANCE + 2) & walls or near(shape, 1) & set(keep):
+            continue
+        walls |= shape
+        placed += 1
+    for y in range(256):
+        for x in range(256):
+            inside = x < width and y < height
+            tilemap.pset(x, y, WALL_TILE if inside and (x, y) in walls else EMPTY_TILE)
+    for (x, y), tile in keep.items():
+        tilemap.pset(x, y, tile)
+    stars = 0
+    for y in range(1, height - 1):
+        for x in range(1, width - 1):
+            if tilemap.pget(x, y) == EMPTY_TILE and (x, y) not in keep and rng.random() < 0.035:
+                tilemap.pset(x, y, STAR_DECOR if rng.random() < 0.93 else GALAXY_DECOR)
+                stars += 1
+    return placed, stars
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument(
         "command",
-        choices=["decorate", "organic", "fortress", "temple", "cave", "scatter", "webs", "ice", "mirror", "thorns"],
+        choices=[
+            "decorate",
+            "organic",
+            "fortress",
+            "temple",
+            "cave",
+            "station",
+            "void",
+            "scatter",
+            "webs",
+            "ice",
+            "mirror",
+            "thorns",
+        ],
     )
     parser.add_argument("resources", type=Path)
     parser.add_argument("--level", type=Path, required=True)
@@ -487,7 +628,10 @@ def main() -> None:
     parser.add_argument("--passes", type=int, default=3, help="cave: smoothing rounds")
     parser.add_argument("--long", action="store_true", help="cave: one winding tunnel with side caverns")
     parser.add_argument("--entity", help="scatter: name of the entity to put down")
-    parser.add_argument("--count", type=int, default=8, help="scatter/webs: how many")
+    parser.add_argument("--count", type=int, default=8, help="scatter/webs: how many; void: rocks")
+    parser.add_argument("--corridor", type=int, default=5, help="station: corridor width in tiles")
+    parser.add_argument("--doors", type=int, default=0, help="station: airlock doors across corridors")
+    parser.add_argument("--cells", type=int, nargs=2, default=(4, 3), help="station: rooms across and down")
     args = parser.parse_args()
     resources = args.resources.resolve()  # before pyxel.init() changes the working directory
     level = omegaconf.OmegaConf.load(args.level)
@@ -508,6 +652,16 @@ def main() -> None:
         cls = ENTITY_NAMES[args.entity]
         count = scatter(pyxel.tilemaps[level.tm], width, height, rng, start, (cls._img_x, cls._img_y), args.count)
         print(f"tilemap {level.tm}: {count} {args.entity}")
+    elif args.command in ("station", "void"):
+        src, dst = pyxel.tilemaps[args.src_tm], pyxel.tilemaps[args.dst_tm]
+        keep = {(x, y): src.pget(x, y) for y in range(height) for x in range(width) if src.pget(x, y) in entity_sprites}
+        if args.command == "station":
+            rooms, doors = station(dst, width, height, rng, start, keep, args.corridor, args.doors, tuple(args.cells))
+            print(f"tilemap {args.dst_tm}: {rooms} rooms, {doors} doors")
+        else:
+            rocks, stars = void(dst, width, height, rng, start, keep, args.count, args.open)
+            print(f"tilemap {args.dst_tm}: {rocks} rocks, {stars} stars")
+        dst.imgsrc = src.imgsrc
     elif args.command == "cave":
         src, dst = pyxel.tilemaps[args.src_tm], pyxel.tilemaps[args.dst_tm]
         keep = {(x, y): src.pget(x, y) for y in range(height) for x in range(width) if src.pget(x, y) in entity_sprites}

@@ -161,6 +161,7 @@ def test_every_registered_goal_is_tested():
         "defeat",
         "hold_length",
         "collapse",
+        "oxygen",
         "collect_all",
         "destroy_all",
         "boss",

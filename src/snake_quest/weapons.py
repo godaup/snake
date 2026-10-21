@@ -307,6 +307,66 @@ class Flare(Gun):
         ]
 
 
+class TractorBeam(Projectile):
+    """The Tractor's pull, PULSE seconds long: every frame it draws the nearest pickup (`Entity.pullable`) within
+    RANGE px and CONE degrees of where the head points towards the head, PULL px per frame. Drawn as a dotted beam."""
+
+    RANGE = 80  # px
+    CONE = 25  # degrees off straight ahead
+    PULL = 2.0  # px per frame
+    PULSE = 0.6  # seconds
+    COL = 12
+
+    def __init__(self, snake: "Snake"):
+        super().__init__(pos=snake.head.pos, orient=snake.orient, speed=0, size=0, col=self.COL, lifetime=self.PULSE)
+        self.snake = snake
+        self.target = None
+
+    @classmethod
+    def in_cone(cls, snake: "Snake", ent) -> bool:
+        to_ent = ent.pos + Vec2(ent.w / 2, ent.h / 2) - snake.head.pos
+        if not 0 < to_ent.length() <= cls.RANGE:
+            return False
+        return abs((pyxel.atan2(to_ent.y, to_ent.x) - snake.orient + 180) % 360 - 180) <= cls.CONE
+
+    def update(self, map: "Map", seconds: float, snake: "Snake | None" = None) -> None:
+        self.age += seconds
+        if self.age >= self.lifetime:
+            self.alive = False
+            return
+        self.pos = self.snake.head.pos
+        pulled = [ent for ent in map.entities if ent.alive and ent.pullable and self.in_cone(self.snake, ent)]
+        self.target = min(pulled, key=lambda ent: (ent.pos - self.pos).length(), default=None)
+        if self.target is not None:
+            to_head = self.pos - (self.target.pos + Vec2(self.target.w / 2, self.target.h / 2))
+            length = to_head.length()
+            if length > 0:
+                self.target.pos = self.target.pos + to_head * (min(self.PULL, length) / length)
+
+    def draw(self, offset: Vec2) -> None:
+        if self.target is None:
+            return
+        end = self.target.pos + Vec2(self.target.w / 2, self.target.h / 2)
+        steps = max(1, int((end - self.pos).length() // 3))
+        for i in range((pyxel.frame_count // 2) % 2, steps, 2):
+            point = self.pos + (end - self.pos) * (i / steps)
+            pyxel.pset(point.x + offset.x, point.y + offset.y, self.COL)
+
+
+class Tractor(Weapon):
+    """Not a gun: every press sends out a TractorBeam that pulls the nearest pickup ahead in. Each pulse is a charge."""
+
+    name = "TRACTOR"
+    COOLDOWN = TractorBeam.PULSE
+    PULLS = True  # bots fire it when a pickup is in its cone
+
+    def release(self, snake, map):
+        map.projectiles.append(TractorBeam(snake))
+
+    def shots(self, snake):
+        return []
+
+
 class Mines(Weapon):
     """Drops a mine behind the tail (see the Mine entity), for whatever follows the snake's trail."""
 

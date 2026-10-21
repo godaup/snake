@@ -264,6 +264,52 @@ class CollapseGoal(Goal):
         return None if self.lead == float("inf") else _fraction(self.lead, 4 * self.NEAR)
 
 
+class OxygenGoal(Goal):
+    """`oxygen: {drain: s, tank: share, light: [R, r]}`: the suit's air runs out in `drain` seconds; an air tank (see
+    space.py) refills `tank` of it. Empty, the level is lost (`map.snake_killed`). In a dark level the suit's lamp
+    shrinks with it, from `light[0]` to `light[1]`. Always done, like a time limit: the pressure on the other goals.
+    Harder difficulties drain it faster (divided by the goals factor)."""
+
+    key = "oxygen"
+    LOW = 0.15  # below this the suit beeps
+    BEEP = 2.0  # seconds between beeps
+
+    def __init__(self, value, map):
+        super().__init__(value, map)
+        self.drain, self.tank = float(value["drain"]), float(value["tank"])
+        self.light = tuple(value["light"]) if "light" in value else None
+        self.left = 1.0  # share of a full suit
+        self.beep = 0.0
+
+    def refill(self) -> None:
+        self.left = min(1.0, self.left + self.tank)
+
+    def update(self, map, snake, dt):
+        seconds = dt.total_seconds()
+        self.left = max(0.0, self.left - seconds / self.drain)
+        if self.left <= 0:
+            map.snake_killed = True
+        if self.light is not None and map.darkness is not None:
+            full, low = self.light
+            map.darkness.light = low + (full - low) * self.left
+        self.beep -= seconds
+        if self.left < self.LOW and self.beep <= 0:
+            self.beep = self.BEEP
+            map.game.sm.effect("hurt")
+
+    def done(self, map, snake):
+        return self.left > 0
+
+    def describe(self):
+        return "Keep breathing: find air tanks"
+
+    def status(self, map, snake):
+        return f"O2 {math.ceil(self.left * 100)}%"
+
+    def progress(self, map, snake):
+        return self.left
+
+
 class DefeatGoal(Goal):
     """`defeat: N`: kill N entities (eating does not count)."""
 
@@ -389,6 +435,7 @@ GOALS: dict[str, type[Goal]] = {
         DefeatGoal,
         HoldLengthGoal,
         CollapseGoal,
+        OxygenGoal,
         CollectAllGoal,
         DestroyAllGoal,
         BossGoal,
