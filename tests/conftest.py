@@ -71,6 +71,9 @@ class FakeGame:
     def start_arc(self, arc):
         self.started_arcs = [*getattr(self, "started_arcs", []), arc]
 
+    def apply_settings(self):
+        self.settings_applied = getattr(self, "settings_applied", 0) + 1
+
     @property
     def running_handler(self):
         """Like Game.running_handler; built on first use (needs the `assets` fixture)."""

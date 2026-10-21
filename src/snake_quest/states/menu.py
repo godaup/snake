@@ -39,6 +39,7 @@ class MenuStateHandler(GameStateHandler):
             ("DIFFICULTY", lambda: self.change_difficulty(1)),
             ("HIGHSCORES", lambda: self.game.change_state(StateID.HIGHSCORES)),
             ("CUSTOMIZE", lambda: self.game.change_state(StateID.CUSTOMIZE)),
+            ("SETTINGS", lambda: self.game.change_state(StateID.SETTINGS)),
             ("CREDITS", lambda: self.game.change_state(StateID.CREDITS)),
             ("QUIT", pyxel.quit),
         ]

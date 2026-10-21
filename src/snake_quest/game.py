@@ -25,6 +25,7 @@ from snake_quest.states.mission import MissionStateHandler
 from snake_quest.states.pause import PauseStateHandler
 from snake_quest.states.running import RunningStateHandler
 from snake_quest.states.select import SelectStateHandler
+from snake_quest.states.settings import SettingsStateHandler
 from snake_quest.states.victory import VictoryStateHandler
 
 SETTINGS = Path(__file__).parent / "settings.yaml"
@@ -89,9 +90,17 @@ class Game:
             StateID.MISSION: MissionStateHandler(self),
             StateID.LEVEL_COMPLETE: LevelCompleteStateHandler(self),
             StateID.SELECT: SelectStateHandler(self),
+            StateID.SETTINGS: SettingsStateHandler(self),
         }
+        self.apply_settings()
         self.change_state(StateID.MENU)
         pyxel.run(self.update, self.draw)
+
+    def apply_settings(self) -> None:
+        """Use the profile's volumes and display settings (at start, and as they change on the settings screen)."""
+        self.sm.set_volume(music=self.profile.music_volume, sound=self.profile.sound_volume)
+        pyxel.fullscreen(self.profile.fullscreen)
+        pyxel.screen_mode(self.profile.screen_mode)
 
     @property
     def difficulty(self) -> Difficulty:

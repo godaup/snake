@@ -1,5 +1,6 @@
-"""The player's saved state: snake palette, difficulty, finished arcs and highscores (one top-10 table per arc and
-difficulty: a score counts the points made in one arc), stored as JSON in Pyxel's per-user data directory."""
+"""The player's saved state: snake palette, difficulty, settings (volumes, display), finished arcs and highscores
+(one top-10 table per arc and difficulty: a score counts the points made in one arc), stored as JSON in Pyxel's
+per-user data directory."""
 
 import contextlib
 import datetime
@@ -11,8 +12,10 @@ from pathlib import Path
 from snake_quest.difficulty import DEFAULT as DEFAULT_DIFFICULTY
 from snake_quest.difficulty import NAMES as DIFFICULTIES
 from snake_quest.palettes import DEFAULT_PALETTE, PALETTES
+from snake_quest.sound import VOLUME_STEPS
 
 MAX_HIGHSCORES = 10
+SCREEN_MODES = ("CRISP", "SMOOTH", "RETRO")  # pyxel.screen_mode 0-2
 
 
 @dataclass
@@ -30,6 +33,10 @@ class Profile:
     highscores: dict[str, list[Highscore]] = field(default_factory=dict)  # difficulty name -> its arcs' tables
     arcs_done: list[str] = field(default_factory=list)  # names of the arcs played through (checkpoints)
     arcs_seen: list[str] = field(default_factory=list)  # arcs seen open on the map (their fog has lifted)
+    music_volume: int = VOLUME_STEPS  # 0..VOLUME_STEPS
+    sound_volume: int = VOLUME_STEPS
+    fullscreen: bool = False
+    screen_mode: int = 0  # index into SCREEN_MODES
     path: Path | None = field(default=None, compare=False, repr=False)
 
     @classmethod
@@ -55,6 +62,10 @@ class Profile:
                 highscores=highscores,
                 arcs_done=[name for name in data.get("arcs_done", []) if isinstance(name, str)],
                 arcs_seen=[name for name in data.get("arcs_seen", []) if isinstance(name, str)],
+                music_volume=_choice(data.get("music_volume"), range(VOLUME_STEPS + 1), VOLUME_STEPS),
+                sound_volume=_choice(data.get("sound_volume"), range(VOLUME_STEPS + 1), VOLUME_STEPS),
+                fullscreen=data.get("fullscreen") is True,
+                screen_mode=_choice(data.get("screen_mode"), range(len(SCREEN_MODES)), 0),
             )
         except (OSError, ValueError, TypeError):
             profile = cls()
@@ -70,6 +81,10 @@ class Profile:
             "difficulty": self.difficulty,
             "arcs_done": self.arcs_done,
             "arcs_seen": self.arcs_seen,
+            "music_volume": self.music_volume,
+            "sound_volume": self.sound_volume,
+            "fullscreen": self.fullscreen,
+            "screen_mode": self.screen_mode,
             "highscores": {name: [asdict(h) for h in table] for name, table in self.highscores.items()},
         }
         try:
@@ -127,6 +142,11 @@ class Profile:
         self.highscores[difficulty] = _capped([*others, *ranked])
         self.save()
         return rank + 1
+
+
+def _choice(value, allowed: range, default: int) -> int:
+    """A saved whole number if it is one of `allowed`, else the default."""
+    return value if isinstance(value, int) and not isinstance(value, bool) and value in allowed else default
 
 
 def _capped(table: list[Highscore]) -> list[Highscore]:

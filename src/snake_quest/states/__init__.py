@@ -14,3 +14,4 @@ class StateID(Enum):
     MISSION = 9
     LEVEL_COMPLETE = 10
     SELECT = 11
+    SETTINGS = 12
