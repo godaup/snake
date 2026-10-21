@@ -111,14 +111,16 @@ Designed in detail in [docs/arc6-space.md](docs/arc6-space.md) (new weapon: the 
 
 Sokoban for snakes: the level is a puzzle with one solution or a few, and timing matters less than the order of moves.
 New: pushable objects and switches.
+Designed in detail in [docs/arc7-workshop.md](docs/arc7-workshop.md) (a blocked crate stops the snake instead of
+crashing it; bots follow a written solution, the level's `plan`).
 
 | #  | Level                  | Twist                                                             | Goal              |
 |----|------------------------|-------------------------------------------------------------------|-------------------|
-| 31 | Crates                 | The head pushes crates and boulders onto switches to open gates   | reach the exit    |
+| 31 | Crates                 | The head pushes crates onto plates to open gates; a lever resets the room | reach the exit |
 | 32 | Pressure Plates        | Plates stay down only while the body lies on them: grow long enough to hold several | reach the exit |
-| 33 | Keys                   | Keys carried in the body (as segments) open matching doors        | reach the exit    |
-| 34 | Conveyors              | Belts carry crates and the snake; switches reverse them           | reach the exit    |
-| 35 | **Boss: The Clockwork** | A machine whose weak spot is opened only by solving its puzzle    | defeat the boss   |
+| 33 | Keys                   | Keys carried in the body (as segments) open matching locks; mice bite them off | reach the exit |
+| 34 | Conveyors              | Belts carry crates and the snake; levers reverse them             | reach the exit    |
+| 35 | **Boss: The Clockwork** | A machine opened only by jamming its gears, holding its springs and unlocking it | defeat the boss |
 
 ### Bonus arc: The Keeper (the snake moves on its own)
 
