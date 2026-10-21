@@ -12,4 +12,4 @@ arcs:
     levels: [hunted, armed, prey, burrows, alpha]
   - name: The Fortress
     resources: arc3.pyxres
-    levels: [turrets, swarm, ice]
+    levels: [turrets, swarm, ice, minefield]

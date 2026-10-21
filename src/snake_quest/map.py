@@ -126,8 +126,8 @@ class Map:
         # remove dead entities
         deads = [ent for ent in self.entities if not ent.alive]
         for dead in deads:
-            self.defeated += dead.killed
-            self.eaten += not dead.killed
+            self.defeated += dead.tally and dead.killed
+            self.eaten += dead.tally and not dead.killed
             self.entities.remove(dead)
         # remove dead timers
         deads = [tmr for tmr in self.timers if not tmr.alive]

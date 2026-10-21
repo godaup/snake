@@ -103,6 +103,7 @@ class PathController(Controller):
     AIM = 8  # degrees: shoots at a hostile entity this close to straight ahead (wider when it is near)
     AIM_AHEAD = 100  # degrees: only entities about ahead are aimed at
     DODGE = 5  # px kept from a hostile shot (turrets), along its flight
+    TRAIL = 40  # px: a hostile entity this close to the tail gets a mine dropped in its way
     AIM_PATIENCE = 48  # frames it turns to aim at most, then AIM_PATIENCE frames not (so it never circles forever)
 
     def __init__(self, target: Callable[["Snake", "Map"], Vec2 | None]):
@@ -197,7 +198,7 @@ class PathController(Controller):
         """(degrees to turn, degrees of tolerance) towards the nearest hostile entity in the weapon's range with no wall
         in between, or None."""
         weapon = snake.weapon
-        if weapon is None or weapon.ammo <= 0:
+        if weapon is None or weapon.ammo <= 0 or getattr(weapon, "DROPS", False):
             return None
         head, best = snake.head.pos, None
         for ent in map.entities:
@@ -218,8 +219,17 @@ class PathController(Controller):
         return None if best is None else best[1:]
 
     def fire(self, snake, map):
-        """Shoot when the weapon is ready and the nearest hostile entity in range is about straight ahead."""
-        aim = self._aim(snake, map) if snake.weapon is not None and snake.weapon.ready else None
+        """Shoot when the weapon is ready and the nearest hostile entity in range is about straight ahead; drop a mine
+        when one is on the snake's trail, within TRAIL px of the tail."""
+        if snake.weapon is None or not snake.weapon.ready:
+            return False
+        if getattr(snake.weapon, "DROPS", False):
+            tail = snake.segs[-1].pos
+            return any(
+                ent.alive and ent.hostile and (ent.pos + Vec2(ent.w / 2, ent.h / 2) - tail).length() < self.TRAIL
+                for ent in map.entities
+            )
+        aim = self._aim(snake, map)
         return aim is not None and abs(aim[0]) <= aim[1]
 
     def _cell(self, pos: Vec2) -> tuple[int, int]:

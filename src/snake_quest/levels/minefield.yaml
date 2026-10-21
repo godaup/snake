@@ -1,0 +1,63 @@
+tm: 3  # fortress layout from tools/draft_garden.py fortress (--src-tm 3 --dst-tm 3 --seed 5)
+width: 480
+height: 320
+tint: {3: 13, 11: 6}  # the hedges as stone walls
+
+start:
+  x: 60
+  y: 60
+
+timers:
+  first_mines:  # right next to the start
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: mines
+      pos: [100, 76]
+  more_mines:
+    duration: 10
+    frequency: 10
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: mines
+      max: 2
+  crawlers:  # they come for the tail, one after another
+    duration: 5
+    frequency: 6
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: crawler
+      away: 160
+      max: 7
+  apple1:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+  apple2:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+
+goal:
+  defeat: 15
+
+title: Minefield
+intro:
+  - "Crawlers follow the snake's trail to its tail,"
+  - "and shots barely scratch their armour."
+  - "Press SPACE to drop a MINE behind you"
+  - "and lead them over it."
+
+difficulty:  # harder: more, faster and hungrier crawlers on the trail, fewer mines
+  hard: {timers: {crawlers: {callback: {max: 9, with: {SPEED: 1.25, CHUNK: 6}}}, more_mines: {frequency: 12}}}
+  nightmare: {timers: {crawlers: {callback: {max: 11, with: {SPEED: 1.35, CHUNK: 8}}}, more_mines: {frequency: 15, callback: {max: 1}}}}

@@ -31,6 +31,7 @@ SOUNDS = {
     "win": {"steps": "c3 e3 g3 c4 - r g3 c4 - -", "tone": "p", "volume": 5, "speed": 9},
     "shoot": {"steps": "a4 e4 a3", "tone": "s", "volume": 4, "speed": 2, "effect": "s"},
     "pickup": {"steps": "g3 c4 e4 g4", "tone": "p", "volume": 5, "speed": 4},
+    "boom": {"steps": "c2 g1 d1 a0 - -", "tone": "n", "volume": 7, "speed": 5, "effect": "s"},
 }
 
 

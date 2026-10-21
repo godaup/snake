@@ -100,10 +100,14 @@ class Weapon(ABC):
     def update(self, snake: "Snake", map: "Map", fire: bool, seconds: float) -> None:
         self.cooldown = max(self.cooldown - seconds, 0.0)
         if fire and self.ready:
-            map.projectiles.extend(self.shots(snake))
+            self.release(snake, map)
             self.ammo -= 1
             self.cooldown = self.COOLDOWN
             map.game.sm.effect("shoot")
+
+    def release(self, snake: "Snake", map: "Map") -> None:
+        """One shot: its projectiles fly off from the head."""
+        map.projectiles.extend(self.shots(snake))
 
     @abstractmethod
     def shots(self, snake: "Snake") -> list[Projectile]:
@@ -168,3 +172,20 @@ class Ricochet(Gun):
                 bounces=self.BOUNCES,
             )
         ]
+
+
+class Mines(Weapon):
+    """Drops a mine behind the tail (see the Mine entity), for whatever follows the snake's trail."""
+
+    name = "MINES"
+    COOLDOWN = 0.6
+    DROPS = True  # bots drop them when something is on the snake's trail, instead of aiming
+
+    def release(self, snake, map):
+        from snake_quest.entity import Mine  # entity imports this module lazily too
+
+        tail = snake.segs[-1].pos
+        map.entities.append(Mine.at_pos(Vec2(tail.x - 4, tail.y - 4)))
+
+    def shots(self, snake):
+        return []

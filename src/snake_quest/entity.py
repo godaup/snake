@@ -36,6 +36,7 @@ class Entity:
     name = "entity"  # set by @register
     light = 0  # radius in px it lights up in dark levels (see darkness.py)
     hostile = False  # bad for the snake: harder difficulties spawn it more often (see difficulty.py)
+    tally = True  # counted when gone: as defeated (killed) or eaten (see Map.update); not for the snake's own mines
     avoid = True  # bots steer around it when hostile (not around drones: a sting costs less than swerving)
     _img_x = None
     _img_y = None
@@ -206,6 +207,73 @@ class RicochetPickup(WeaponPickup):
     _img_x = 3
     _img_y = 13
     WEAPON = "Ricochet"
+
+
+@register("mines")
+class MinesPickup(WeaponPickup):
+    _img_x = 4
+    _img_y = 13
+    AMMO = 8
+    WEAPON = "Mines"
+
+
+@register("mine")
+class Mine(Entity):
+    """A mine the snake dropped behind its tail (the Mines weapon). Armed after ARM seconds, it goes off when a hostile
+    entity comes within TRIGGER px: every hostile entity within BLAST px takes DAMAGE. It never hurts the snake, which
+    can cross it, and fizzles out after FUSE seconds."""
+
+    _img_x = 5
+    _img_y = 13
+    tally = False
+    ARM = 0.5  # seconds
+    TRIGGER = 8  # px from its centre to a hostile entity's centre
+    BLAST = 22  # px
+    DAMAGE = 3
+    FUSE = 30.0  # seconds
+    BOOM = 0.3  # seconds the explosion shows
+    COL_BOOM = (10, 9, 8)  # inner to outer
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.age = 0.0
+        self.boom = None  # seconds since it went off
+
+    @property
+    def center(self) -> Vec2:
+        return self.pos + Vec2(self.w / 2, self.h / 2)
+
+    def update(self, snake: "Snake", map: "Map"):
+        seconds = map.game.dt.total_seconds()
+        self.age += seconds
+        if self.boom is not None:
+            self.boom += seconds
+            self.alive = self.boom < self.BOOM
+            return
+        if self.age >= self.FUSE:
+            self.alive = False
+            return
+        foes = [ent for ent in map.entities if ent.alive and ent.hostile]
+        centre = self.center
+        if self.age >= self.ARM and any(
+            (ent.pos + Vec2(ent.w / 2, ent.h / 2) - centre).length() < self.TRIGGER + max(ent.w, ent.h) / 2
+            for ent in foes
+        ):
+            self.boom = 0.0
+            map.game.sm.effect("boom")
+            for ent in foes:
+                if (ent.pos + Vec2(ent.w / 2, ent.h / 2) - centre).length() < self.BLAST:
+                    ent.hit(self.DAMAGE)
+
+    def draw(self, offset: "Vec2"):
+        if self.boom is None:
+            if self.age >= self.ARM or pyxel.frame_count % 4 < 2:  # blinks until armed
+                super().draw(offset)
+            return
+        centre = self.center + offset
+        radius = self.BLAST * min(1.0, self.boom / self.BOOM * 2)
+        for col, share in zip(self.COL_BOOM[::-1], (1.0, 0.7, 0.4), strict=True):
+            pyxel.circ(centre.x, centre.y, radius * share, col)
 
 
 @register("critter")
@@ -566,6 +634,42 @@ class Turret(Entity):
         center = self.center + offset  # the barrel sticks out of the dome
         tip = center + Vec2(pyxel.cos(self.aim), pyxel.sin(self.aim)) * 7
         pyxel.line(center.x, center.y, tip.x, tip.y, self.COL_BARREL)
+        super().draw(offset)
+
+
+@register("crawler")
+class Crawler(Hunter):
+    """A machine of The Fortress that follows the snake's trail to its tail, without the beetles' breaks: slower than
+    the snake, but relentless, and armoured (HEALTH shots; a mine's blast is enough). It starts hunting at once."""
+
+    _img_x = 7
+    _img_y = 13
+    ASLEEP_IMG_X = 7  # no eyes to close
+    SPEED = 1.15
+    HUNT = (30.0, 60.0)
+    PAUSE = (0.5, 1.0)
+    DETOUR_CHANCE = 0.0
+    CHUNK = 4
+    HEALTH = 3
+    FLASH = 0.15
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.health = self.HEALTH
+        self.flash = 0.0
+        self.asleep = False
+
+    def update(self, snake: "Snake", map: "Map"):
+        self.flash = max(self.flash - map.game.dt.total_seconds(), 0.0)
+        super().update(snake, map)
+
+    def hit(self, dmg: int):
+        super().hit(dmg)
+        self.flash = self.FLASH
+
+    def draw(self, offset: "Vec2"):
+        if self.flash > 0 and pyxel.frame_count % 2:
+            return
         super().draw(offset)
 
 
