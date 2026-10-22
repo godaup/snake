@@ -21,6 +21,13 @@ SPAWN_DELAY = datetime.timedelta(microseconds=300)
 TURN_SPEED = 9  # degrees per frame at full steering
 NECK = 3.0  # px along the body from the head that it can't bite: 3 segments at any normal speed, more while
 # slowed (webs), when the segments lie closer
+# its looks (drawing only: collisions use `size` everywhere)
+TAPER = 6  # tail segments drawn thinner (radius 1, the last two a single pixel), on snakes longer than twice that
+TONGUE_EVERY, TONGUE_OUT = 2.4, 0.3  # seconds: the tongue flicks out for TONGUE_OUT once every TONGUE_EVERY
+BLINK_EVERY, BLINK = 3.7, 0.15  # seconds: the eyes shut for BLINK once every BLINK_EVERY
+AMMO_BAND = 12  # at most this many segments behind the head show a spine in the weapon's colour, one per shot left
+COL_TONGUE, COL_LID = 8, 13
+LIGHT = {0: 5, 1: 5, 2: 14, 3: 11, 4: 9, 5: 12, 6: 7, 7: 7, 8: 14, 9: 10, 10: 7, 11: 7, 12: 6, 13: 7, 14: 15, 15: 7}
 
 
 class SnakeSeg:
@@ -74,6 +81,7 @@ class Snake:
         self.weapon: Weapon | None = None  # see weapons.py; picked up in the level
         self.controller: Controller = controller or Controller()  # the default one goes straight
         self.turn_speed = turn_speed
+        self.clock = 0.0  # seconds it has lived, for the tongue and the blinking (no random numbers: bots replay)
 
     def __len__(self):
         return len(self.segs)
@@ -118,13 +126,55 @@ class Snake:
         self.orient = (self.orient + val) % 360
 
     def draw(self, offset: Vec2):
-        """Draw every segment, shifted by the camera's `offset`."""
-        for seg in self.segs:
-            seg.draw(offset)
+        """Draw the snake shifted by the camera's `offset`: the body from the tail up (tapering to a point, the ammo
+        as a stripe down the spine behind the head), then the head with its eyes and, now and then, its tongue."""
+        n = len(self.segs)
+        for index in range(n - 1, 0, -1):
+            seg = self.segs[index]
+            if seg.key is not None:
+                seg.draw(offset)
+                continue
+            radius = self.size
+            if n > 2 * TAPER and index >= n - TAPER:
+                radius = 0 if index >= n - 2 else 1
+            pyxel.circ(seg.pos.x + offset.x, seg.pos.y + offset.y, radius, seg.col)
+        # details on top, as the segments overlap: the gloss along the back, the ammo down the spine
+        band = min(self.weapon.ammo, AMMO_BAND) if self.weapon is not None else 0
+        for index in range(1, n - TAPER if n > 2 * TAPER else n):
+            seg = self.segs[index]
+            if seg.key is not None:
+                continue
+            x, y = seg.pos.x + offset.x, seg.pos.y + offset.y
+            if self.colors.gloss:
+                ahead = self.segs[index - 1].pos - seg.pos
+                length = ahead.length() or 1
+                pyxel.pset(x + ahead.y / length * 1.2 - 0.3, y - ahead.x / length * 1.2 - 0.3, LIGHT[seg.col])
+            if index <= band:  # a segment a shot
+                pyxel.pset(x, y, self.weapon.COL)
+        self._draw_head(offset)
+
+    def _draw_head(self, offset: Vec2) -> None:
+        """A head one pixel bigger than the body, its eyes to either side of where it points (shut while it
+        blinks), and the forked tongue while it flicks."""
+        x, y = self.head.pos.x + offset.x, self.head.pos.y + offset.y
+        dx, dy = pyxel.cos(self.orient), pyxel.sin(self.orient)
+        radius = self.size + 1
+        if self.clock % TONGUE_EVERY < TONGUE_OUT:
+            tip_x, tip_y = x + dx * (radius + 4), y + dy * (radius + 4)
+            pyxel.line(x + dx * (radius + 1), y + dy * (radius + 1), tip_x, tip_y, COL_TONGUE)
+            for side in (-1, 1):
+                pyxel.pset(tip_x + dx + dy * side, tip_y + dy - dx * side, COL_TONGUE)
+        pyxel.circ(x, y, radius, self.head.col)
+        if self.colors.gloss:
+            pyxel.pset(x + dy * 1.5 - 0.5, y - dx * 1.5 - 0.5, LIGHT[self.head.col])
+        eyes = COL_LID if self.clock % BLINK_EVERY < BLINK else self.colors.eyes
+        for side in (-1, 1):
+            pyxel.pset(x + dx * 1.2 + dy * side * 1.6, y + dy * 1.2 - dx * side * 1.6, eyes)
 
     def update(self, dt: datetime.timedelta, map: "Map"):
         """One frame: steer (through the controller, the other way on mirrored floor), drift on ice and with the
         planets' pull, move (or stall at a crate), grow or shrink one segment and let the weapon fire."""
+        self.clock += dt.total_seconds()
         self.boost_left = max(self.boost_left - dt.total_seconds(), 0.0)
         # steer
         steering = self.controller.steer(self, map)

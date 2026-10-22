@@ -136,6 +136,7 @@ class Weapon(ABC):
 
     name: ClassVar[str]  # upper case, shown in the HUD
     COOLDOWN: ClassVar[float]  # seconds between shots
+    COL: ClassVar[int] = 7  # its shots' colour, and the ammo band's on the snake (see Snake.draw)
 
     def __init__(self, ammo: int, hostile: bool = False):
         self.ammo = ammo
@@ -366,6 +367,7 @@ class Tractor(Weapon):
 
     name = "TRACTOR"
     COOLDOWN = TractorBeam.PULSE
+    COL = TractorBeam.COL
     PULLS = True  # bots fire it when a pickup is in its cone
 
     def release(self, snake, map):
@@ -380,6 +382,7 @@ class Mines(Weapon):
 
     name = "MINES"
     COOLDOWN = 0.6
+    COL = 13
     DROPS = True  # bots drop them when something is on the snake's trail, instead of aiming
 
     def release(self, snake, map):

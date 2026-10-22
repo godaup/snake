@@ -9,7 +9,9 @@ class Palette:
 
     name: str
     head: int
-    body: tuple[int, ...]  # repeated along the body, segment by segment
+    body: tuple[int, ...]  # repeated along the body, segment by segment: also makes the patterns (bands, diamonds)
+    eyes: int = 0  # light ones on a dark head
+    gloss: bool = False  # a lighter pixel along the back of every segment
 
 
 PALETTES: dict[str, Palette] = {
