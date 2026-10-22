@@ -29,7 +29,7 @@ python tools/draft_workshop.py src/snake_quest/resources/arc7.pyxres tools/puzzl
 python tools/solve_workshop.py check tools/puzzles/crates.txt src/snake_quest/levels/crates.yaml   # does the level's plan solve it? (`solve` searches the fewest pushes, room by room)
 python tools/draft_keeper.py src/snake_quest/resources/keeper.pyxres tools/gardens/hedges.txt --tm 0   # a Keeper level from its garden text (one character per tile; the text is the source of truth)
 python tools/balance.py --levels hunger --seeds 12   # bot win rate per level and difficulty (--no-hand: the Keeper's levels left alone)
-python tools/readme_media.py docs/media   # the README's screenshots and clip, rendered headlessly with the bot playing (--only NAME ...)
+python tools/readme_media.py docs/media   # the README's gameplay montage (MONTAGE: level, warm-up, seconds, seed, caption) and screenshots, rendered headlessly with the bot playing (--only NAME ..., --stills)
 pytest                                # run all tests
 pytest tests/test_map.py::test_new_pos_is_free   # run a single test
 ruff check . && ruff format --check .            # lint + format check

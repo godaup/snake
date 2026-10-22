@@ -10,7 +10,7 @@ in a clockwork workshop, and face eight bosses on the way.
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 <p align="center">
-  <img src="docs/media/clip.gif" width="640" alt="Boss: The Crow, the last level of the bonus arc: the snake snaps at the crow in the garden">
+  <img src="docs/media/montage.gif" width="640" alt="A few seconds from each arc: a long snake in the garden, portals, beetles on the hunt, a boss and its pack, turrets, a rival snake, bats in the dark caves, asteroids, crates in the workshop and the Keeper's garden">
 </p>
 
 ## Features
@@ -31,16 +31,9 @@ in a clockwork workshop, and face eight bosses on the way.
 
 ## Screenshots
 
-| | | |
+| ![The overview map](docs/media/map.png) | ![A mission briefing](docs/media/mission.png) | ![Boss: The Crow](docs/media/boss.png) |
 |:-:|:-:|:-:|
-| ![Main menu](docs/media/menu.png) | ![The overview map](docs/media/map.png) | ![A mission briefing](docs/media/mission.png) |
-| Main menu | The overview map | Every level starts with its mission |
-| ![Maneuver](docs/media/maneuver.png) | ![Boss: The Hunger](docs/media/hunger.png) | ![Boss: The Alpha](docs/media/alpha.png) |
-| The Garden: a scrolling level with portals | The Hunger: starving in the dark | The Wilds: the Alpha and its pack |
-| ![Turrets](docs/media/fortress.png) | ![Boss: Ouroboros](docs/media/ouroboros.png) | ![Bats](docs/media/caves.png) |
-| The Fortress: turrets | Ouroboros: a rival snake | The Caves: bats wake in the light |
-| ![Gravity Wells](docs/media/space.png) | ![Crates](docs/media/workshop.png) | ![Boss: The Crow](docs/media/keeper.png) |
-| Space: gravity wells | The Workshop: crates and plates | The Keeper: the Crow |
+| The overview map: one region per arc | Every level starts with its mission | The Keeper's boss, the Crow |
 
 ## The campaign
 
@@ -114,7 +107,7 @@ The [`tools/`](tools) folder has the level design and content tools:
 | `solve_workshop.py` | check and solve the Workshop's crate puzzles |
 | `compose_theme.py`, `compose_music.py`, `compose_effects.py` | compile the text scores into the game's music and sound effects |
 | `balance.py` | the bot's win rate per level and difficulty |
-| `readme_media.py` | render the screenshots and the clip above from the real game |
+| `readme_media.py` | render the gameplay montage and the screenshots above from the real game, the bot playing |
 | `mcp_game.py` | run the game headlessly for the [pyxel-mcp](https://github.com/kitao/pyxel-mcp) server |
 | `audio_stress.py` | check music switching against Pyxel's audio thread |
 
