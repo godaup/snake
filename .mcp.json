@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "pyxel": {
+      "command": "pyxel-mcp",
+      "args": []
+    }
+  }
+}
