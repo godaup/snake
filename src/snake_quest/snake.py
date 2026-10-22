@@ -1,6 +1,7 @@
 """The snake: its segments, how it moves, grows, turns and gets hurt."""
 
 import datetime
+import math
 from copy import copy
 from typing import TYPE_CHECKING
 
@@ -25,8 +26,10 @@ NECK = 3.0  # px along the body from the head that it can't bite: 3 segments at 
 TAPER = 6  # tail segments drawn thinner (radius 1, the last two a single pixel), on snakes longer than twice that
 TONGUE_EVERY, TONGUE_OUT = 2.4, 0.3  # seconds: the tongue flicks out for TONGUE_OUT once every TONGUE_EVERY
 BLINK_EVERY, BLINK = 3.7, 0.15  # seconds: the eyes shut for BLINK once every BLINK_EVERY
-AMMO_BAND = 12  # at most this many bands across the body behind the head, in the weapon's colour, one per shot left
-COL_TONGUE, COL_LID = 8, 13
+AMMO_BEADS = 12  # at most this many beads down the back behind the head, in the weapon's colour, one per shot left
+AMMO_PIE = False  # the ammo also as a pie floating over the head, a piece a shot (to try out: see _draw_ammo_pie)
+PIE_RADIUS, PIE_ABOVE, PIE_FOLLOW = 4, 11, 0.25  # px, px over the head, share of the way it catches up per frame
+COL_TONGUE, COL_LID, COL_BEAD, COL_PIE_EMPTY, COL_PIE_CUT = 8, 13, 7, 1, 0
 LIGHT = {0: 5, 1: 5, 2: 14, 3: 11, 4: 9, 5: 12, 6: 7, 7: 7, 8: 14, 9: 10, 10: 7, 11: 7, 12: 6, 13: 7, 14: 15, 15: 7}
 
 
@@ -82,6 +85,9 @@ class Snake:
         self.controller: Controller = controller or Controller()  # the default one goes straight
         self.turn_speed = turn_speed
         self.clock = 0.0  # seconds it has lived, for the tongue and the blinking (no random numbers: bots replay)
+        self.pie: Vec2 | None = None  # where the ammo pie floats (see AMMO_PIE)
+        self.ammo_full = 0  # the most shots the weapon carried has held: the whole pie
+        self._carried: Weapon | None = None
 
     def __len__(self):
         return len(self.segs)
@@ -127,7 +133,7 @@ class Snake:
 
     def draw(self, offset: Vec2):
         """Draw the snake shifted by the camera's `offset`: the body from the tail up (tapering to a point, the ammo
-        as a cartridge belt behind the head), then the head with its eyes and, now and then, its tongue."""
+        as beads behind the head), then the head with its eyes and, now and then, its tongue."""
         n = len(self.segs)
         for index in range(n - 1, 0, -1):
             seg = self.segs[index]
@@ -138,9 +144,9 @@ class Snake:
             if n > 2 * TAPER and index >= n - TAPER:
                 radius = 0 if index >= n - 2 else 1
             pyxel.circ(seg.pos.x + offset.x, seg.pos.y + offset.y, radius, seg.col)
-        # details on top, as the segments overlap: the gloss along the back, the ammo as a cartridge belt
+        # details on top, as the segments overlap: the gloss along the back, the ammo as beads
         body = n - TAPER if n > 2 * TAPER else n
-        bands = min(self.weapon.ammo, AMMO_BAND, (body - 2) // 2) if self.weapon is not None else 0
+        beads = min(self.weapon.ammo, AMMO_BEADS, (body - 2) // 2) if self.weapon is not None else 0
         for index in range(1, body):
             seg = self.segs[index]
             if seg.key is not None:
@@ -151,10 +157,30 @@ class Snake:
             dx, dy = ahead.x / length, ahead.y / length
             if self.colors.gloss:
                 pyxel.pset(x + dy * 1.2 - 0.3, y - dx * 1.2 - 0.3, LIGHT[seg.col])
-            if index % 2 == 0 and index // 2 <= bands:  # a band across the body every other segment, a shot each
-                across_x, across_y = dy * self.size, -dx * self.size
-                pyxel.line(x + across_x, y + across_y, x - across_x, y - across_y, self.weapon.COL)
+            if index % 2 == 0 and index // 2 <= beads:  # a bead every other segment, a shot each
+                pyxel.circ(x, y, 1, self.weapon.COL)
+                pyxel.pset(x, y, COL_BEAD)
         self._draw_head(offset)
+        if AMMO_PIE and self.weapon is not None and self.pie is not None:
+            self._draw_ammo_pie(offset)
+
+    def _draw_ammo_pie(self, offset: Vec2) -> None:
+        """The ammo as a pie over the head in the weapon's colour: a piece for each shot the weapon has held, the
+        ones fired gone (dark), clockwise from the top; cut into pieces while there are few enough to tell apart."""
+        full, left = max(self.ammo_full, 1), self.weapon.ammo
+        x, y = self.pie.x + offset.x, self.pie.y + offset.y + round(math.sin(self.clock * 4))
+        reach = PIE_RADIUS * PIE_RADIUS + PIE_RADIUS
+        for py in range(-PIE_RADIUS, PIE_RADIUS + 1):
+            for px in range(-PIE_RADIUS, PIE_RADIUS + 1):
+                if px * px + py * py > reach:
+                    continue
+                angle = math.degrees(math.atan2(px, -py)) % 360
+                pyxel.pset(x + px, y + py, self.weapon.COL if angle < 360 * left / full else COL_PIE_EMPTY)
+        if full <= 8:
+            for piece in range(full):
+                angle = math.radians(piece * 360 / full)
+                pyxel.line(x, y, x + math.sin(angle) * PIE_RADIUS, y - math.cos(angle) * PIE_RADIUS, COL_PIE_CUT)
+        pyxel.pset(x, y, COL_PIE_CUT)
 
     def _draw_head(self, offset: Vec2) -> None:
         """A head one pixel bigger than the body, its eyes to either side of where it points (shut while it
@@ -215,6 +241,13 @@ class Snake:
         # fire
         if self.weapon:
             self.weapon.update(self, map, fire=self.controller.fire(self, map), seconds=dt.total_seconds())
+        # the ammo pie: full is the most the weapon has held; it floats after the head
+        if self.weapon is not self._carried:
+            self._carried, self.ammo_full = self.weapon, 0
+        if self.weapon is not None:
+            self.ammo_full = max(self.ammo_full, self.weapon.ammo)
+        above = self.head.pos + Vec2(0, -PIE_ABOVE)
+        self.pie = above if self.pie is None else self.pie + (above - self.pie) * PIE_FOLLOW
 
     def cut(self, n: int) -> bool:
         """Lose `n` segments from the tail; False (and nothing cut) when the snake isn't longer than that."""

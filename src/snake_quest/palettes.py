@@ -18,11 +18,8 @@ PALETTES: dict[str, Palette] = {
     p.name: p
     for p in (
         Palette("Classic", head=7, body=(11, 11, 4, 3, 3)),
-        Palette("Ember", head=10, body=(9, 9, 8, 8, 4)),
         Palette("Ocean", head=7, body=(12, 12, 6, 5, 5)),
-        Palette("Candy", head=7, body=(14, 14, 8, 15, 15)),
         Palette("Ghost", head=7, body=(13, 13, 6, 13, 7)),
-        Palette("Royal", head=10, body=(2, 2, 5, 12, 12)),
         # patterns: diamonds down the back, saddles, rings (never colour 0 in them: the floor's)
         Palette("Rattler", head=15, body=(15, 15, 4, 9, 4, 15, 15)),
         Palette("Magma", head=9, body=(8, 8, 2, 10, 2, 8, 8)),
