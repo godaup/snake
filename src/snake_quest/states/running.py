@@ -6,6 +6,7 @@ from snake_quest.cam import Cam
 from snake_quest.controls import KeyboardController
 from snake_quest.debug import draw_overlay
 from snake_quest.hud import Hud
+from snake_quest.keeper import HandInput, PetController
 from snake_quest.map import Map
 from snake_quest.palettes import palette
 from snake_quest.snake import INIT_SPEED, Snake
@@ -31,6 +32,9 @@ class RunningStateHandler(GameStateHandler):
             controller=KeyboardController(),
             speed=INIT_SPEED * game.difficulty.speed,
         )
+        if self.map.hand is not None:  # the Keeper: the snake moves on its own, the player is the hand
+            self.snake.controller = PetController()
+            self.map.hand.player = HandInput()
         self.cam = Cam(snake=self.snake, map=self.map, game=self.game)
         self.hud = Hud(game=self.game, level_map=self.map, snake=self.snake)
         self.intro_pending = True  # show the mission briefing after the first frame
@@ -57,6 +61,8 @@ class RunningStateHandler(GameStateHandler):
             self.game.change_state(state=StateID.DEATH)
         # calc offset
         self.cam.update()
+        if self.map.hand is not None:
+            self.map.hand.offset = self.cam.offset
         # update entities and timers and projectiles
         self.map.update(snake=self.snake)
         # check wall collisions (and hazards that cut more than the snake has)
@@ -76,6 +82,10 @@ class RunningStateHandler(GameStateHandler):
         pyxel.cls(self.game.cfg.area.bg)
         # draw game with offset
         self.cam.draw()
+        if self.map.hand is not None:  # the pet's way and mood, the hand's cursor
+            if isinstance(self.snake.controller, PetController):
+                self.snake.controller.draw(self.snake, self.cam.offset)
+            self.map.hand.draw_cursor(self.cam.offset, self.snake)
         self.hud.draw()
         if self.game.cfg.debug:
             draw_overlay(self)

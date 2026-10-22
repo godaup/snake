@@ -19,6 +19,7 @@ class Level:
     arc: str
     resources: Path  # .pyxres holding this level's tilemaps
     music: str = "garden"  # its arc's music (see sound.MUSIC); a level file may name another (`music: boss`)
+    bonus: bool = False  # in a bonus arc (`bonus: true`), played after the story's end
 
     @property
     def path(self) -> Path:
@@ -45,6 +46,16 @@ class Campaign:
 
     def __len__(self) -> int:
         return len(self.levels)
+
+    @property
+    def story_last(self) -> int:
+        """Number of the story's last level (the bonus arcs come after it)."""
+        return max((level.number for level in self.levels if not level.bonus), default=len(self.levels))
+
+    @property
+    def endings(self) -> set[int]:
+        """Levels after which the victory screen shows: the story's last and the very last."""
+        return {self.story_last, len(self.levels)}
 
     def level(self, number: int) -> Level:
         """Level by its 1-based campaign number."""
@@ -95,6 +106,7 @@ def load_campaign(path: Path = CAMPAIGN_FILE) -> Campaign:
                     arc=arc.name,
                     resources=RESOURCES_DIR / arc.resources,
                     music=arc.get("music", "garden"),
+                    bonus=arc.get("bonus", False),
                 )
             )
     return Campaign(sprites=RESOURCES_DIR / cfg.sprites, levels=tuple(levels), themes=themes)

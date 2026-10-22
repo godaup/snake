@@ -3,6 +3,7 @@ with several seeds, and the win rate, the median time to win and what killed it 
 
     python tools/balance.py                                  # every level the bot can play, every difficulty
     python tools/balance.py --levels hunger --difficulties medium hard --seeds 12
+    python tools/balance.py --levels hedges --no-hand    # the Keeper's levels with nobody keeping the garden
 
 The bot knows where every apple is, so a person needs longer; use this to compare levels and difficulties, and
 playtesting to set medium. tests/test_winnable.py checks the bands (see WIN_RATES there; `pytest -m slow`).
@@ -54,6 +55,7 @@ def main() -> None:
     parser.add_argument("--difficulties", nargs="+", default=difficulty.NAMES, choices=difficulty.NAMES)
     parser.add_argument("--seeds", type=int, default=8)
     parser.add_argument("--seconds", type=float, default=240, help="give up a run after this much play time")
+    parser.add_argument("--no-hand", action="store_true", help="the Keeper's levels without the hand bot")
     args = parser.parse_args()
     pyxel.init(16, 16, headless=True)
     campaign = load_campaign()
@@ -61,7 +63,9 @@ def main() -> None:
     print(f"{'level':<10} {'difficulty':<10} {'wins':>6}  {'median':>7}  outcomes")
     for level in args.levels:
         for name in args.difficulties:
-            rate, wins, outcomes = win_rate(BotGame(campaign, name), level, range(args.seeds), args.seconds)
+            rate, wins, outcomes = win_rate(
+                BotGame(campaign, name), level, range(args.seeds), args.seconds, hand=not args.no_hand
+            )
             median = f"{statistics.median(wins):.0f}s" if wins else "-"
             rest = ", ".join(f"{key} {count}" for key, count in outcomes.most_common() if key != "won")
             print(f"{level:<10} {name:<10} {rate:>6.0%}  {median:>7}  {rest}", flush=True)

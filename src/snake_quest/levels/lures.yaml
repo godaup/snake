@@ -1,0 +1,50 @@
+tm: 2  # tools/draft_keeper.py from tools/gardens/lures.txt
+width: 320
+height: 192
+
+start:
+  x: 164
+  y: 120
+
+hand:
+  lure: 6
+  hedge: 16
+
+timers:
+  nests:  # one at each corner, two beetles each at a time
+    duration: 0
+    frequency: 0.05
+    fire_n: 4
+    callback:
+      type: spawn
+      entity: nest
+      spots: [[32, 52], [280, 52], [32, 172], [280, 172]]
+      with: {BROOD: 2, SPAWN: 12.0}
+  apples:
+    duration: 0
+    frequency: 2
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+      max: 3
+      away: 48
+
+goal:
+  hold_length: {length: 25, seconds: 40}
+  time_limit: 180
+
+difficulty:  # two pens take sixteen hedges whatever the difficulty
+  hard: {hand: {hedge: 16}}
+  nightmare: {hand: {hedge: 16}}
+
+title: Lures
+intro:
+  - "Beetles hunt your snake's tail. It can't fight,"
+  - "and it only runs from the ones it sees."
+  - "Lures wriggle: beetles near one hunt it first."
+  - "A beetle shut in by hedges gives up for good."
+
+keeper:  # for bots: rings of hedges round the two top nests; lures as beetles come (HandBot.react)
+  - hedge: [[3, 3], [4, 3], [5, 3], [5, 4], [5, 5], [4, 5], [3, 5], [3, 4]]
+  - hedge: [[34, 3], [35, 3], [36, 3], [36, 4], [36, 5], [35, 5], [34, 5], [34, 4]]

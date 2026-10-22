@@ -6,6 +6,9 @@ EFFECTS = {
     "shoot": 12,
     "pickup": 13,
     "boom": 14,
+    "plant": 15,
+    "lift": 43,
+    "caw": 44,
 }
 # the level music of each arc and the bosses' (a level picks one by name: its arc's `music`, or its own), written by
 # tools/compose_music.py into the sprites file; music 1 is the menu theme (MENU_MUSIC in states/menu_common.py). A
@@ -19,6 +22,7 @@ MUSIC: dict[str, int | tuple[int, ...]] = {
     "caves": 6,
     "space": 7,
     "workshop": (37, 38, 39),
+    "keeper": (40, 41, 42),
 }
 
 

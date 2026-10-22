@@ -1,0 +1,42 @@
+tm: 3  # tools/draft_keeper.py from tools/gardens/lanterns.txt
+width: 320
+height: 192
+
+start:
+  x: 44
+  y: 120
+
+darkness:
+  light: 20
+  floor: 1
+
+hand:
+  lantern: 4
+  hedge: 6
+  lure: 2
+
+goal:
+  collect_all: golden
+  time_limit: 200
+
+title: Lanterns
+intro:
+  - "Night. Your snake sees only what is lit, and in"
+  - "the dark it walks to the nearest lantern."
+  - "Light five golden apples for it. Mind: light"
+  - "wakes the beetles."
+
+keeper:  # for bots: light one golden apple at a time, and take the lantern back once it is eaten
+  - lantern: [[6, 5]]
+  - reach: [3, 3]
+  - lift: [[6, 5]]
+  - lantern: [[6, 18]]
+  - reach: [3, 20]
+  - lift: [[6, 18]]
+  - lantern: [[20, 12]]
+  - reach: [19, 11]
+  - lift: [[20, 12]]
+  - lantern: [[33, 5]]
+  - reach: [36, 3]
+  - lift: [[33, 5]]
+  - lantern: [[33, 18]]

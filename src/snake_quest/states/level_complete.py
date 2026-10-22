@@ -22,6 +22,7 @@ class LevelStats:
     score: int
     last_level: bool
     rank: int | None = None  # the arc's score made its highscores (recorded after its last level)
+    thrift: int | None = None  # the Keeper: points for the tools left unused
 
 
 def format_time(seconds: float) -> str:
@@ -43,8 +44,15 @@ class LevelCompleteStateHandler(OverlayStateHandler):
         """Snapshot the finished level, so the numbers don't change while the screen is shown."""
         running = self.running
         self.t = 0.0
-        last_level = self.game.level_counter == len(self.game.campaign)
+        last_level = self.game.level_counter in self.game.campaign.endings
         arc = self.game.campaign.arc_of(self.game.level_counter)
+        hand = getattr(running.map, "hand", None)
+        thrift = None
+        if hand is not None:  # the Keeper: a point for every tool left unused
+            from snake_quest.keeper import THRIFT
+
+            thrift = hand.unused() * THRIFT
+            self.game.score += thrift
         rank = None
         if self.game.level_counter == arc.last and not last_level:  # after the very last one the victory screen does
             played = self.game.difficulty.name
@@ -57,6 +65,7 @@ class LevelCompleteStateHandler(OverlayStateHandler):
             score=self.game.score,
             last_level=last_level,
             rank=rank,
+            thrift=thrift,
         )
         self.game.sm.effect("win")
 
@@ -71,6 +80,7 @@ class LevelCompleteStateHandler(OverlayStateHandler):
         return [
             ("TIME", format_time(stats.seconds)),
             ("POINTS", f"+{stats.points}"),
+            *([("THRIFT", f"+{stats.thrift}")] if stats.thrift is not None else []),
             ("LENGTH", str(stats.length)),
             ("SCORE", f"{stats.score:05}"),
             *([("HIGHSCORE", f"NEW #{stats.rank}")] if stats.rank else []),

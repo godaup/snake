@@ -1,7 +1,8 @@
 """Write the level music into the sprites .pyxres: per track three voices (lead, bass, drums) on channels 0-2, looped;
 channel 3 stays free for the sound effects.
 
-The scores are plain text, written like the menu theme's (see compose_theme.py): bars of 8 steps (eighth notes) with
+The scores are plain text, written like the menu theme's (see compose_theme.py): bars of 8 steps (eighth notes; a
+track's `bar` may set another length, 6 for a waltz) with
 `c3`-style notes (sharps as `c#3`, octaves 0-4), `-` to hold, `r` to rest. Each track names its sections and a `form`,
 the order they play in; a voice may leave a section out to rest through it. A voice's `volume` is a number, or for
 drums one per octave of the noise pitch (kick, snare, hats); `vibrato` makes held notes waver.
@@ -19,7 +20,7 @@ import pyxel
 from snake_quest.sound import MUSIC, MUSIC_CHANNELS
 
 FIRST_SOUND = 16  # slots 0-7 and 12-14 hold the effects, 8-11 the menu theme
-REST_BAR = "r r r r r r r r"
+BAR = 8  # steps per bar, unless a track sets its `bar`
 
 TRACKS = {
     # The Garden: light and bouncy, G major. A: G Em C D G Em Am-D G, A2: G Em C D C G D G, B: C D Bm Em C G/B Am D
@@ -718,6 +719,75 @@ TRACKS = {
             },
         },
     },
+    # The Keeper: a gentle waltz in 3/4 (bars of 6 eighths), F major, the quietest track. A: F F C C Gm C F F,
+    # B: Bb Bb F F Gm C F C
+    "keeper": {
+        "speed": 20,
+        "bar": 6,
+        "form": ["a", "a", "b", "a"],
+        "voices": {
+            "lead": {  # a music box
+                "tone": "t",
+                "volume": 3,
+                "sections": {
+                    "a": [
+                        "a3 - - c4 - f4",
+                        "a4 - - g4 - f4",
+                        "e4 - - g4 - c4",
+                        "e4 - - - - r",
+                        "d4 - - f4 - a#4",
+                        "a#4 - - a4 - g4",
+                        "a4 - - c4 - f4",
+                        "f4 - - - - r",
+                    ],
+                    "b": [
+                        "d4 - - f4 - a#4",
+                        "a#4 - - a4 - g4",
+                        "a4 - - f4 - c4",
+                        "f4 - - - - r",
+                        "g4 - - a#4 - a4",
+                        "g4 - - e4 - c4",
+                        "f4 - - a4 - c4",
+                        "e4 - - g4 - r",
+                    ],
+                },
+            },
+            "bass": {  # plucked on the first beat, the chord after
+                "tone": "p",
+                "volume": 1,
+                "sections": {
+                    "a": [
+                        "f1 r a1 r c2 r",
+                        "f1 r a1 r c2 r",
+                        "c1 r e1 r g1 r",
+                        "c1 r e1 r g1 r",
+                        "g1 r a#1 r d2 r",
+                        "c1 r e1 r g1 r",
+                        "f1 r a1 r c2 r",
+                        "f1 r c1 r f1 r",
+                    ],
+                    "b": [
+                        "a#0 r d1 r f1 r",
+                        "a#0 r d1 r f1 r",
+                        "f1 r a1 r c2 r",
+                        "f1 r a1 r c2 r",
+                        "g1 r a#1 r d2 r",
+                        "c1 r e1 r g1 r",
+                        "f1 r a1 r c2 r",
+                        "c1 r e1 r g1 r",
+                    ],
+                },
+            },
+            "drums": {  # brushed: a soft kick, then two strokes
+                "tone": "n",
+                "volume": {"4": 1, "0": 1},
+                "sections": {
+                    "a": ["a0 r e4 r e4 r"] * 8,
+                    "b": ["a0 r e4 r e4 r"] * 7 + ["a0 r e4 e4 e4 r"],
+                },
+            },
+        },
+    },
 }
 
 
@@ -744,11 +814,11 @@ def render(voice: dict) -> tuple[str, str, str, str]:
     return "".join(notes), voice["tone"] * len(notes), "".join(volumes), "".join(effects)
 
 
-def voice_bars(voice: dict, form: list[str], bars_per_section: dict[str, int]) -> list[str]:
+def voice_bars(voice: dict, form: list[str], bars_per_section: dict[str, int], steps: int = BAR) -> list[str]:
     """The voice's bars in the order of the form; sections it leaves out are rests."""
     bars = []
     for name in form:
-        bars += voice["sections"].get(name, [REST_BAR] * bars_per_section[name])
+        bars += voice["sections"].get(name, [" ".join("r" * steps)] * bars_per_section[name])
     return bars
 
 
@@ -769,10 +839,11 @@ def main() -> None:
             for section, bars in voice["sections"].items():
                 assert len(bars) == lengths[section], f"{name}/{voice_name}/{section}: {len(bars)} bars"
                 for bar in bars:
-                    assert len(bar.split()) == 8, f"{name}/{voice_name}/{section}: {bar!r} is not 8 steps"
+                    steps = track.get("bar", BAR)
+                    assert len(bar.split()) == steps, f"{name}/{voice_name}/{section}: {bar!r} is not {steps} steps"
         channels = []
         for voice_name, voice in voices.items():
-            rendered = dict(voice, bars=voice_bars(voice, track["form"], lengths))
+            rendered = dict(voice, bars=voice_bars(voice, track["form"], lengths, track.get("bar", BAR)))
             pyxel.sounds[slot].set(*render(rendered), track["speed"])
             channels.append([slot])
             print(f"sound {slot}: {name} {voice_name}, {pyxel.sounds[slot].total_sec():.1f} s")

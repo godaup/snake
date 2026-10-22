@@ -837,8 +837,233 @@ class ClockworkBoss(Boss):
         return circles
 
 
+class CrowBoss(Boss):
+    """The Crow (level 40, the Keeper's): a Crow entity flying over the garden from `pos`, with `health`; the bar is its
+    health. The snake can't shoot: its head bites the Crow only while it is on the ground. Phases by `below`, like the
+    Alpha's:
+
+    1. The thief: every `steal` seconds it flies to an apple (of the tree with most apples, if any) and sits on it for
+       `perch` seconds, then eats it; without apples it pulls up a hedge the hand planted (`perch` seconds on the
+       ground too; the hedge goes back to the hand).
+    2. The swoop: every `swoop` seconds it marks a line to where the snake's tail will be (`warn` seconds) and dives
+       along it (over the level's walls); a hit cuts `chunk` segments off. A hedge the hand planted (sprouting too) on
+       the line stops the dive: it lies stunned for `stun` seconds.
+    3. The flock: it goes on swooping and calls a jackdaw every `call` seconds while fewer than `flock` are about; dusk
+       falls (the light shrinks from `light[0]` to `light[1]` over DUSK seconds; needs `darkness`).
+
+        boss: {type: crow, pos: [x, y], health: 6, steal: 4, perch: 3, swoop: 6, warn: 1.5, stun: 3, chunk: 8,
+               call: 6, flock: 0, light: [400, 56], phases: [{below: 1}, {below: 0.67}, {below: 0.34, flock: 3}]}"""
+
+    key = "crow"
+    title = "THE CROW"
+    pressure = ("health", "flock", "chunk")
+    relief = ("steal", "perch", "swoop", "warn", "stun", "call")
+    lights = ("light",)
+    FLY = 1.8  # px per frame
+    DIVE = 3.5
+    STRIKE = 8  # px from its centre to a segment
+    DUSK = 20.0  # seconds dusk takes to fall
+    DANGER = 10  # px: circles along a swoop's line bots keep out of
+    MARGIN = 16  # px from the level's edges where it flies
+
+    def __init__(self, cfg, map):
+        super().__init__(cfg, map)
+        from snake_quest.keeper import Crow, Jackdaw
+
+        self._jackdaw = Jackdaw
+        self.crow = Crow.at_pos(Vec2(*cfg.pos) - Vec2(8, 8))
+        self.crow.health = self.full = max(1, round(cfg.health))
+        map.entities.append(self.crow)
+        self.crow.state = "hover"
+        self.left = self.setting("steal")
+        self.call_left = self.setting("call")
+        self.dest: Vec2 | None = None
+        self.prey = None  # the apple or hedge tile it is after
+        self.flock: list = []
+
+    def next_phase_due(self, map, snake):
+        return self.crow.health <= self.full * self.phases[self.phase + 1]["below"] + 1e-6
+
+    def on_phase(self, map, snake):
+        if not self.crow.grounded:
+            self._take_off(map, self.setting("swoop") / 2)
+
+    def _light(self, map) -> None:
+        if map.darkness is None or "light" not in self.cfg:
+            return
+        full, dusk = self.setting("light")
+        share = min(self.since_phase / self.DUSK, 1.0) if self.phase >= 2 else 0.0
+        map.darkness.light = full + (dusk - full) * share
+
+    def _sky(self, map) -> Vec2:
+        """A random spot in the air over the level."""
+        return Vec2(
+            pyxel.rndf(self.MARGIN, map.cfg.width - self.MARGIN),
+            pyxel.rndf(self.MARGIN, map.cfg.height - self.MARGIN) + map.header,
+        )
+
+    def _take_off(self, map, wait: float) -> None:
+        crow = self.crow
+        crow.state, crow.line, self.prey = "fly", None, None
+        self.dest, self.left = self._sky(map), wait
+
+    def _fly(self, target: Vec2, speed: float) -> bool:
+        """One frame towards `target`; True once there."""
+        to = target - self.crow.center
+        distance = to.length()
+        if distance <= speed:
+            self.crow.pos = target - Vec2(8, 8)
+            return True
+        self.crow.pos = self.crow.pos + to * (speed / distance)
+        return False
+
+    def act(self, map, snake, seconds):
+        self._light(map)
+        crow = self.crow
+        if not crow.alive:
+            return
+        speed = map.game.difficulty.speed
+        if crow.bitten:  # bitten on the ground: up and away
+            crow.bitten = False
+            self._take_off(map, self.setting("steal" if self.phase == 0 else "swoop"))
+        if self.phase >= 2:
+            self._call(map, snake, seconds)
+        self.left -= seconds
+        if crow.state == "fly":
+            target = self.dest if self.prey is None else self._prey_pos(map)
+            if target is None:  # what it was after is gone
+                self._take_off(map, self.left)
+            elif self._fly(target, self.FLY * speed):
+                if self.prey is None:
+                    crow.state = "hover"
+                else:
+                    crow.state, self.left = "perch", self.setting("perch")
+        elif crow.state == "hover" and self.left <= 0:
+            if self.phase == 0:
+                self._steal(map)
+            else:
+                self._mark(map, snake)
+        elif crow.state == "perch" and self.left <= 0:
+            self._feed(map)
+            self._take_off(map, self.setting("steal"))
+        elif crow.state == "warn" and self.left <= 0:
+            crow.state = "dive"
+        elif crow.state == "dive":
+            self._dive(map, snake, speed)
+        elif crow.state == "stunned" and self.left <= 0:
+            self._take_off(map, self.setting("swoop"))
+
+    def _steal(self, map) -> None:
+        """Off to an apple (the fullest tree's first), or else to a planted hedge, or once round the garden."""
+        from snake_quest.entity import Apple
+        from snake_quest.keeper import Tree
+
+        trees = [ent for ent in map.entities if ent.alive and isinstance(ent, Tree) and ent.apples]
+        if trees:
+            tree = max(trees, key=lambda ent: len(ent.apples))
+            self.prey = tree.apples[0]
+        else:
+            apples = [ent for ent in map.entities if ent.alive and isinstance(ent, Apple)]
+            hedges = sorted(map.hand.planted) if map.hand is not None else []
+            if apples:
+                self.prey = apples[pyxel.rndi(0, len(apples) - 1)]
+            elif hedges:
+                self.prey = hedges[pyxel.rndi(0, len(hedges) - 1)]
+        if self.prey is None:
+            self._take_off(map, self.setting("steal"))
+            return
+        self.crow.state = "fly"
+
+    def _prey_pos(self, map) -> Vec2 | None:
+        prey = self.prey
+        if isinstance(prey, tuple):
+            return map.tile_center(prey) if map.hand is not None and prey in map.hand.planted else None
+        return prey.pos + Vec2(4, 4) if prey.alive else None
+
+    def _feed(self, map) -> None:
+        """At the end of its perch: the apple eaten, or the hedge pulled up (back to the hand)."""
+        prey = self.prey
+        if isinstance(prey, tuple):
+            if map.hand is not None and prey in map.hand.planted:
+                map.hand.uproot(prey)
+                map.hand.left["hedge"] += 1
+        elif prey is not None and prey.alive:
+            prey.alive, prey.tally = False, False
+        map.game.sm.effect("caw")
+
+    def _mark(self, map, snake) -> None:
+        """A swoop: from where it is to where the tail will be when it gets there."""
+        crow, fps = self.crow, map.game.cfg.fps
+        start = crow.center
+        frames = int(self.setting("warn") * fps + (snake.segs[-1].pos - start).length() / self.DIVE)
+        index = max(len(snake) // 2, len(snake) - 1 - frames)
+        end = snake.segs[min(index, len(snake) - 1)].pos
+        crow.state, crow.line, self.left = "warn", (start, end), self.setting("warn")
+        map.game.sm.effect("caw")
+
+    def _dive(self, map, snake, speed: float) -> None:
+        crow = self.crow
+        start, end = crow.line
+        arrived = self._fly(end, self.DIVE * speed)
+        center = crow.center
+        hand = map.hand
+        tile = map.tile_xy(center)
+        if hand is not None and (tile in hand.planted or tile in hand.sprouts):  # into the hand's hedge: stunned
+            back = start - end
+            if back.length() > 0:
+                crow.pos = crow.pos + back * (6 / back.length())
+            crow.state, crow.line, self.left = "stunned", None, self.setting("stun")
+            map.game.sm.effect("boom")
+            return
+        if not arrived:
+            return
+        if snake.segment_at(center, self.STRIKE - snake.size) is not None:
+            map.game.sm.effect("hurt")
+            if not snake.cut(round(self.setting("chunk"))):
+                map.snake_killed = True
+        self._take_off(map, self.setting("swoop"))
+
+    def _call(self, map, snake, seconds) -> None:
+        self.call_left -= seconds
+        if self.call_left > 0:
+            return
+        self.call_left = self.setting("call")
+        self.flock = [bird for bird in self.flock if bird.alive]
+        if len(self.flock) < round(self.setting("flock")):
+            bird = self._jackdaw.at_pos(map.new_pos(snake=snake, away=96))
+            bird.asleep = False
+            self.flock.append(bird)
+            map.entities.append(bird)
+
+    def bar(self, map, snake):
+        return max(self.crow.health, 0) / self.full
+
+    def phase_message(self):
+        return "THE CROW STOOPS" if self.phase == 1 else "THE SKY GOES BLACK"
+
+    def defeated(self, map):
+        return not self.crow.alive
+
+    def target(self):
+        """The Crow while it is on the ground: the only time it can be bitten."""
+        return self.crow.center if self.crow.alive and self.crow.grounded else None
+
+    def swoop_line(self) -> "tuple[Vec2, Vec2] | None":
+        """The line of a swoop it is warning of (for the bot playing the hand)."""
+        return self.crow.line if self.crow.alive and self.crow.state == "warn" else None
+
+    def danger(self):
+        """Circles along a swoop's line while it warns and dives."""
+        if not self.crow.alive or self.crow.state not in ("warn", "dive") or self.crow.line is None:
+            return None
+        start, end = self.crow.line
+        steps = max(int((end - start).length() // 12), 1)
+        return [(start + (end - start) * (i / steps), self.DANGER) for i in range(steps + 1)]
+
+
 BOSSES: dict[str, type[Boss]] = {
-    cls.key: cls for cls in [Hunger, AlphaBoss, CoreBoss, OuroborosBoss, BroodMotherBoss, MothershipBoss, ClockworkBoss]
+    cls.key: cls
+    for cls in [Hunger, AlphaBoss, CoreBoss, OuroborosBoss, BroodMotherBoss, MothershipBoss, ClockworkBoss, CrowBoss]
 }
 
 

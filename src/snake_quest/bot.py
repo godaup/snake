@@ -6,11 +6,13 @@ is anything the running state can run on without a window (the tests' FakeGame, 
 
 from collections import Counter
 
+import omegaconf
 import pyxel
 
 from snake_quest.controls import PathController, nearest
 from snake_quest.entity import ENTITY_NAMES, Apple, Critter, GoldenApple, Turret, WeaponPickup
 from snake_quest.goals import CollectAllGoal, DefeatGoal, DestroyAllGoal, ExitGoal, LengthGoal, OxygenGoal, ScoreGoal
+from snake_quest.keeper import HandBot
 from snake_quest.space import AirTank
 from snake_quest.states import StateID
 from snake_quest.states.running import RunningStateHandler
@@ -50,6 +52,11 @@ LEVELS = (
     "keys",
     "conveyors",
     "clockwork",
+    "hedges",
+    "orchard",
+    "lures",
+    "lanterns",
+    "crow",
 )
 
 HUNT_LENGTH = 16  # segments: shorter, the bot eats before it hunts
@@ -123,14 +130,19 @@ def more_ammo(snake, map):
     return nearest(*kinds, wary=WARY)(snake, map) if kinds else None
 
 
-def play(game, level: str, seed: int, seconds: float) -> tuple[str, float]:
-    """One run of `level`: ("won" | "wall" | "tail" | "killed" | "timeout", seconds played)."""
+def play(game, level: str, seed: int, seconds: float, hand: bool = True) -> tuple[str, float]:
+    """One run of `level`: ("won" | "wall" | "tail" | "killed" | "timeout", seconds played). In the Keeper's levels the
+    pet plays as it does for people, and a HandBot keeps the garden (nobody without `hand`)."""
     pyxel.rseed(seed)
     game.level_counter = game.campaign.resolve(level)
     game.requested_states.clear()
     game.score = 0
     running = RunningStateHandler(game)
-    running.snake.controller = PathController(target)
+    if running.map.hand is not None:
+        plan = omegaconf.OmegaConf.to_container(running.map.cfg.get("keeper", []))
+        running.map.hand.player = HandBot(plan) if hand else None
+    else:
+        running.snake.controller = PathController(target)
     for _ in range(int(seconds * game.cfg.fps)):
         running.update()
         if StateID.LEVEL_COMPLETE in game.requested_states:
@@ -142,11 +154,11 @@ def play(game, level: str, seed: int, seconds: float) -> tuple[str, float]:
     return "timeout", running.elapsed
 
 
-def win_rate(game, level: str, seeds, seconds: float) -> tuple[float, list[float], Counter]:
+def win_rate(game, level: str, seeds, seconds: float, hand: bool = True) -> tuple[float, list[float], Counter]:
     """Fraction of runs won, the play times of the wins and the outcomes of all runs."""
     outcomes, wins = Counter(), []
     for seed in seeds:
-        outcome, elapsed = play(game, level, seed, seconds)
+        outcome, elapsed = play(game, level, seed, seconds, hand)
         outcomes[outcome] += 1
         if outcome == "won":
             wins.append(elapsed)

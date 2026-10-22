@@ -3,8 +3,8 @@
 Snake is the starting point, not the limit: **every level gives the game its own twist.** The campaign has
 **35 levels in 7 story arcs**, and each arc ends with a boss level (5, 10, 15, ..., 35). Difficulty and mechanics ramp
 up gradually. A level introduces at most one new mechanic, and later levels combine them. The first four arcs are below;
-the Caves, Space and the Workshop were built from the [Expansion](#expansion), which still plans a bonus arc where the
-snake moves on its own, and one-off levels.
+the Caves, Space and the Workshop were built from the [Expansion](#expansion), and so was a bonus arc after them,
+The Keeper, where the snake moves on its own. The Expansion still plans one-off levels.
 
 Ground rules:
 
@@ -129,15 +129,15 @@ mouse: build and remove walls, plant apple trees, set decoys that lure enemies a
 bot whose choices the player can read and predict. Goals as usual (score, length, survive), but reached for the snake.
 Designed in detail in [docs/arc8-keeper.md](docs/arc8-keeper.md) (a pet bot that eats the nearest apple by walking
 distance, keeps its choice and draws its way; a hand with budgets of hedges, trees, lures and lanterns; a second bot
-plays the hand in tests, and the levels must be lost without it).
+plays the hand in tests, and the levels must be lost without it); built (see M9).
 
 | #  | Level              | Twist                                                                  | Goal                      |
 |----|--------------------|------------------------------------------------------------------------|---------------------------|
-| 36 | Hedges             | Plant and lift hedges to lead the snake round thorns it can't see      | length                    |
-| 37 | Orchard            | Apple trees are the only food: where they stand steers the snake       | score, in time            |
-| 38 | Lures              | Beetles hunt lures before the tail; thorns and hedge pens stop them    | hold a length             |
-| 39 | Lanterns           | In the dark the snake sees only what is lit and walks to the lanterns  | collect all golden apples |
-| 40 | **Boss: The Crow** | Lands to steal, swoops at the tail, calls its flock; bitten only while down | defeat the boss      |
+| 36 | Hedges             | Plant and lift hedges to lead the snake round thorns it can't see      | length (exists)           |
+| 37 | Orchard            | Apple trees are the only food: where they stand steers the snake       | score, in time (exists)   |
+| 38 | Lures              | Beetles hunt lures before the tail; hedge pens stop them               | hold a length (exists)    |
+| 39 | Lanterns           | In the dark the snake sees only what is lit and walks to the lanterns  | all golden apples (exists) |
+| 40 | **Boss: The Crow** | Lands to steal, swoops at the tail, calls its flock; bitten only while down | defeat the boss (exists) |
 
 ### One-off levels
 
@@ -225,6 +225,18 @@ stall at one that can't move, plates and gates, reset levers), Pressure Plates (
 Keys (level 33: keys as segments, locks, clockwork mice), Conveyors (level 34: belts and levers), Boss: The
 Clockwork (level 35: jam its gears, hold its springs, bring keys to its locks; its hands cut). Open: boulders
 (see docs/arc7-workshop.md), playtesting (puzzles need people more than any other arc).
+
+### M9: The Keeper (bonus arc)
+
+Done: `keeper.pyxres` with layouts written from garden texts (`tools/draft_keeper.py`, `tools/gardens/`), a bonus
+arc after the story (`bonus: true`: the victory screen after level 35 as before, the arc open on the map once the
+Workshop is done, its own victory after level 40), the Keeper's waltz and three effects (plant, lift, caw), the pet
+(`PetController`: nearest food by walking distance, a kept choice, blind to thorns, its way drawn), the hand (mouse,
+keys or gamepad; budgets; sprouting hedges), Hedges (level 36), Orchard (level 37: apple trees), Lures (level 38:
+lures, hedge pens), Lanterns (level 39: lanterns in the dark), Boss: The Crow (level 40: it steals, swoops and calls
+its flock; a hedge across a swoop brings it down). A `HandBot` plays the hand in tests, and a slow test checks that
+the pet left alone loses every level. Open: playtesting (above all: is the pet's way readable enough to plan with?),
+the "keeper's breath" slow-down (see docs/arc8-keeper.md), the Shepherd as a Keeper level.
 
 ### M5: Release
 

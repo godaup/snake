@@ -33,12 +33,18 @@ class MissionStateHandler(OverlayStateHandler):
         level_map = self.running.map
         level = level_map.level
         return {
-            "kicker": f"LEVEL {level.number} OF {len(self.game.campaign)}  -  {level.arc.upper()}"
-            f"  -  {self.game.difficulty.label}",
+            "kicker": f"{self.kicker(level)}  -  {self.game.difficulty.label}",
             "title": str(level_map.cfg.get("title", level.name)).upper(),
             "intro": [str(line) for line in level_map.cfg.get("intro", [])],
             "goals": [goal.describe() for goal in level_map.goals],
         }
+
+    def kicker(self, level) -> str:
+        """Where the level is: its number in the story, or in the bonus arcs after it."""
+        last = self.game.campaign.story_last
+        if level.bonus:
+            return f"BONUS LEVEL {level.number - last} OF {len(self.game.campaign) - last}  -  {level.arc.upper()}"
+        return f"LEVEL {level.number} OF {last}  -  {level.arc.upper()}"
 
     def update(self) -> None:
         self.t += self.game.dt.total_seconds()

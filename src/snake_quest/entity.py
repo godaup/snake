@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 import pyxel
 
 from snake_quest.palettes import Palette
+from snake_quest.tiles import HAZARD_TILE
 from snake_quest.utils import Vec2
 from snake_quest.widget import WIDGET_MARGIN, Widget
 
@@ -390,9 +391,11 @@ class Hunter(Entity):
     BITE = 5  # px from its centre to a segment
     RETREAT = 2.5  # seconds it backs off after a bite
     CHUNK = 6  # segments a bite takes off the tail
+    PENNED = 3.0  # seconds a hunter shut in by the Keeper's hedges lasts (no way to the tail, none to a lure)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.penned = 0.0  # seconds shut in so far
         self.state = "asleep"  # asleep, hunt, rest, detour or retreat
         self.left = pyxel.rndf(*self.NAP)  # seconds until the state ends
         self.health = 1  # one shot
@@ -429,10 +432,17 @@ class Hunter(Entity):
         self._begin("rest", pyxel.rndf(*self.PAUSE) * factor)
 
     def update(self, snake: "Snake", map: "Map"):
+        garden = getattr(map, "hand", None) is not None
+        if garden and map.tile_at(self.center) == HAZARD_TILE:  # in the Keeper's garden thorns kill hunters
+            self.alive, self.killed = False, True
+            return
         self.left -= map.game.dt.total_seconds()
         speed = map.game.difficulty.speed
         if self.state == "asleep":
-            if self.left <= 0 or (snake.head.pos - self.center).length() < self.WAKE:
+            napping, wake = self.left <= 0, self.WAKE
+            if garden and map.darkness is not None:  # the Keeper's dark garden: only light wakes it (see Lantern)
+                napping, wake = False, map.darkness.light
+            if napping or (snake.head.pos - self.center).length() < wake:
                 self._begin("hunt", pyxel.rndf(*self.HUNT))
             return
         if self.left <= 0:
@@ -449,12 +459,24 @@ class Hunter(Entity):
             self._move(self._next_step(self._detour, None, map) - self.center, self.DETOUR_SPEED * speed)
             return
         field, goal = self.quarry(snake, map)
+        if garden and map.tile_xy(self.center) not in field:  # penned in by hedges: it gives up
+            self.penned += map.game.dt.total_seconds()
+            if self.penned >= self.PENNED:
+                self.alive, self.killed = False, True
+            return
+        self.penned = 0.0
         self._move(self._next_step(field, goal, map) - self.center, self.SPEED * speed)
         if any((seg.pos - self.center).length() < self.BITE for seg in snake.segs[1:]):
             self.bite(snake, map)
 
     def quarry(self, snake: "Snake", map: "Map") -> tuple[dict[tuple[int, int], int], Vec2]:
-        """What it hunts: walking distances to it and its position (the tail)."""
+        """What it hunts: walking distances to it and its position (the tail, or a Keeper's lure near it)."""
+        hand = getattr(map, "hand", None)
+        lure = hand.lure_for(self) if hand is not None else None
+        if lure is not None:
+            field = map.field(f"lure{id(lure)}", lure.center)
+            if map.tile_xy(self.center) in field:
+                return field, lure.center
         return map.chase(snake), snake.segs[-1].pos
 
     def _next_step(self, distance: dict[tuple[int, int], int], goal: Vec2 | None, map: "Map") -> Vec2:
@@ -485,14 +507,21 @@ class Hunter(Entity):
             map.snake_killed = True
 
     def on_intersect(self, snake: "Snake", map: "Map"):
-        """The snake runs into it head first."""
-        if not self.asleep:
+        """The snake runs into it head first: the end, except in the Keeper's garden, where the snake can't fight
+        and a beetle met head first only bites (not while it backs off from a bite)."""
+        if self.asleep:
+            return
+        if getattr(map, "hand", None) is None:
             map.snake_killed = True
+        elif self.state != "retreat":
+            self.bite(snake, map)
 
     def draw(self, offset: "Vec2"):
-        closed = self.state in ("asleep", "rest")
+        closed = self.state in ("asleep", "rest") or self.penned > 0
         self.img_x = 8 * (self.ASLEEP_IMG_X if closed else self._img_x)
         if self.state == "retreat" and pyxel.frame_count % 6 < 3:  # blinks while backing off
+            return
+        if self.penned > self.PENNED / 2 and pyxel.frame_count % 4 < 2:  # fading away, shut in
             return
         super().draw(offset)
 
@@ -1051,6 +1080,6 @@ class Enemy(Entity):
             self.wdg.draw()
 
 
-# the later arcs' entities (caves: arc 5, space: arc 6, workshop: arc 7) register themselves; they build on the
-# classes above
-from snake_quest import caves, space, workshop  # noqa: E402, F401
+# the later arcs' entities (caves: arc 5, space: arc 6, workshop: arc 7, keeper: the bonus arc) register themselves;
+# they build on the classes above
+from snake_quest import caves, keeper, space, workshop  # noqa: E402, F401

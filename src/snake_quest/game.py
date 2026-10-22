@@ -173,12 +173,13 @@ class Game:
         first level. Each arc has its own highscores, so the score starts again from 0 in the next arc (the level
         complete screen has recorded it)."""
         arc = self.campaign.arc_of(self.level_counter)
+        ending = self.level_counter in self.campaign.endings  # the story's last level or the bonus arc's
         if self.level_counter == arc.last:
             self.profile.complete_arc(arc.name)
-            if self.level_counter < len(self.campaign):
+            if not ending:
                 self.start_level = self.level_counter + 1
                 self.score = 0
-        if self.level_counter == len(self.campaign):
+        if ending:
             self.change_state(StateID.VICTORY)
             return
         self.level_counter += 1

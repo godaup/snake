@@ -1,0 +1,61 @@
+tm: 4  # tools/draft_keeper.py from tools/gardens/crow.txt
+width: 320
+height: 192
+music: boss
+
+start:
+  x: 164
+  y: 152
+
+darkness:  # bright until the Crow's third phase brings dusk (see its `light`)
+  light: 400
+
+hand:
+  hedge: 10
+  tree: 3
+  lure: 3
+  lantern: 3
+
+boss:
+  type: crow
+  pos: [160, 50]
+  health: 6
+  steal: 4
+  perch: 3.5
+  swoop: 6
+  warn: 1.6
+  stun: 3.5
+  chunk: 6
+  call: 6
+  flock: 0
+  light: [400, 56]
+  phases:
+    - {below: 1}
+    - {below: 0.67}
+    - {below: 0.34, flock: 3, swoop: 5}
+
+timers:
+  apples:
+    duration: 0
+    frequency: 3
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
+      max: 2
+      away: 48
+
+goal:
+  boss: defeated
+
+title: "Boss: The Crow"
+intro:
+  - "The Crow has come for your garden. It lands to"
+  - "feed, swoops at the tail, then calls its flock."
+  - "Your snake can bite it only while it is down:"
+  - "a hedge across its swoop brings it down."
+
+keeper:  # for bots: trees by the middle, lanterns there at dusk; hedges across swoops and lures (HandBot.react)
+  - tree: [[13, 10], [25, 10]]
+  - after: {phase: 2}
+  - lantern: [[16, 12], [23, 12], [19, 16]]

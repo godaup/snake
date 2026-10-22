@@ -8,12 +8,15 @@
     boss     a boss's pressure (`Boss.pressure` keys, e.g. The Hunger's rise); its `relief` keys are divided by it
     light    light radii in dark levels
 
+The Keeper's tool budgets (`hand`) are divided by the goals factor, rounded up: easier gives more.
+
 Where scaling isn't enough, a level sets absolute values per difficulty, merged over the scaled level:
 
     difficulty:
       hard: {goal: {score: 70}}
 """
 
+import math
 from dataclasses import dataclass
 
 import omegaconf
@@ -96,6 +99,8 @@ def apply(cfg: omegaconf.DictConfig, difficulty: Difficulty) -> omegaconf.DictCo
         factor = d.hostile if ENTITY_NAMES[timer.callback.entity].hostile else d.helpful
         timer.duration = timer.duration * factor
         timer.frequency = timer.frequency * factor
+    for tool in cfg.get("hand", {}):
+        cfg.hand[tool] = max(0, math.ceil(cfg.hand[tool] / d.goals))
     if "darkness" in cfg:
         cfg.darkness.light = cfg.darkness.light * d.light
     if "boss" in cfg:

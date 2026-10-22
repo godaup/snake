@@ -32,6 +32,9 @@ SOUNDS = {
     "shoot": {"steps": "a4 e4 a3", "tone": "s", "volume": 4, "speed": 2, "effect": "s"},
     "pickup": {"steps": "g3 c4 e4 g4", "tone": "p", "volume": 5, "speed": 4},
     "boom": {"steps": "c2 g1 d1 a0 - -", "tone": "n", "volume": 7, "speed": 5, "effect": "s"},
+    "plant": {"steps": "e3 c3 g2", "tone": "n", "volume": 3, "speed": 4},
+    "lift": {"steps": "g2 c3 e3", "tone": "n", "volume": 3, "speed": 4},
+    "caw": {"steps": "a3 g3 d3 - r a3 f3 c3 -", "tone": "s", "volume": 4, "speed": 5, "effect": "s"},
 }
 
 

@@ -117,21 +117,41 @@ class Hud:
         pyxel.rect(0, y, self.width, self.footer_h, self.game.cfg.footer.bg)
         pyxel.line(0, y, self.width - 1, y, COL_BORDER)
         entries = self.goal_entries()
-        slot_w = self.width // max(len(entries), 1)
+        left = 0
+        hand = getattr(self.map, "hand", None)
+        if hand is not None:  # the Keeper: the hand's tools take the left half
+            left = self.width // 2
+            self.draw_toolbar(hand, y)
+        slot_w = (self.width - left) // max(len(entries), 1)
         text_y = y + (self.footer_h - pyxel.FONT_HEIGHT) // 2 + 1
         for index, (status, progress) in enumerate(entries):
-            x = index * slot_w + MARGIN
+            x = left + index * slot_w + MARGIN
             done = progress is not None and progress >= 1
             pyxel.text(x, text_y, status, COL_ACCENT if done else COL_VALUE)
             if progress is None:
                 continue
             bar_x = x + len(status) * pyxel.FONT_WIDTH + MARGIN
-            bar_w = (index + 1) * slot_w - MARGIN - bar_x
+            bar_w = left + (index + 1) * slot_w - MARGIN - bar_x
             if bar_w < 8:
                 continue
             bar_y = y + (self.footer_h - BAR_H) // 2 + 1
             pyxel.rect(bar_x, bar_y, bar_w, BAR_H, COL_BAR_BG)
             pyxel.rect(bar_x, bar_y, round(bar_w * progress), BAR_H, COL_BAR_DONE if done else COL_BAR)
+
+    def draw_toolbar(self, hand, y: int) -> None:
+        """One slot per tool: its key, its sprite and how many are left; the chosen one framed."""
+        from snake_quest.keeper import ICONS
+
+        slot_w = (self.width // 2) // len(hand.tools)
+        text_y = y + (self.footer_h - pyxel.FONT_HEIGHT) // 2 + 1
+        for index, tool in enumerate(hand.tools):
+            x = index * slot_w + MARGIN
+            if tool == hand.tool:
+                pyxel.rectb(x - 2, y + 1, slot_w - MARGIN, self.footer_h - 1, COL_ACCENT)
+            pyxel.text(x, text_y, str(index + 1), COL_LABEL)
+            u, v = ICONS[tool]
+            pyxel.blt(x + 6, y + 1, 0, u * 8, v * 8, 8, 8, colkey=0)
+            pyxel.text(x + 16, text_y, str(hand.left[tool]), COL_VALUE if hand.left[tool] else COL_BORDER)
 
     # ---- boss ---------------------------------------------------------------------------------------------------
 

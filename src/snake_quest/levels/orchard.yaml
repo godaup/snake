@@ -1,0 +1,29 @@
+tm: 1  # tools/draft_keeper.py from tools/gardens/orchard.txt
+width: 320
+height: 192
+
+start:
+  x: 84
+  y: 120
+
+hand:
+  tree: 3
+  hedge: 6
+
+goal:
+  score: 40
+  time_limit: 180
+
+difficulty:  # more points would grow the snake too long for the garden: harder means less time
+  hard: {goal: {score: 40}}
+  nightmare: {goal: {score: 40}}
+
+title: Orchard
+intro:
+  - "Nothing grows here but what you plant."
+  - "Trees (key 1) drop apples once they have grown,"
+  - "and your snake eats the nearest: plant where you"
+  - "want it to go. Golden apples lie behind thorns."
+
+keeper:  # for bots: three trees far apart, so the snake walks a wide loop between them
+  - tree: [[11, 3], [11, 19], [28, 11]]

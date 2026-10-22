@@ -1,0 +1,39 @@
+tm: 0  # tools/draft_keeper.py from tools/gardens/hedges.txt
+width: 320
+height: 192
+
+start:
+  x: 68
+  y: 64
+
+hand:  # the player's tools (see keeper.py)
+  hedge: 12
+
+timers:
+  apples:  # one apple at a time, in turn at a spot in each quarter: the short way to the next crosses thorns
+    duration: 0.5
+    frequency: 1
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: fallen
+      max: 1
+      spots: [[108, 80], [204, 80], [204, 144], [108, 144]]
+
+goal:
+  length: 40
+
+difficulty:  # the four gaps take twelve hedges whatever the difficulty
+  hard: {hand: {hedge: 12}}
+  nightmare: {hand: {hedge: 12}}
+
+title: Hedges
+intro:
+  - "Your snake moves on its own now. It goes for the"
+  - "nearest apple, and it doesn't know thorns."
+  - "Plant hedges (left click, or space) to lead it"
+  - "round them. Right click (or X) lifts one again."
+
+keeper:  # for bots: plug the four thorny gaps, the far ones first
+  - hedge: [[25, 13], [26, 13], [27, 13], [19, 14], [19, 15], [19, 16], [21, 8], [21, 9], [21, 10]]
+  - hedge: [[13, 11], [14, 11], [15, 11]]

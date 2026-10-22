@@ -12,6 +12,7 @@ from snake_quest.campaign import Level
 from snake_quest.darkness import Darkness
 from snake_quest.entity import ENTITY_NAMES, ENTITY_TILES, Entity
 from snake_quest.goals import Goal, load_goals
+from snake_quest.keeper import Hand
 from snake_quest.tiles import (
     BELT_TILES,
     DOOR_OPEN_TILE,
@@ -76,6 +77,7 @@ class Map:
         self.header: int = game.cfg.header.h
         self.tm: int = self.cfg.tm
         self.game = game
+        self.hand: Hand | None = None  # the Keeper's levels: the player's hand (see keeper.py), made below
         self.timers: list[Timer] = []
         # create initial game objects
         self.entities: list[Entity] = []
@@ -176,6 +178,8 @@ class Map:
         self.door_warn = float(self.cfg.airlock.warn) if self.doors else 0.0
         self.door_left = self.door_cycle  # seconds until the doors swap
         self.closing: set[tuple[int, int]] = set()  # open doors about to shut (blinking; bots keep out)
+        if "hand" in self.cfg:
+            self.hand = Hand(self)
 
     def update(self, snake: "Snake"):
         # remove dead entities
@@ -197,6 +201,8 @@ class Map:
         self._step_on_tiles(snake)
         if self.works:
             self.works.update(snake)
+        if self.hand:
+            self.hand.update(snake)
         if self.torn:
             self._regrow_webs(snake, self.game.dt.total_seconds())
         if self.doors:
@@ -266,6 +272,8 @@ class Map:
         if self.closing and pyxel.frame_count % 6 < 3:  # doors about to shut blink
             for x, y in self.closing:
                 pyxel.rectb(x * 8 + offset.x, y * 8 + header + offset.y, 8, 8, COL_DOOR_WARN)
+        if self.hand:
+            self.hand.draw(offset)
         for ent in self.entities:
             ent.draw(offset)
         for proj in self.projectiles:
@@ -551,10 +559,18 @@ class Map:
 
     def create_callback(self, description: dict) -> Callable[["Map", "Snake"], None]:
         if description["type"] == "spawn":
+            spots = list(description.get("spots", []))  # optional: positions taken in turn
 
             def callback(map: "Map", snake: "Snake"):
                 # generate next entity
-                if "pos" in description:
+                if spots:
+                    limit = description.get("max")
+                    ent_cls = ENTITY_NAMES[description["entity"]]
+                    if limit is not None and sum(isinstance(e, ent_cls) and e.alive for e in map.entities) >= limit:
+                        return
+                    new_pos = Vec2(*spots[0])
+                    spots.append(spots.pop(0))
+                elif "pos" in description:
                     new_pos = Vec2(*description["pos"])
                 else:
                     new_pos: Vec2 = map.new_pos(

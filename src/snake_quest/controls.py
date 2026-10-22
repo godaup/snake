@@ -105,6 +105,7 @@ class PathController(Controller):
     DODGE = 5  # px kept from a hostile shot (turrets), along its flight
     TRAIL = 40  # px: a hostile entity this close to the tail gets a mine dropped in its way
     DEFENCE = 64  # px: while not hunting, it only turns to aim at hostile entities that never move this close
+    THORNS = True  # thorns are walls to its way-finding (not to the Keeper's pet, which doesn't know them)
     AIM_PATIENCE = 48  # frames it turns to aim at most, then AIM_PATIENCE frames not (so it never circles forever)
 
     def __init__(self, target: Callable[["Snake", "Map"], Vec2 | None]):
@@ -314,7 +315,7 @@ class PathController(Controller):
             # cached: only the walls that stay (the trail comes and goes); thorns are walls for finding the way, though
             # an arc may still cross them when there is no other
             self._walls[cell] = (map.check_on_wall(center) and map.tile_xy(center) not in map.trail) or (
-                map.tile_at(center) == HAZARD_TILE
+                self.THORNS and map.tile_at(center) == HAZARD_TILE
             )
         if map.trail and not self._walls[cell]:
             return map.tile_xy(Vec2(cell[0] * self.CELL, cell[1] * self.CELL)) in map.trail

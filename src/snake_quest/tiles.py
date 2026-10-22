@@ -52,8 +52,9 @@ WALL_TILES = frozenset(
     | {(mask, WALL_VARIANT_ROW) for mask in range(16)}
 )
 # floor decorations (grass, flowers, stones): drawn, but walkable and free for spawning
-# 6, 7: the caves' pebbles and shards; 8, 9: stars, a galaxy; 10, 11: the workshop's bench grid, an oil spot
-DECOR_TILES = frozenset((k, 9) for k in range(12))
+# 6, 7: the caves' pebbles and shards; 8, 9: stars, a galaxy; 10, 11: the workshop's bench grid, an oil spot;
+# 12, 13: the Keeper's clover and stepping stones
+DECOR_TILES = frozenset((k, 9) for k in range(14))
 FLOOR_TILES = frozenset({EMPTY_TILE} | DECOR_TILES)
 # level design helper marking the intended route (e.g. through the maze); hidden until revealed
 PATH_TILE = (3, 0)
