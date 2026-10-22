@@ -1,3 +1,5 @@
+"""The main menu."""
+
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
@@ -31,6 +33,9 @@ DIFFICULTY_ITEM = 1
 
 
 class MenuStateHandler(GameStateHandler):
+    """The main menu over the backdrop: play, difficulty, highscores, customize, settings, credits and quit, with the
+    keys or the mouse."""
+
     def __init__(self, game: "Game"):
         super().__init__(game=game)
         self.title = Title("SNAKE QUEST")
@@ -61,12 +66,14 @@ class MenuStateHandler(GameStateHandler):
         profile.save()
 
     def label(self, index: int) -> str:
+        """Item `index`'s text; the difficulty item shows the difficulty chosen."""
         label = self.items[index][0]
         if index == DIFFICULTY_ITEM:
             return f"{label}  {self.game.profile.difficulty.upper()}"
         return label
 
     def item_rect(self, index: int) -> tuple[int, int, int, int]:
+        """(x, y, w, h) of item `index`, for drawing it and for the mouse."""
         return (self.game.cfg.width - PANEL_W) // 2 + 4, self.items_top + index * ITEM_SPACING - 2, PANEL_W - 8, 10
 
     def update(self) -> None:

@@ -18,6 +18,9 @@ if TYPE_CHECKING:
 
 
 class Goal(ABC):
+    """A win condition, built from one entry `key: value` of a level's `goal` section; the level is won once every
+    goal's `done` holds. Subclasses are listed in GOALS."""
+
     key: ClassVar[str]
 
     def __init__(self, value, map: "Map"):
@@ -27,7 +30,8 @@ class Goal(ABC):
         """Called every running frame, for goals that track time."""
 
     @abstractmethod
-    def done(self, map: "Map", snake: "Snake") -> bool: ...
+    def done(self, map: "Map", snake: "Snake") -> bool:
+        """Whether the goal holds now."""
 
     @abstractmethod
     def describe(self) -> str:
@@ -146,6 +150,7 @@ class TimeLimitGoal(Goal):
         self.elapsed = datetime.timedelta(0)
 
     def left(self) -> float:
+        """Seconds left before the time is up."""
         return max(self.value - self.elapsed.total_seconds(), 0.0)
 
     def update(self, map, snake, dt):
@@ -282,6 +287,7 @@ class OxygenGoal(Goal):
         self.beep = 0.0
 
     def refill(self) -> None:
+        """An air tank: refill `tank` of a full suit, at most to full."""
         self.left = min(1.0, self.left + self.tank)
 
     def update(self, map, snake, dt):
@@ -371,6 +377,7 @@ class CollectAllGoal(Goal):
         return len(self.seen) - len(alive), len(self.seen)
 
     def remaining(self, map) -> int:
+        """How many of them are still to be collected."""
         collected, total = self.counts(map)
         return total - collected
 
@@ -394,6 +401,7 @@ def _count(n, singular: str, plural: str | None = None) -> str:
 
 
 def _fraction(value: float, target: float) -> float:
+    """`value` as a share of `target`, within 0..1 (1 for a target of 0)."""
     return 1.0 if target <= 0 else min(max(value / target, 0.0), 1.0)
 
 
@@ -444,6 +452,7 @@ GOALS: dict[str, type[Goal]] = {
 
 
 def load_goals(cfg, map: "Map") -> list[Goal]:
+    """The goals of a level's `goal` section; raises on an empty section or an unknown goal type."""
     if not cfg:
         raise ValueError("a level needs at least one goal, otherwise it is won on the first frame")
     unknown = set(cfg) - set(GOALS)

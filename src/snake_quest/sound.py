@@ -1,3 +1,5 @@
+"""Music and sound effects: which sound slots hold what, and `SoundManager`, which plays them."""
+
 import pyxel
 
 # sound slot of each effect, written by tools/compose_effects.py (slots 8-11 hold the menu theme)
@@ -41,6 +43,9 @@ FULL_GAIN = 0.125
 
 
 class SoundManager:
+    """Plays the music and the effects at the volumes from the settings; `effects` / `music` False (from `--mute`) keeps
+    it quiet."""
+
     def __init__(self, effects: bool = True, music: bool = True):
         self.effects: bool = effects
         self.music: bool = music
@@ -70,6 +75,7 @@ class SoundManager:
 
     @staticmethod
     def interrupt():
+        """Stop everything playing on all channels."""
         pyxel.stop()
 
     def play(self, music: int | tuple[int, ...] | None = None):

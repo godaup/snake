@@ -1,3 +1,6 @@
+"""A running level: its layout (the tilemap), terrain, entities, timers, shots, goals and boss, loaded from the level's
+YAML file."""
+
 import datetime
 from collections import deque
 from collections.abc import Callable
@@ -63,6 +66,10 @@ TRAIL_GAP = 16  # px: no trail is laid this close to the head (a snake that is s
 
 
 class Map:
+    """The level `level` as played at the game's difficulty. It loads the level file and its tilemaps, lifts entity and
+    path tiles out of the tilemap, autotiles the walls, and every frame (`update`) lets the terrain, entities, shots,
+    timers, boss and goals act on the snake."""
+
     def __init__(self, level: Level, game: "Game"):
         self.level = level
         # the level as tuned for medium, scaled for the difficulty played
@@ -183,6 +190,8 @@ class Map:
 
     def update(self, snake: "Snake"):
         # remove dead entities
+        """One frame: clear out what died (counting the defeated and the eaten), apply the terrain under the snake, let
+        touched entities react, then update entities, shots, timers, breadcrumbs, the boss and the goals."""
         deads = [ent for ent in self.entities if not ent.alive]
         for dead in deads:
             self.defeated += dead.tally and dead.killed
@@ -240,6 +249,8 @@ class Map:
             goal.update(map=self, snake=snake, dt=self.game.dt)
 
     def draw(self, offset: Vec2):
+        """Draw the tilemap (tinted; the floor lit in dark levels), portal sparks, breadcrumbs, the Workshop's machines,
+        doors about to shut, the hand's work, entities and shots, shifted by the camera's `offset`."""
         if self.darkness and not self.game.cfg.debug:
             pyxel.pal(0, self.darkness.floor)
         for colour, replacement in self.tint.items():
@@ -431,6 +442,7 @@ class Map:
         return ICE_GRIP if self.ice and self.tile_at(pos) == ICE_TILE else self.grip
 
     def tile_center(self, tile: tuple[int, int]) -> Vec2:
+        """The world position of the centre of tilemap tile `tile` (x, y in tiles)."""
         return Vec2(tile[0] * 8 + 4, tile[1] * 8 + 4 + self.header)
 
     def chase(self, snake: "Snake") -> dict[tuple[int, int], int]:
@@ -447,6 +459,7 @@ class Map:
         return self._field(name, origin)
 
     def _field(self, name: str, origin: Vec2) -> dict[tuple[int, int], int]:
+        """The shared walking distances `name` from `origin`, computed again once they are CHASE_EVERY seconds old."""
         if name not in self._fields or self._field_age[name] >= CHASE_EVERY:
             self._fields[name], self._field_age[name] = self.walking_distances(origin), 0.0
         return self._fields[name]
@@ -471,6 +484,7 @@ class Map:
         self.crumbs_shown = 0.0
 
     def tile_xy(self, pos: Vec2) -> tuple[int, int]:
+        """The tilemap tile (x, y in tiles) at world position `pos`."""
         return int(pos.x) // 8, (int(pos.y) - self.header) // 8
 
     def walking_distances(self, origin: Vec2) -> dict[tuple[int, int], int]:
@@ -496,6 +510,7 @@ class Map:
         return pyxel.tilemaps[self.tm].pget(pos.x // 8, (pos.y - self.header) // 8)
 
     def check_on_wall(self, pos: Vec2) -> bool:
+        """Whether a wall is at `pos`: what kills the head. A lock is none while the snake carries its key."""
         tile = self.tile_at(pos)
         if tile not in WALL_TILES:
             return False
@@ -525,6 +540,8 @@ class Map:
         self._walls_changed(tile)
 
     def _walls_changed(self, tile: tuple[int, int]) -> None:
+        """After a tile changed between wall and floor: autotile the walls around it, and make bots and hunters find
+        their ways again."""
         tilemap = pyxel.tilemaps[self.tm]
         width, height = self.cfg.width // 8, self.cfg.height // 8
 
@@ -558,6 +575,9 @@ class Map:
             tilemap.pset(x, y, tile)
 
     def create_callback(self, description: dict) -> Callable[["Map", "Snake"], None]:
+        """The function a level timer calls, from its `callback` section: `type: spawn` puts down entities (at `pos`, at
+        `spots` in turn, or at a free place, optionally `count` at once, up to `max`, with settings `with`), `type:
+        grow` adds `value` segments."""
         if description["type"] == "spawn":
             spots = list(description.get("spots", []))  # optional: positions taken in turn
 
@@ -605,4 +625,5 @@ class Map:
 
     def check_win(self, snake: "Snake") -> bool:
         # all conditions must be met
+        """Whether every goal of the level holds."""
         return all(goal.done(map=self, snake=snake) for goal in self.goals)

@@ -1,7 +1,11 @@
+"""The game's screens (states) and their handlers, one module each."""
+
 from enum import Enum
 
 
 class StateID(Enum):
+    """The game's states; `Game` keeps one handler for each."""
+
     MENU = 0
     PAUSE = 1
     RUNNING = 2

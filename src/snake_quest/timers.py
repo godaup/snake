@@ -1,3 +1,5 @@
+"""Level timers (the `timers` section of a level file): call something after a while, once or again and again."""
+
 import datetime
 from collections.abc import Callable
 from typing import TYPE_CHECKING
@@ -8,6 +10,9 @@ if TYPE_CHECKING:
 
 
 class Timer:
+    """Calls `callback(map=, snake=)` once `duration` of game time has passed, then every `frequency` (None: only once),
+    at most `fire_n` times (0: no limit). It is done once `alive` is False; `enabled` pauses it."""
+
     def __init__(
         self,
         duration: datetime.timedelta,
@@ -25,6 +30,7 @@ class Timer:
         self.alive = True
 
     def update(self, map: "Map", snake: "Snake"):
+        """Advance by the frame's game time (`map.game.dt`) and fire when due."""
         if self.enabled and self.alive:
             self._measured += map.game.dt
             if self._measured > self.duration:

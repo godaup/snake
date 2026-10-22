@@ -5,6 +5,8 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class Palette:
+    """A snake's colours: the head's and the body's, repeated along it."""
+
     name: str
     head: int
     body: tuple[int, ...]  # repeated along the body, segment by segment

@@ -14,6 +14,8 @@ SCALE_MIN, SCALE_PULSE = 4, 3
 
 
 class CountdownHandler(OverlayStateHandler):
+    """3-2-1-GO! over the frozen level after the mission briefing, then the level runs."""
+
     def __init__(self, game):
         super().__init__(game=game)
         self.text = BigText(scale=SCALE_MIN)
@@ -27,6 +29,7 @@ class CountdownHandler(OverlayStateHandler):
         return False
 
     def label(self) -> str:
+        """The number to show, or GO! at the end."""
         return str(math.ceil(self.remaining)) if self.remaining > 0 else "GO!"
 
     def scale(self) -> float:

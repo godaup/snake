@@ -49,10 +49,13 @@ class BigText:
 
     @property
     def width(self) -> int:
+        """The drawn width in px of the last text."""
         return 0 if self.image is None else self.image.width * self.scale
 
 
 class Hud:
+    """Draws the header, the footer and the boss bar over a running level."""
+
     def __init__(self, game: "Game", level_map: "Map", snake: "Snake"):
         self.game = game
         self.map = level_map
@@ -65,6 +68,7 @@ class Hud:
         self.footer_h = game.cfg.footer.h
 
     def draw(self) -> None:
+        """Draw header, footer and, in a boss level, the boss bar."""
         self.draw_header()
         self.draw_footer()
         if self.map.boss:
@@ -73,6 +77,7 @@ class Hud:
     # ---- header -------------------------------------------------------------------------------------------------
 
     def level_lines(self) -> tuple[str, str]:
+        """The header's left lines: the level number and the level's title."""
         return f"LEVEL {self.game.level_counter}", str(self.map.cfg.get("title", self.map.level.name))
 
     def right_lines(self) -> tuple[str, str]:
@@ -91,6 +96,7 @@ class Hud:
         return f"BEST {best}", length
 
     def draw_header(self) -> None:
+        """The header: level and title, the score in big digits behind an apple, best score (or a boost) and length."""
         pyxel.rect(0, 0, self.width, self.header_h, self.game.cfg.header.bg)
         pyxel.line(0, self.header_h - 1, self.width - 1, self.header_h - 1, COL_BORDER)
         top, bottom = 3, self.header_h - pyxel.FONT_HEIGHT - 3
@@ -110,9 +116,12 @@ class Hud:
     # ---- footer -------------------------------------------------------------------------------------------------
 
     def goal_entries(self) -> list[tuple[str, float | None]]:
+        """Status text and progress (or None) of every goal of the level."""
         return [(goal.status(self.map, self.snake), goal.progress(self.map, self.snake)) for goal in self.map.goals]
 
     def draw_footer(self) -> None:
+        """The footer: a slot for each goal with its status and a progress bar; in the Keeper's levels the hand's
+        toolbar takes the left half."""
         y = self.footer_y
         pyxel.rect(0, y, self.width, self.footer_h, self.game.cfg.footer.bg)
         pyxel.line(0, y, self.width - 1, y, COL_BORDER)

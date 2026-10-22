@@ -177,6 +177,8 @@ class PathController(Controller):
         return [box for box in boxes if not (box[0] <= head.x <= box[2] and box[1] <= head.y <= box[3])], boxes
 
     def _steer(self, snake, map):
+        """The plain steering choice, before `steer` swaps it on mirrored floor: try the arcs and take the best (see the
+        class)."""
         self._threats = self.threats(snake, map)
         # what never moves but is a crash to touch (planets): kept clear by SOLID px, however far ahead
         self._solids = [
@@ -305,9 +307,12 @@ class PathController(Controller):
         return aim is not None and abs(aim[0]) <= aim[1]
 
     def _cell(self, pos: Vec2) -> tuple[int, int]:
+        """The bot's grid cell (CELL px) at `pos`."""
         return int(pos.x) // self.CELL, int(pos.y) // self.CELL
 
     def _wall(self, map: "Map", cell: tuple[int, int]) -> bool:
+        """Whether `cell` is closed to the bot's way-finding: walls (cached until the map's walls change), thorns, the
+        trail, doors about to shut and a cave-in's cracked floor."""
         if map is not self._walls_map or map.walls_version != self._walls_version:
             self._walls, self._walls_map, self._walls_version = {}, map, map.walls_version
         if cell not in self._walls:

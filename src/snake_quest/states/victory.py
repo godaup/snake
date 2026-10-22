@@ -1,3 +1,5 @@
+"""The victory screen."""
+
 from snake_quest.states.death import DeathStateHandler
 
 COL_VICTORY = 11

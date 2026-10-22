@@ -17,6 +17,8 @@ ITEM_SPACING = 12
 
 
 class PauseStateHandler(OverlayStateHandler):
+    """PAUSED over the frozen level: resume or go back to the menu."""
+
     def __init__(self, game):
         super().__init__(game=game)
         self.title = BigText(scale=2)
@@ -31,9 +33,11 @@ class PauseStateHandler(OverlayStateHandler):
 
     @property
     def top(self) -> int:
+        """The panel's top in screen px."""
         return int(self.area_center_y - PANEL_H / 2)
 
     def item_rect(self, index: int) -> tuple[int, int, int, int]:
+        """(x, y, w, h) of item `index`, for drawing it and for the mouse."""
         width = self.game.cfg.width
         return (width - PANEL_W) // 2 + 4, self.top + 30 + index * ITEM_SPACING - 2, PANEL_W - 8, 10
 

@@ -18,6 +18,7 @@ def level_number(value: str) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
+    """The command line's options."""
     parser = argparse.ArgumentParser(prog="snake-quest", description="A level-based snake game built with Pyxel.")
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     parser.add_argument(
@@ -56,6 +57,7 @@ def settings_overrides(args: argparse.Namespace) -> dict:
 
 
 def main(argv: list[str] | None = None) -> None:
+    """Run the game with the options in `argv` (default: the command line), or render a level with --preview."""
     args = build_parser().parse_args(argv)
     if args.preview:
         preview(load_campaign().level(args.level), args.preview)
@@ -67,6 +69,7 @@ def main(argv: list[str] | None = None) -> None:
 
 
 def preview(level, filename: Path) -> None:
+    """Render `level` to the PNG `filename` without opening a window (see preview.py)."""
     import pyxel
 
     from snake_quest.campaign import load_campaign

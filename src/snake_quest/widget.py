@@ -1,3 +1,5 @@
+"""Simple UI widgets: a box with text and an optional sprite, a progress bar and a clickable button."""
+
 from collections.abc import Callable
 from dataclasses import dataclass
 
@@ -10,6 +12,8 @@ TEXT_LINE_SPACING = 2
 
 @dataclass
 class ImgInfo:
+    """A sprite for a widget: `w` x `h` px at (`u`, `v`) in image bank `nr`, colour `collkey` transparent."""
+
     nr: int
     u: int
     v: int
@@ -19,6 +23,9 @@ class ImgInfo:
 
 
 class Widget:
+    """A box at (`x`, `y`) with an optional background, border, sprite and lines of text. Without `w` / `h` it sizes
+    itself to its text and sprite. Sub-widgets are drawn on top of it."""
+
     def __init__(
         self,
         x: int,
@@ -60,12 +67,14 @@ class Widget:
         self.enabled: bool = True
 
     def update(self):
+        """Update the sub-widgets (buttons check the mouse here); nothing while disabled."""
         if not self.enabled:
             return
         for wdg in self.sub_widgets:
             wdg.update()
 
     def draw(self):
+        """Draw background, border, sprite, text and sub-widgets; nothing while disabled."""
         if not self.enabled:
             return
         # background
@@ -97,12 +106,16 @@ class Widget:
             wdg.draw()
 
     def add_sub_widget(self, wdg: "Widget"):
+        """Add `wdg` as a child: its coordinates are taken as relative to this widget's inside (they are moved by its
+        position and margin)."""
         wdg.x += self.x + WIDGET_MARGIN
         wdg.y += self.y + WIDGET_MARGIN
         self.sub_widgets.append(wdg)
 
 
 class LifeBar(Widget):
+    """A bar filled `val` (0..1) of its width with `fg` over `bg`, e.g. a boss's health."""
+
     def __init__(self, x: int, y: int, h: int, w: int, bg: int, fg: int, border: int | None = None, val: float = 1.0):
         super().__init__(x=x, y=y, h=h, w=w, bg=bg, border=border, text=None, img=None)
         self.val = val
@@ -116,6 +129,9 @@ class LifeBar(Widget):
 
 
 class Button(Widget):
+    """A widget that calls `on_click` when clicked or when its `hotkey` is pressed, and shows `hover` as background
+    while the mouse is over it."""
+
     def __init__(
         self,
         x: int,
@@ -137,6 +153,7 @@ class Button(Widget):
         self.hotkey = hotkey
 
     def update(self):
+        """Call `on_click` on the hotkey or a left click on the button, and switch the background while hovered."""
         if self.hotkey and pyxel.btnp(self.hotkey):
             self.on_click()
         elif self.x <= pyxel.mouse_x <= self.x + self.w and self.y <= pyxel.mouse_y <= self.y + self.h:

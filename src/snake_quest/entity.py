@@ -1,3 +1,10 @@
+"""Things on the map besides the snake: pickups, critters, hunters, nests, turrets, drones, mines.
+
+An entity subclasses `Entity`, names its sprite tile (`_img_x`, `_img_y`) and is registered with `@register(name)`,
+which makes it available to level files by name and to tilemaps by its sprite tile. Later arcs keep theirs in their
+own modules (caves, space, workshop, keeper), imported at the end of this one so that they register too.
+"""
+
 import datetime
 from typing import TYPE_CHECKING
 
@@ -23,6 +30,7 @@ def register(name: str):
     """Class decorator making an entity available to level files by `name` and to tilemaps by its sprite tile."""
 
     def decorator(cls: type["Entity"]) -> type["Entity"]:
+        """Register `cls`; raises if its name or sprite tile is taken."""
         tile = (cls._img_x, cls._img_y)
         if name in ENTITY_NAMES or tile in ENTITY_TILES:
             raise ValueError(f"entity {name!r} or its sprite tile {tile} is registered twice")
@@ -35,6 +43,9 @@ def register(name: str):
 
 
 class Entity:
+    """Something at `pos` with a sprite (`img_x`, `img_y` in px in image bank `img_b`, `w` x `h` px). The flags below
+    say how the game, the shots and the bots treat it; it is gone once `alive` is False."""
+
     name = "entity"  # set by @register
     light = 0  # radius in px it lights up in dark levels (see darkness.py)
     hostile = False  # bad for the snake: harder difficulties spawn it more often (see difficulty.py)
@@ -61,6 +72,7 @@ class Entity:
         self.health = float("inf")
 
     def draw(self, offset: "Vec2"):
+        """Draw it at its world position shifted by the camera's `offset` (colour 0 transparent)."""
         if self.alive:
             pyxel.blt(
                 x=self.pos.x + offset.x,
@@ -74,19 +86,27 @@ class Entity:
             )
 
     def update(self, snake: "Snake", map: "Map"):
-        pass
+        """Called every frame while it is alive: move, think, spawn."""
 
     def on_intersect(self, snake: "Snake", map: "Map"):
-        pass
+        """The snake's head touches it: be eaten, bite, hurt or be pushed."""
+
+    @property
+    def center(self) -> "Vec2":
+        """The middle of its sprite in world px: where bots aim, hunters measure from and lights shine."""
+        return self.pos + Vec2(self.w / 2, self.h / 2)
 
     def covers(self, point: "Vec2") -> bool:
+        """Whether `point` (world px) lies on it: what the head, shots and bites test against."""
         return self.pos.x <= point.x <= self.pos.x + self.w and self.pos.y <= point.y <= self.pos.y + self.h
 
     @classmethod
     def at_pos(cls, pos: "Vec2"):
+        """A new one at `pos` with the class's own sprite: how tilemaps and spawn timers place entities."""
         return cls(pos=pos, img_x=8 * cls._img_x, img_y=8 * cls._img_y)
 
     def hit(self, dmg: int):
+        """A shot (or a mine) deals `dmg`: at no health left it is dead, and counts as defeated."""
         self.health -= dmg
         if self.health <= 0:
             self.alive = False
@@ -98,6 +118,8 @@ class Entity:
 
 @register("apple")
 class Apple(Entity):
+    """+5 length and a point; another apple appears at a free spot when it is eaten."""
+
     _img_x = 2
     _img_y = 0
     pullable = True
@@ -117,6 +139,8 @@ class Apple(Entity):
 
 @register("golden")
 class GoldenApple(Entity):
+    """+20 length and 5 points, and no new one: levels place golden apples or spawn them by timer."""
+
     _img_x = 2
     _img_y = 1
     pullable = True
@@ -205,12 +229,16 @@ class WeaponPickup(Entity):
 
 @register("gun")
 class GunPickup(WeaponPickup):
+    """The Gun: single shots straight ahead."""
+
     _img_x = 2
     _img_y = 11
 
 
 @register("spread")
 class SpreadPickup(WeaponPickup):
+    """The Spread: a fan of three shots."""
+
     _img_x = 2
     _img_y = 13
     AMMO = 12
@@ -219,6 +247,8 @@ class SpreadPickup(WeaponPickup):
 
 @register("ricochet")
 class RicochetPickup(WeaponPickup):
+    """The Ricochet: a shot that bounces off walls."""
+
     _img_x = 3
     _img_y = 13
     WEAPON = "Ricochet"
@@ -226,6 +256,8 @@ class RicochetPickup(WeaponPickup):
 
 @register("mines")
 class MinesPickup(WeaponPickup):
+    """Mines, dropped behind the tail, which go off when a hostile entity comes near."""
+
     _img_x = 4
     _img_y = 13
     AMMO = 8
@@ -234,6 +266,8 @@ class MinesPickup(WeaponPickup):
 
 @register("laser")
 class LaserPickup(WeaponPickup):
+    """The Laser: a fast beam that pierces armour and everything it hits."""
+
     _img_x = 10
     _img_y = 13
     AMMO = 12
@@ -242,6 +276,8 @@ class LaserPickup(WeaponPickup):
 
 @register("homing")
 class HomingPickup(WeaponPickup):
+    """Homing shots, which turn towards the nearest hostile entity."""
+
     _img_x = 12
     _img_y = 13
     AMMO = 12
@@ -269,10 +305,6 @@ class Mine(Entity):
         super().__init__(**kwargs)
         self.age = 0.0
         self.boom = None  # seconds since it went off
-
-    @property
-    def center(self) -> Vec2:
-        return self.pos + Vec2(self.w / 2, self.h / 2)
 
     def update(self, snake: "Snake", map: "Map"):
         seconds = map.game.dt.total_seconds()
@@ -328,10 +360,6 @@ class Critter(Entity):
         super().__init__(**kwargs)
         self.state = "graze"  # graze, run or breath
         self.left = 0.0
-
-    @property
-    def center(self) -> Vec2:
-        return self.pos + Vec2(self.w / 2, self.h / 2)
 
     def update(self, snake: "Snake", map: "Map"):
         self.left -= map.game.dt.total_seconds()
@@ -403,17 +431,15 @@ class Hunter(Entity):
 
     @property
     def asleep(self) -> bool:
+        """Whether it sleeps; set it to send it to sleep (for a random nap) or wake it to hunt."""
         return self.state == "asleep"
 
     @asleep.setter
     def asleep(self, value: bool) -> None:
         self._begin("asleep", pyxel.rndf(*self.NAP)) if value else self._begin("hunt", pyxel.rndf(*self.HUNT))
 
-    @property
-    def center(self) -> Vec2:
-        return self.pos + Vec2(self.w / 2, self.h / 2)
-
     def _begin(self, state: str, seconds: float) -> None:
+        """Switch to `state` for `seconds`."""
         self.state, self.left = state, seconds
 
     def _break(self, map: "Map") -> None:
@@ -495,6 +521,7 @@ class Hunter(Entity):
         return map.tile_center(best)
 
     def _move(self, direction: Vec2, speed: float) -> None:
+        """Move along `direction` by `speed` px, no further than its length."""
         length = direction.length()
         if length > 0:
             self.pos = self.pos + direction * (min(speed, length) / length)
@@ -646,10 +673,6 @@ class Turret(Entity):
         self.flash = 0.0
         self.aim = 90.0  # degrees, where the barrel points
         self.sees = False  # the snake's head is in range and in sight
-
-    @property
-    def center(self) -> Vec2:
-        return self.pos + Vec2(self.w / 2, self.h / 2)
 
     def update(self, snake: "Snake", map: "Map"):
         from snake_quest.weapons import Projectile  # weapons need nothing from here, see GunPickup
@@ -819,6 +842,7 @@ class Rival(Entity):
         self.shot_down = False  # shot shorter than MIN: loses a life on its next update
 
     def spawn(self) -> None:
+        """Put a new body at the lair, START segments long, driven by a RivalController."""
         from snake_quest.controls import RivalController
         from snake_quest.snake import Snake
 
@@ -940,10 +964,6 @@ class Core(Entity):
         self.shielded = False
         self.flash = 0.0
 
-    @property
-    def center(self) -> Vec2:
-        return self.pos + Vec2(self.w / 2, self.h / 2)
-
     def update(self, snake: "Snake", map: "Map"):
         self.flash = max(self.flash - map.game.dt.total_seconds(), 0.0)
 
@@ -989,10 +1009,6 @@ class Drone(Entity):
         self.heading = pyxel.rndf(0, 360)
         self.phase = pyxel.rndf(0, 360)  # wing beat, so a swarm doesn't flap in sync
 
-    @property
-    def center(self) -> Vec2:
-        return self.pos + Vec2(self.w / 2, self.h / 2)
-
     def update(self, snake: "Snake", map: "Map"):
         to_head = snake.head.pos - self.center
         turn = (pyxel.atan2(to_head.y, to_head.x) - self.heading + 180) % 360 - 180
@@ -1008,6 +1024,7 @@ class Drone(Entity):
             self.sting(snake, map)
 
     def sting(self, snake: "Snake", map: "Map") -> None:
+        """Sting the body: STING segments off the tail (the end when the snake is too short), and the drone is gone."""
         map.game.sm.effect("hurt")
         self.alive = False
         if not snake.cut(self.STING):
@@ -1025,6 +1042,9 @@ class Drone(Entity):
 
 @register("enemy")
 class Enemy(Entity):
+    """The first enemy, from before the arcs, kept for the tests and the scratch level: every 4 s it naps, wanders or
+    makes for the head. Touched, it is gone and costs 10 points but speeds the snake up."""
+
     _img_x = 3
     _img_y = 1
     hostile = True

@@ -1,3 +1,5 @@
+"""The highscores screen: one table per arc and difficulty."""
+
 from snake_quest import difficulty
 from snake_quest.profile import MAX_HIGHSCORES
 from snake_quest.states import StateID
@@ -23,6 +25,8 @@ PANEL_W = 200
 
 
 class HighscoresStateHandler(GameStateHandler):
+    """Shows a highscore table; left/right switch the difficulty, up/down the arc, starting at the ones last played."""
+
     def __init__(self, game):
         super().__init__(game=game)
         self.title = Title("HIGHSCORES", scale=2)
@@ -56,6 +60,7 @@ class HighscoresStateHandler(GameStateHandler):
             self.game.change_state(StateID.MENU)
 
     def rows(self) -> list[str]:
+        """The lines of the table shown: rank, score, level reached and date."""
         scores = self.game.profile.table(self.shown, self.game.campaign.arcs[self.arc].name)
         if not scores:
             return []

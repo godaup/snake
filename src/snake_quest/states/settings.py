@@ -1,3 +1,5 @@
+"""The settings screen."""
+
 import pyxel
 
 from snake_quest.profile import SCREEN_MODES
@@ -63,10 +65,12 @@ class SettingsStateHandler(GameStateHandler):
             self.game.sm.effect("eat")  # hear the new volume
 
     def leave(self) -> None:
+        """Save the settings and go back to the menu."""
         self.game.profile.save()
         self.game.change_state(StateID.MENU)
 
     def item_rect(self, index: int) -> tuple[int, int, int, int]:
+        """(x, y, w, h) of item `index`, for drawing it and for the mouse."""
         return (self.game.cfg.width - PANEL_W) // 2 + 4, self.top + 10 + index * ITEM_SPACING - 3, PANEL_W - 8, 12
 
     def update(self) -> None:

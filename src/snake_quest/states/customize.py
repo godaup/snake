@@ -1,3 +1,5 @@
+"""The customize screen: the snake's colour palette."""
+
 import pyxel
 
 from snake_quest.palettes import PALETTES
@@ -39,9 +41,11 @@ class CustomizeStateHandler(GameStateHandler):
 
     @property
     def index(self) -> int:
+        """The position of the chosen palette in the list."""
         return self.names.index(self.game.profile.palette)
 
     def choose(self, index: int) -> None:
+        """Choose palette `index` (wrapping round) and recolour the backdrop snake."""
         self.game.profile.palette = self.names[index % len(self.names)]
         self.game.backdrop.recolor()
 

@@ -1,3 +1,5 @@
+"""The snake: its segments, how it moves, grows, turns and gets hurt."""
+
 import datetime
 from copy import copy
 from typing import TYPE_CHECKING
@@ -22,7 +24,7 @@ NECK = 3.0  # px along the body from the head that it can't bite: 3 segments at 
 
 
 class SnakeSeg:
-    """Snake segment class"""
+    """One round piece of the snake at `pos`: `size` is its radius, `col` its colour. Segment 0 is the head."""
 
     def __init__(self, pos: Vec2, size: int, col: int):
         self.pos = pos
@@ -31,6 +33,7 @@ class SnakeSeg:
         self.key: int | None = None  # the colour of a key it carries (the Workshop, see workshop.Key)
 
     def draw(self, offset: Vec2):
+        """Draw the segment (one carrying a key bigger, in the key's colour), shifted by the camera's `offset`."""
         if self.key is not None:  # a key: bigger, in its colour
             from snake_quest.workshop import KEY_COLS
 
@@ -41,7 +44,9 @@ class SnakeSeg:
 
 
 class Snake:
-    """Snake class."""
+    """The snake: a list of segments, the head first. Each frame the head moves `effective_speed` px along `heading`
+    (where its `controller` steers it, see controls.py) and every other segment takes the place of the one ahead of
+    it; `grow` adds segments at the tail one at a time (or cuts them while negative)."""
 
     def __init__(
         self,
@@ -75,10 +80,12 @@ class Snake:
 
     @property
     def head(self) -> SnakeSeg:
+        """The first segment, the one that moves and collides."""
         return self.segs[0]
 
     @property
     def speed(self):
+        """The base speed in px per frame, kept within MIN_SPEED..MAX_SPEED (see `effective_speed` for boosts)."""
         return self._speed
 
     @speed.setter
@@ -96,6 +103,7 @@ class Snake:
         self.boost_left = seconds
 
     def body_color(self, index: int) -> int:
+        """The colour of segment `index`: the palette's body colours repeated along the body."""
         return self.colors.body[index % len(self.colors.body)]
 
     def recolor(self, colors: Palette) -> None:
@@ -106,13 +114,17 @@ class Snake:
             seg.col = self.body_color(index)
 
     def turn(self, val: int):
+        """Turn where the snake points by `val` degrees."""
         self.orient = (self.orient + val) % 360
 
     def draw(self, offset: Vec2):
+        """Draw every segment, shifted by the camera's `offset`."""
         for seg in self.segs:
             seg.draw(offset)
 
     def update(self, dt: datetime.timedelta, map: "Map"):
+        """One frame: steer (through the controller, the other way on mirrored floor), drift on ice and with the
+        planets' pull, move (or stall at a crate), grow or shrink one segment and let the weapon fire."""
         self.boost_left = max(self.boost_left - dt.total_seconds(), 0.0)
         # steer
         steering = self.controller.steer(self, map)
@@ -185,12 +197,15 @@ class Snake:
         return len(self.segs)
 
     def self_intersect(self) -> bool:
+        """Whether the head touches its own body beyond the neck (biting itself is the end)."""
         if len(self) < 4:
             return False
         return any([(self.head.pos - other.pos).length() < self.size for other in self.segs[max(3, self.neck()) :]])
 
     def covers(self, point: Vec2) -> bool:
+        """Whether `point` lies on any segment."""
         return any([(point - seg.pos).length() < self.size for seg in self.segs])
 
     def get_collision_points(self) -> tuple[Vec2, Vec2]:
+        """The two points of the head tested against walls (see `utils.collision_points`)."""
         return collision_points(self.head.pos, self.heading, self.size)

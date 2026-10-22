@@ -15,6 +15,8 @@ COL_TITLE, COL_CHECK = 10, 11
 
 @dataclass
 class LevelStats:
+    """The numbers the level complete screen shows, taken once when the level is won."""
+
     goals: list[str]
     seconds: float
     points: int
@@ -26,11 +28,15 @@ class LevelStats:
 
 
 def format_time(seconds: float) -> str:
+    """`seconds` as m:ss."""
     minutes, secs = divmod(int(seconds), 60)
     return f"{minutes}:{secs:02}"
 
 
 class LevelCompleteStateHandler(OverlayStateHandler):
+    """LEVEL COMPLETE! over the frozen level: the goals met and the level's stats, and Enter goes on (see
+    `Game.level_up`)."""
+
     def __init__(self, game):
         super().__init__(game=game)
         self.title = BigText(scale=2)
@@ -76,6 +82,7 @@ class LevelCompleteStateHandler(OverlayStateHandler):
             self.game.level_up()
 
     def stat_rows(self) -> list[tuple[str, str]]:
+        """(label, value) rows under the goals: time, points, thrift (the Keeper), length, score and a new highscore."""
         stats = self.stats
         return [
             ("TIME", format_time(stats.seconds)),

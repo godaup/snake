@@ -1,3 +1,5 @@
+"""Playing a level."""
+
 from typing import TYPE_CHECKING
 
 import pyxel
@@ -21,6 +23,9 @@ SNAKE_SIZE = 2
 
 
 class RunningStateHandler(GameStateHandler):
+    """A level being played: the map, the snake (steered by the keyboard, or in the Keeper's levels by itself while the
+    player is the hand), the camera and the HUD. A new one is made for every level and every restart."""
+
     def __init__(self, game: "Game"):
         super().__init__(game=game)
         self.map = Map(level=game.campaign.level(game.level_counter), game=self.game)

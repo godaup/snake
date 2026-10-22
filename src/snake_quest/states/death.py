@@ -1,3 +1,5 @@
+"""The game over screen, which records the highscore."""
+
 import pyxel
 
 from snake_quest.states import StateID
@@ -9,6 +11,8 @@ COL_DEATH = 8
 
 
 class DeathStateHandler(GameStateHandler):
+    """Game over: a box over the last frame with the score's rank, and R restart, M menu, Q quit."""
+
     TITLE = "GAME OVER"
     BG = COL_DEATH
 
@@ -30,6 +34,7 @@ class DeathStateHandler(GameStateHandler):
         self.wdg = self.build_widget([*lines, "", "(R)ESTART", "(M)ENU", "(Q)UIT"])
 
     def build_widget(self, text: list[str]) -> Widget:
+        """The box with `text`, centred in the play area."""
         return Widget(
             x=min([self.center_text(line) for line in text]) - WIDGET_MARGIN,
             y=self.game.cfg.area.h // 2

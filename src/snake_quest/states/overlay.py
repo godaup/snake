@@ -19,6 +19,7 @@ class OverlayStateHandler(GameStateHandler):
 
     @property
     def running(self):
+        """The running level drawn underneath."""
         return self.game.running_handler
 
     def get_music(self) -> int | tuple[int, ...] | None:
@@ -31,13 +32,16 @@ class OverlayStateHandler(GameStateHandler):
         self.draw_overlay()
 
     def dim(self) -> None:
+        """Darken the play area with a dither, so the panel stands out from the level."""
         pyxel.dither(DIM_ALPHA)
         pyxel.rect(0, self.game.cfg.header.h, self.game.cfg.width, self.game.cfg.area.h, 0)
         pyxel.dither(1.0)
 
     @property
     def area_center_y(self) -> float:
+        """The vertical middle of the play area in screen px."""
         return self.game.cfg.header.h + self.game.cfg.area.h / 2
 
     @abstractmethod
-    def draw_overlay(self) -> None: ...
+    def draw_overlay(self) -> None:
+        """Draw the state's own panel over the dimmed level."""

@@ -130,6 +130,16 @@ def more_ammo(snake, map):
     return nearest(*kinds, wary=WARY)(snake, map) if kinds else None
 
 
+def take_over(running: RunningStateHandler, hand: bool = True) -> None:
+    """Let the bot play a running level instead of the player: it steers the snake, or in the Keeper's levels a
+    HandBot following the level's `keeper` plan is the hand (nobody without `hand`) and the pet steers itself."""
+    if running.map.hand is not None:
+        plan = omegaconf.OmegaConf.to_container(running.map.cfg.get("keeper", []))
+        running.map.hand.player = HandBot(plan) if hand else None
+    else:
+        running.snake.controller = PathController(target)
+
+
 def play(game, level: str, seed: int, seconds: float, hand: bool = True) -> tuple[str, float]:
     """One run of `level`: ("won" | "wall" | "tail" | "killed" | "timeout", seconds played). In the Keeper's levels the
     pet plays as it does for people, and a HandBot keeps the garden (nobody without `hand`)."""
@@ -138,11 +148,7 @@ def play(game, level: str, seed: int, seconds: float, hand: bool = True) -> tupl
     game.requested_states.clear()
     game.score = 0
     running = RunningStateHandler(game)
-    if running.map.hand is not None:
-        plan = omegaconf.OmegaConf.to_container(running.map.cfg.get("keeper", []))
-        running.map.hand.player = HandBot(plan) if hand else None
-    else:
-        running.snake.controller = PathController(target)
+    take_over(running, hand)
     for _ in range(int(seconds * game.cfg.fps)):
         running.update()
         if StateID.LEVEL_COMPLETE in game.requested_states:

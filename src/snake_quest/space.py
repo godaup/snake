@@ -35,6 +35,8 @@ class AirTank(Entity):
 
 @register("tractor")
 class TractorPickup(WeaponPickup):
+    """The Tractor: each press pulls the nearest pickup ahead in to the head."""
+
     _img_x = 2
     _img_y = 17
     AMMO = 12
@@ -82,10 +84,6 @@ class Planet(Entity):
         super().__init__(**kwargs)
         self.w = self.h = 16
         self.mass = pyxel.rndf(*self.MASS)
-
-    @property
-    def center(self) -> Vec2:
-        return self.pos + Vec2(self.w / 2, self.h / 2)
 
     def covers(self, point: "Vec2") -> bool:
         return (point - self.center).length() <= self.RADIUS
@@ -137,21 +135,20 @@ class Asteroid(Entity):
         self.resize(3)
 
     def resize(self, size: int) -> None:
+        """Become size `size` (3 large, 2 medium, 1 small): its sprite, box and health."""
         self.size = size
         self.w = self.h = self.SIZES[size]
         self.img_x, self.img_y = (8 * v for v in self.SPRITES[size])
         self.health = self.HEALTH[size]
 
     @property
-    def avoid(self) -> bool:  # small ones only sting: bots don't swerve for them
+    def avoid(self) -> bool:
+        """Bots swerve only for large and medium ones: the small ones only sting."""
         return self.size > 1
 
     @property
-    def center(self) -> Vec2:
-        return self.pos + Vec2(self.w / 2, self.h / 2)
-
-    @property
     def radius(self) -> float:
+        """Its round size for collisions, a bit smaller than the sprite."""
         return self.w * 0.42
 
     def covers(self, point: "Vec2") -> bool:
@@ -176,6 +173,8 @@ class Asteroid(Entity):
                 self.strike(snake, map, index)
 
     def strike(self, snake: "Snake", map: "Map", index: int) -> None:
+        """It hits segment `index`: a small one stings (cuts STING segments), a bigger one wounds the body like a shot
+        and is the end on the head; it bounces off."""
         map.game.sm.effect("hurt")
         self.cool = self.COOL
         away = self.center - snake.segs[index].pos
@@ -273,15 +272,13 @@ class Mothership(Entity):
         self.flash = 0.0
 
     @property
-    def center(self) -> Vec2:
-        return self.pos + Vec2(self.w / 2, self.h / 2)
-
-    @property
     def exposed(self) -> bool:
+        """Shots meet it while its shield is up (and glint off) or its bay is open."""
         return self.open or self.shielded  # shots meet the shield (and glint) or the open bay
 
     @property
-    def armored(self) -> bool:  # the shield: every shot glances off
+    def armored(self) -> bool:
+        """While the shield is up every shot glances off."""
         return self.shielded
 
     def covers(self, point: "Vec2") -> bool:
@@ -297,6 +294,8 @@ class Mothership(Entity):
             self.flash = self.FLASH
 
     def pull(self, pos: "Vec2", heading: float, gravity: float) -> float:
+        """Degrees its tractor beam turns `heading` at `pos` this frame (0 without a beam or out of its reach);
+        `gravity` is unused, the signature is a planet's."""
         if not self.tractor:
             return 0.0
         to_ship = self.center - pos

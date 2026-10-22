@@ -26,30 +26,37 @@ N, E, S, W = 1, 2, 4, 8
 
 
 def pressed(*keys: int) -> bool:
+    """Whether any of `keys` was pressed this frame, repeating while held (for moving through menus)."""
     return any(pyxel.btnp(key, hold=10, repeat=4) for key in keys)
 
 
 def up() -> bool:
+    """Menu up: the up arrow, W or the d-pad."""
     return pressed(pyxel.KEY_UP, pyxel.KEY_W, pyxel.GAMEPAD1_BUTTON_DPAD_UP)
 
 
 def down() -> bool:
+    """Menu down: the down arrow, S or the d-pad."""
     return pressed(pyxel.KEY_DOWN, pyxel.KEY_S, pyxel.GAMEPAD1_BUTTON_DPAD_DOWN)
 
 
 def left() -> bool:
+    """Menu left: the left arrow, A or the d-pad."""
     return pressed(pyxel.KEY_LEFT, pyxel.KEY_A, pyxel.GAMEPAD1_BUTTON_DPAD_LEFT)
 
 
 def right() -> bool:
+    """Menu right: the right arrow, D or the d-pad."""
     return pressed(pyxel.KEY_RIGHT, pyxel.KEY_D, pyxel.GAMEPAD1_BUTTON_DPAD_RIGHT)
 
 
 def confirm() -> bool:
+    """Menu confirm: Enter, Space or the gamepad's A."""
     return any(pyxel.btnp(key) for key in (pyxel.KEY_RETURN, pyxel.KEY_SPACE, pyxel.GAMEPAD1_BUTTON_A))
 
 
 def back() -> bool:
+    """Menu back: Esc, Backspace or the gamepad's B."""
     return any(pyxel.btnp(key) for key in (pyxel.KEY_ESCAPE, pyxel.KEY_BACKSPACE, pyxel.GAMEPAD1_BUTTON_B))
 
 
@@ -57,6 +64,7 @@ def back() -> bool:
 
 
 def text_width(text: str) -> int:
+    """The width of `text` in px in Pyxel's font."""
     return len(text) * pyxel.FONT_WIDTH
 
 
@@ -68,6 +76,7 @@ def centered_text(y: int, text: str, col: int, width: int) -> None:
 
 
 def panel(x: int, y: int, w: int, h: int) -> None:
+    """A menu panel: a filled box with a border."""
     pyxel.rect(x, y, w, h, COL_PANEL)
     pyxel.rectb(x, y, w, h, COL_PANEL_BORDER)
 
@@ -83,6 +92,8 @@ class Title:
         self.image.text(0, 0, text, 7)
 
     def draw(self, center_x: float, center_y: float, t: float) -> None:
+        """Draw the title centred at (`center_x`, `center_y`), bobbing gently and cycling its colours with time `t` in
+        seconds."""
         y = center_y + pyxel.sin(t * 90) * 2  # gentle bob
         x0, y0 = center_x - self.w / 2, y - self.h / 2  # blt scales around the centre of the target rectangle
         for dx, dy, col in ((2, 2, 1), (0, 0, TITLE_COLORS[int(t * 2) % len(TITLE_COLORS)])):
@@ -104,11 +115,13 @@ class Drifter:
         self.vel = Vec2(rng.uniform(-6, -2), rng.uniform(-3, 3))  # px per second, a slow breeze to the left
 
     def update(self, seconds: float) -> None:
+        """Drift on by its velocity, wrapping round the screen."""
         self.pos = self.pos + self.vel * seconds
         self.pos.x %= self.width + 16
         self.pos.y %= self.height + 16
 
     def draw(self) -> None:
+        """Draw its sprite."""
         pyxel.blt(self.pos.x - 8, self.pos.y - 8, 0, self.tile[0] * 8, self.tile[1] * 8, 8, 8, colkey=0)
 
 
@@ -134,6 +147,7 @@ class Backdrop:
         self.recolor()
 
     def recolor(self) -> None:
+        """Recolour the demo snake to the palette chosen in the profile."""
         self.snake.recolor(palette(self.game.profile.palette))
 
     def target(self) -> Vec2:
@@ -144,6 +158,7 @@ class Backdrop:
         )
 
     def update(self, dt: datetime.timedelta) -> None:
+        """Advance the drifting decorations and the demo snake by the frame's time."""
         seconds = min(dt.total_seconds(), 0.1)  # don't jump after a pause or a slow frame
         self.t += seconds
         for drifter in self.drifters:
@@ -151,6 +166,7 @@ class Backdrop:
         self.snake.update(dt=dt, map=None)
 
     def draw(self) -> None:
+        """Clear the screen and draw the decorations, the demo snake and the hedge frame."""
         pyxel.cls(self.game.cfg.area.bg)
         for drifter in self.drifters:
             drifter.draw()

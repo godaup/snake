@@ -7,6 +7,8 @@ from enum import Enum
 
 
 class TileKind(Enum):
+    """What a tile with a fixed meaning does (see TILE_KINDS)."""
+
     FLOOR = "floor"  # walkable, free for spawning
     WALL = "wall"  # deadly to touch
     PATH = "path"  # level design helper, lifted out of the tilemap and drawn as breadcrumbs

@@ -20,6 +20,9 @@ FLOOR = 1  # the black floor is drawn in this colour in dark levels, so the lit 
 
 
 class Darkness:
+    """Draws the darkness of a dark level over the play area: everything black except round lights, with a soft dithered
+    edge."""
+
     def __init__(self, cfg, game: "Game"):
         self.light: float = cfg.light  # radius around the head in px; a boss may change it while playing
         self.floor: int = cfg.get("floor", FLOOR)

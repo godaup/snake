@@ -22,6 +22,9 @@ ROMAN = ["I", "II", "III", "IV", "V"]
 
 
 class Boss(ABC):
+    """A level's boss, built by `load_boss` from the level's `boss` section; subclasses are listed in BOSSES. `update`
+    moves through the phases and calls `act` every frame; the HUD draws `bar()` with `title`."""
+
     key: ClassVar[str]
     title: ClassVar[str]  # upper case, shown on the bar
     # settings harder difficulties raise (pressure), lower (relief) or apply to light radii, see difficulty.py
@@ -42,6 +45,7 @@ class Boss(ABC):
         return phase[name] if name in phase else self.cfg[name]
 
     def update(self, map: "Map", snake: "Snake", dt: datetime.timedelta) -> None:
+        """One frame: count the time, start the next phase when it is due (`on_phase`) and `act`."""
         seconds = dt.total_seconds()
         self.elapsed += seconds
         self.since_phase += seconds
@@ -284,6 +288,7 @@ class OuroborosBoss(Boss):
         map.entities.append(self.rival)
 
     def _tune(self) -> None:
+        """Give the rival the current phase's speed, start length, respawn time and reload time."""
         self.rival.SPEED = self.setting("speed")
         self.rival.START = max(self.rival.MIN, round(self.setting("length")))
         self.rival.RESPAWN = self.setting("respawn")
@@ -378,6 +383,7 @@ class BroodMotherBoss(Boss):
             self.mother.state, self.left = "ceiling", self.setting("drop")
 
     def _light(self, map) -> None:
+        """The light radius for the phase: dimmed where the phase says `dim`."""
         if map.darkness is not None and "light" in self.cfg:
             full, dim = self.setting("light")
             map.darkness.light = dim if self.phases[self.phase].get("dim", False) else full
@@ -416,6 +422,8 @@ class BroodMotherBoss(Boss):
         self.mother.shadow = 0.0
 
     def _land(self, map, snake) -> None:
+        """She lands: crushes what lies under her, spins a ring of webs around (not on the snake) and lets the phase's
+        `hatch` spiderlings out."""
         centre = self.mother.center
         map.game.sm.effect("boom")
         index = snake.segment_at(centre, self.CRUSH - snake.size)
@@ -614,6 +622,8 @@ class ClockworkBoss(Boss):
         self._sync()
 
     def _sync(self) -> None:
+        """Pass the hands' angles and lengths, and in phase 3 the locks, to the Clockwork entity for drawing and
+        cutting."""
         self.clock.hands = list(zip(self.angles, self.cfg.hands, strict=True))
         self.clock.locks = list(self.locks) if self.phase == 2 else []
 
@@ -668,6 +678,7 @@ class ClockworkBoss(Boss):
             works.plan = self._plan(map, snake)  # (made anew while it hasn't started, e.g. once armed)
 
     def _open(self) -> None:
+        """Open the face for `open` seconds; the bots' plan for the phase is done."""
         self.clock.open, self.open_left = True, self.setting("open")
         self.map.works.plan = None
         self.map.game.sm.effect("win")
@@ -679,9 +690,11 @@ class ClockworkBoss(Boss):
         return self.phase == 1 and self._down(works, 1) >= round(self.setting("hold"))
 
     def _plates(self, works, colour: int) -> int:
+        """How many plates of `colour` the level has."""
         return sum(plate_colour == colour for plate_colour, _ in works.plates)
 
     def _down(self, works, colour: int) -> int:
+        """How many plates of `colour` are down."""
         return sum(works.plates[index][0] == colour for index in works.down)
 
     def _locks(self, map, snake, seconds) -> None:
@@ -889,6 +902,7 @@ class CrowBoss(Boss):
             self._take_off(map, self.setting("swoop") / 2)
 
     def _light(self, map) -> None:
+        """Dusk in the flock phase: the light shrinks from `light[0]` to `light[1]` over DUSK seconds."""
         if map.darkness is None or "light" not in self.cfg:
             return
         full, dusk = self.setting("light")
@@ -903,6 +917,7 @@ class CrowBoss(Boss):
         )
 
     def _take_off(self, map, wait: float) -> None:
+        """Fly up to a spot in the sky and wait `wait` seconds before the next move."""
         crow = self.crow
         crow.state, crow.line, self.prey = "fly", None, None
         self.dest, self.left = self._sky(map), wait
@@ -975,6 +990,7 @@ class CrowBoss(Boss):
         self.crow.state = "fly"
 
     def _prey_pos(self, map) -> Vec2 | None:
+        """Where what the crow is after lies (an apple's centre or a planted hedge's tile), or None once it is gone."""
         prey = self.prey
         if isinstance(prey, tuple):
             return map.tile_center(prey) if map.hand is not None and prey in map.hand.planted else None
@@ -1002,6 +1018,8 @@ class CrowBoss(Boss):
         map.game.sm.effect("caw")
 
     def _dive(self, map, snake, speed: float) -> None:
+        """One frame of a swoop along its line: a hedge of the hand's on the way stuns it, at the end it cuts `chunk`
+        off whatever of the snake lies there, then takes off again."""
         crow = self.crow
         start, end = crow.line
         arrived = self._fly(end, self.DIVE * speed)
@@ -1024,6 +1042,7 @@ class CrowBoss(Boss):
         self._take_off(map, self.setting("swoop"))
 
     def _call(self, map, snake, seconds) -> None:
+        """Every `call` seconds call a jackdaw, awake, while fewer than `flock` are about."""
         self.call_left -= seconds
         if self.call_left > 0:
             return
@@ -1068,6 +1087,7 @@ BOSSES: dict[str, type[Boss]] = {
 
 
 def load_boss(cfg, map: "Map") -> Boss:
+    """The boss named by `cfg.type`, built from the level's `boss` section; raises on an unknown type."""
     if cfg.type not in BOSSES:
         raise ValueError(f"unknown boss type {cfg.type!r}, expected one of {sorted(BOSSES)}")
     return BOSSES[cfg.type](cfg, map)

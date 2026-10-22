@@ -113,6 +113,8 @@ class Key(Entity):
 
 @register("key_red")
 class RedKey(Key):
+    """The red key: opens red locks."""
+
     _img_x = 5
     _img_y = 21
     COLOUR = 0
@@ -120,6 +122,8 @@ class RedKey(Key):
 
 @register("key_blue")
 class BlueKey(Key):
+    """The blue key: opens blue locks."""
+
     _img_x = 5
     _img_y = 22
     COLOUR = 1
@@ -127,6 +131,8 @@ class BlueKey(Key):
 
 @register("key_yellow")
 class YellowKey(Key):
+    """The yellow key: opens yellow locks."""
+
     _img_x = 6
     _img_y = 22
     COLOUR = 2
@@ -243,11 +249,14 @@ class Works:
         return group
 
     def room_of(self, pos: Vec2) -> int | None:
+        """The room (index) at `pos`, or None in a wall or gate."""
         return self.rooms.get(self.map.tile_xy(pos))
 
     # -- every frame
 
     def update(self, snake: "Snake") -> None:
+        """One frame: which plates are down, gates opening or blinking and shutting, levers and reset levers the head
+        runs onto, locks it brings a key to, keys carried."""
         map = self.map
         tilemap = pyxel.tilemaps[map.tm]
         covered = {map.tile_xy(seg.pos) for seg in snake.segs}
@@ -317,6 +326,7 @@ class Works:
             self.map._fields.clear()
 
     def _set(self, tile: tuple[int, int], sprite: tuple[int, int]) -> None:
+        """Change `tile` to `sprite` (a gate opening or shutting) and let the map know its walls changed."""
         pyxel.tilemaps[self.map.tm].pset(*tile, sprite)
         self.map._walls_changed(tile)
 
@@ -522,6 +532,7 @@ class Plan:
 
     @property
     def done(self) -> bool:
+        """Whether every room's plan has been played through."""
         return self.room >= len(self.rooms)
 
     def cell(self, cell) -> Vec2:
@@ -538,6 +549,7 @@ class Plan:
             self.index, self.stage, self.since, self.resetting, self.pushing = 0, 0, 0.0, False, None
 
     def _next(self) -> None:
+        """On to the room's next step, or to the next room after the last."""
         self.index, self.stage, self.since, self.pushing = self.index + 1, 0, 0.0, None
         if self.index >= len(self.rooms[self.room][1]):
             self.room, self.index = self.room + 1, 0
@@ -611,6 +623,8 @@ class Plan:
         raise ValueError(f"unknown plan step {kind!r}")
 
     def _push(self, value, snake: "Snake", map: "Map") -> Vec2 | None:
+        """Where to steer for a `push` step: line up behind the crate, push it `cells` cells in `direction`, then turn
+        off it. None while there is nothing left to do (it has gone, or the head is clear of it)."""
         cell, direction, cells = value
         d = DIRECTIONS[direction]
         if self.pushing is None:  # the crate on that cell
@@ -720,6 +734,7 @@ class Clockwork(Crate):
 
     @property
     def exposed(self) -> bool:
+        """Shots hurt it only while its face is open."""
         return self.open
 
     @property

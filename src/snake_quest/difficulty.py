@@ -38,6 +38,9 @@ LIMIT_FIELDS = {"oxygen": ("drain",)}  # the same for fields of a goal
 
 @dataclass(frozen=True)
 class Difficulty:
+    """A difficulty's factors, from the `difficulty` section of settings.yaml; `apply` scales a level's config with
+    them."""
+
     name: str
     speed: float = 1.0
     goals: float = 1.0
@@ -48,6 +51,7 @@ class Difficulty:
 
     @property
     def label(self) -> str:
+        """The name as shown in menus."""
         return self.name.upper()
 
 

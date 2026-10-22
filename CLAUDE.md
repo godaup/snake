@@ -29,6 +29,7 @@ python tools/draft_workshop.py src/snake_quest/resources/arc7.pyxres tools/puzzl
 python tools/solve_workshop.py check tools/puzzles/crates.txt src/snake_quest/levels/crates.yaml   # does the level's plan solve it? (`solve` searches the fewest pushes, room by room)
 python tools/draft_keeper.py src/snake_quest/resources/keeper.pyxres tools/gardens/hedges.txt --tm 0   # a Keeper level from its garden text (one character per tile; the text is the source of truth)
 python tools/balance.py --levels hunger --seeds 12   # bot win rate per level and difficulty (--no-hand: the Keeper's levels left alone)
+python tools/readme_media.py docs/media   # the README's screenshots and clip, rendered headlessly with the bot playing (--only NAME ...)
 pytest                                # run all tests
 pytest tests/test_map.py::test_new_pos_is_free   # run a single test
 ruff check . && ruff format --check .            # lint + format check
@@ -40,7 +41,7 @@ CI (`.github/workflows/ci.yml`) runs lint, format check and pytest. It then buil
 
 ## Tests
 
-Tests run against the installed package, so do the editable install first. Tests that need Pyxel (`Map`, state handlers, widgets) rely on the session fixture in `tests/conftest.py`, which calls `pyxel.init(..., headless=True)` once. Request the `assets` fixture to get freshly loaded tilemaps (Map mutates them). `Game` cannot be built in tests because it enters `pyxel.run`; use the `game` fixture (`FakeGame`) instead, which records `change_state` calls in `requested_states`. Known bugs are kept as `xfail(strict=True)` tests, so fixing one makes that test fail until the marker is removed.
+Tests run against the installed package, so do the editable install first. Tests that need Pyxel (`Map`, state handlers, widgets) rely on the session fixture in `tests/conftest.py`, which calls `pyxel.init(..., headless=True)` once. Request the `assets` fixture to get freshly loaded tilemaps (Map mutates them). `Game` cannot be built in tests because it enters `pyxel.run`; use the `game` fixture (`FakeGame`) instead, which records `change_state` calls in `requested_states`. Known bugs are kept as `xfail(strict=True)` tests, so fixing one makes that test fail until the marker is removed. `test_docs.py` requires a docstring on every public module, class, function and method (an override may rely on the one it overrides; a dataclass needs its own).
 
 ## Architecture
 

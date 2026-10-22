@@ -1,3 +1,6 @@
+"""The camera: the offset that keeps the snake's head in the middle of the play area, and drawing the level through
+it."""
+
 from typing import TYPE_CHECKING
 
 import pyxel
@@ -18,6 +21,8 @@ def _follow(screen: float, world: float, target: float) -> float:
 
 
 class Cam:
+    """Follows `snake` over `map`; every world `draw(offset)` adds `offset`, recomputed in `update` each frame."""
+
     def __init__(self, snake: "Snake", map: "Map", game: "Game"):
         self.snake: Snake = snake
         self.map: Map = map
@@ -36,6 +41,8 @@ class Cam:
             self.offset.y += pyxel.rndi(-self.map.shake, self.map.shake)
 
     def draw(self):
+        """Draw the level, the snake and the darkness through the camera; with `debug` also the head's collision points
+        (blue) and centre (white)."""
         self.map.draw(self.offset)
         self.snake.draw(self.offset)
         if self.map.darkness and not self.game.cfg.debug:  # debug shows the whole level

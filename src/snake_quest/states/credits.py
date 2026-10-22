@@ -1,3 +1,5 @@
+"""The credits screen: the names scrolling up over the menu backdrop."""
+
 from snake_quest.states import StateID
 from snake_quest.states.abstract import GameStateHandler
 from snake_quest.states.menu_common import COL_DIM, COL_HIGHLIGHT, COL_TEXT, MENU_MUSIC, back, centered_text, confirm
@@ -23,6 +25,8 @@ SCROLL_SPEED = 14  # px per second
 
 
 class CreditsStateHandler(GameStateHandler):
+    """Scrolls CREDITS up the screen, over and over; any confirm or back key returns to the menu."""
+
     def __init__(self, game):
         super().__init__(game=game)
         self.height = game.cfg.header.h + game.cfg.area.h + game.cfg.footer.h

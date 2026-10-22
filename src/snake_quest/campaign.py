@@ -14,6 +14,9 @@ CAMPAIGN_FILE = LEVELS_DIR / "campaign.yaml"
 
 @dataclass(frozen=True)
 class Level:
+    """One level of the campaign: its file `levels/<name>.yaml`, its place in the campaign and in its arc, and the
+    resource file holding its tilemaps."""
+
     name: str
     number: int  # 1-based position in the whole campaign
     arc: str
@@ -23,6 +26,7 @@ class Level:
 
     @property
     def path(self) -> Path:
+        """The level file."""
         return LEVELS_DIR / f"{self.name}.yaml"
 
     def load_tilemaps(self) -> None:
@@ -32,6 +36,8 @@ class Level:
 
 @dataclass(frozen=True)
 class Arc:
+    """A story arc: the campaign numbers of its first and last level, and its look on the overview map."""
+
     name: str
     first: int  # campaign numbers of its first and last level
     last: int
@@ -40,6 +46,8 @@ class Arc:
 
 @dataclass(frozen=True)
 class Campaign:
+    """Every level in order of play and the shared sprites file (images, sounds, music); see `arcs` for the arcs."""
+
     sprites: Path
     levels: tuple[Level, ...]
     themes: dict[str, dict] = field(default_factory=dict, compare=False)  # arc name -> its `map` section
@@ -94,6 +102,7 @@ class Campaign:
 
 
 def load_campaign(path: Path = CAMPAIGN_FILE) -> Campaign:
+    """Read the campaign file: its arcs in order, each with its resource file, music and levels."""
     cfg = omegaconf.OmegaConf.load(path)
     levels = []
     themes = {arc.name: omegaconf.OmegaConf.to_container(arc.map) if "map" in arc else {} for arc in cfg.arcs}

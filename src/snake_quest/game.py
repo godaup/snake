@@ -34,6 +34,10 @@ USER_DATA = ("godaup", "snake-quest")
 
 
 class Game:
+    """The whole game: settings, profile, score, the current level and one handler per state. Building it starts Pyxel
+    and runs the game loop until the player quits; `overrides` are merged over settings.yaml (the command line's
+    options), `start_level` is where a new game starts."""
+
     def __init__(self, overrides: dict | None = None, start_level: int = 1):
         """define variables and start, inital values are likely overwritten immediately in start
 
@@ -109,6 +113,7 @@ class Game:
 
     @property
     def handler(self) -> "GameStateHandler":
+        """The handler of the current state, which gets this frame's update and draw."""
         return self._state_handlers[self.stateID]
 
     @property
@@ -148,6 +153,7 @@ class Game:
         self.stateID = self.next_stateID
 
     def restart(self):
+        """A new game from `start_level` with a score of 0, starting with that level's mission."""
         self.score = 0
         self.level_counter = self.start_level
         self._state_handlers[StateID.RUNNING] = RunningStateHandler(self)

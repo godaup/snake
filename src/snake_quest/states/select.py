@@ -42,6 +42,8 @@ PANEL_H = 34
 
 
 class SelectStateHandler(GameStateHandler):
+    """The overview map where an arc is chosen to play; see the module's docstring."""
+
     def __init__(self, game: "Game"):
         super().__init__(game=game)
         self.width = game.cfg.width
@@ -66,12 +68,14 @@ class SelectStateHandler(GameStateHandler):
         return MENU_MUSIC
 
     def _new_snake(self, pos: Vec2) -> Snake:
+        """The little snake that walks the road, in the player's colours, at `pos`."""
         snake = Snake(pos=pos, orient=0, size=2, controller=ChaseController(lambda snake, map: self.target()))
         snake.grow = 14
         snake.recolor(palette(self.game.profile.palette))
         return snake
 
     def open_arcs(self) -> list[int]:
+        """Indexes of the arcs that can be started."""
         unlocked = self.game.unlocked_arcs()
         return [index for index, arc in enumerate(self.arcs) if arc in unlocked]
 
@@ -92,14 +96,17 @@ class SelectStateHandler(GameStateHandler):
         self.t = 0.0
 
     def cam_target(self, index: int) -> float:
+        """Where the camera's left edge goes to show arc `index`, kept within the map."""
         x = self.atlas.region_x(index) + REGION_W / 2 - self.width / 2
         return max(0.0, min(x, self.atlas.width - self.width))
 
     def choose(self, index: int) -> None:
+        """Start arc `index` if it is open."""
         if index in self.open_arcs():
             self.game.start_arc(self.arcs[index])
 
     def best(self, index: int) -> int | None:
+        """The best score in arc `index` at the difficulty chosen, or None."""
         table = self.game.profile.table(self.game.difficulty.name, self.arcs[index].name)
         return table[0].score if table else None
 

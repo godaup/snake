@@ -70,10 +70,6 @@ class Spider(Entity):
         self.heading: tuple[int, int] = (1, 0)
         self.goal: tuple[int, int] | None = None  # the tile it is crawling to
 
-    @property
-    def center(self) -> Vec2:
-        return self.pos + Vec2(self.w / 2, self.h / 2)
-
     def _ledge(self, map: "Map", tile: tuple[int, int]) -> bool:
         """Floor next to rock: where spiders crawl."""
         tilemap = pyxel.tilemaps[map.tm]
@@ -131,6 +127,8 @@ class Spider(Entity):
                 map.clear_web(self.webs.pop(0))
 
     def bite(self, snake: "Snake", map: "Map") -> None:
+        """Bite the body: BITE segments off the tail (the end when the snake is too short), then retreat for RETREAT
+        s."""
         map.game.sm.effect("hurt")
         self.retreat, self.state = self.RETREAT, "retreat"
         if not snake.cut(self.BITE):
@@ -181,15 +179,13 @@ class Mole(Entity):
         self.dug = 0
 
     @property
-    def center(self) -> Vec2:
-        return self.pos + Vec2(self.w / 2, self.h / 2)
-
-    @property
     def exposed(self) -> bool:
+        """Only while it is up can it be shot or aimed at."""
         return self.state == "up"
 
     @property
     def avoid(self) -> bool:
+        """Bots steer around it only while it is up."""
         return self.state == "up"
 
     def covers(self, point: "Vec2") -> bool:
@@ -229,6 +225,7 @@ class Mole(Entity):
                 self.left = 0.5  # try again in a moment
 
     def dive(self, map: "Map") -> None:
+        """Go underground again until it next surfaces."""
         self.state, self.left = "under", pyxel.rndf(*self.SURFACE)
 
     def on_intersect(self, snake: "Snake", map: "Map"):
@@ -267,10 +264,6 @@ class Burning(Entity):
         super().__init__(**kwargs)
         self.left = self.BURN
 
-    @property
-    def center(self) -> Vec2:
-        return self.pos + Vec2(self.w / 2, self.h / 2)
-
     def update(self, snake: "Snake", map: "Map"):
         self.left -= map.game.dt.total_seconds()
         if self.left <= 0:
@@ -292,6 +285,8 @@ class Burning(Entity):
 
 @register("flare")
 class FlarePickup(WeaponPickup):
+    """Flares: slow shots that come to rest as a burning light and burn webs and egg sacs."""
+
     _img_x = 7
     _img_y = 15
     AMMO = 4
@@ -331,13 +326,11 @@ class Bat(Entity):
 
     @property
     def asleep(self) -> bool:
+        """Whether it hangs asleep at its roost."""
         return self.state == "asleep"
 
-    @property
-    def center(self) -> Vec2:
-        return self.pos + Vec2(self.w / 2, self.h / 2)
-
     def lit(self, snake: "Snake", map: "Map") -> bool:
+        """Whether any light falls on it: the head's or a glowing entity's."""
         lights = [(snake.head.pos, map.darkness.light if map.darkness else 56)]
         lights += [(ent.pos + Vec2(ent.w / 2, ent.h / 2), ent.light) for ent in map.entities if ent.alive and ent.light]
         return any((pos - self.center).length() < radius for pos, radius in lights)
@@ -374,6 +367,7 @@ class Bat(Entity):
             self.bite(snake, map)
 
     def _fly(self, map: "Map", goal: Vec2) -> None:
+        """Flutter towards `goal`: turn at most TURN degrees with some jitter, and turn round at rock."""
         to_goal = goal - self.center
         turn = (pyxel.atan2(to_goal.y, to_goal.x) - self.heading + 180) % 360 - 180
         self.heading += max(-self.TURN, min(self.TURN, turn)) + pyxel.rndf(-self.JITTER, self.JITTER) / 4
@@ -385,6 +379,8 @@ class Bat(Entity):
         self.pos = self.pos + step
 
     def bite(self, snake: "Snake", map: "Map") -> None:
+        """Bite the body: BITE segments off the tail (the end when the snake is too short), then flutter off for RETREAT
+        s."""
         map.game.sm.effect("hurt")
         self.state, self.left = "retreat", self.RETREAT
         if not snake.cut(self.BITE):
@@ -458,11 +454,8 @@ class BroodMother(Entity):
         self.shadow = 0.0  # 0..1: how far the drop has come
 
     @property
-    def center(self) -> Vec2:
-        return self.pos + Vec2(self.w / 2, self.h / 2)
-
-    @property
     def exposed(self) -> bool:
+        """Shots hurt her only while she lies dazed after a landing."""
         return self.state == "rest"
 
     avoid = False  # out of reach above, harmless when down: bots may turn to face her

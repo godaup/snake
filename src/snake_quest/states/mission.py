@@ -21,6 +21,9 @@ COL_TITLE = 11
 
 
 class MissionStateHandler(OverlayStateHandler):
+    """The mission briefing over the frozen level when it starts: arc and difficulty, title, intro lines and goals;
+    Enter starts the countdown, Esc goes to the menu."""
+
     def __init__(self, game):
         super().__init__(game=game)
         self.title = BigText(scale=2)
@@ -30,6 +33,7 @@ class MissionStateHandler(OverlayStateHandler):
         self.t = 0.0
 
     def lines(self) -> dict:
+        """The briefing's text: the kicker line, the title, the intro and the goals."""
         level_map = self.running.map
         level = level_map.level
         return {

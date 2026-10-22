@@ -20,6 +20,8 @@ SCREEN_MODES = ("CRISP", "SMOOTH", "RETRO")  # pyxel.screen_mode 0-2
 
 @dataclass
 class Highscore:
+    """One entry of a highscore table: the points made in one arc, the level reached and the date."""
+
     score: int
     level: int
     date: str  # ISO date
@@ -28,6 +30,9 @@ class Highscore:
 
 @dataclass
 class Profile:
+    """What the game remembers between runs: the snake's palette, the difficulty, the settings, finished and seen arcs
+    and the highscores. Loaded and saved as JSON at `path`."""
+
     palette: str = DEFAULT_PALETTE
     difficulty: str = DEFAULT_DIFFICULTY
     highscores: dict[str, list[Highscore]] = field(default_factory=dict)  # difficulty name -> its arcs' tables
@@ -74,6 +79,8 @@ class Profile:
         return profile
 
     def save(self) -> None:
+        """Write the profile back to where it was loaded from; quietly does nothing when that fails or it was never
+        loaded (tests)."""
         if self.path is None:
             return
         data = {

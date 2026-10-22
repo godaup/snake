@@ -1,3 +1,5 @@
+"""Small helpers shared by the game and the bots: vectors and the snake's head geometry."""
+
 from dataclasses import dataclass
 
 import pyxel
@@ -5,7 +7,7 @@ import pyxel
 
 @dataclass
 class Vec2:
-    """A simple 2D vector"""
+    """A 2D vector or point in px (world positions include the header height in y)."""
 
     x: float = 0
     y: float = 0
@@ -24,6 +26,7 @@ class Vec2:
         return Vec2(other * self.x, other * self.y)
 
     def length(self):
+        """The vector's length in px."""
         return pyxel.sqrt(self.x**2 + self.y**2)
 
 

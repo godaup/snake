@@ -42,6 +42,9 @@ class Stop:
 
 
 class WorldMap:
+    """The overview map's picture: a region per arc side by side, drawn once from the arcs' themes, with the road
+    through a stop per level."""
+
     def __init__(self, arcs: list[Arc], height: int):
         self.arcs = arcs
         self.height = height
@@ -64,6 +67,7 @@ class WorldMap:
 
     @staticmethod
     def region_x(index: int) -> int:
+        """The left edge in px of arc `index`'s region."""
         return LEAD + index * REGION_W
 
     def region_at(self, x: float) -> int | None:
@@ -89,6 +93,7 @@ class WorldMap:
         return self.road[-1]
 
     def road_distance(self, pos: Vec2) -> float:
+        """How far `pos` is from the road, in px."""
         best = float("inf")
         for a, b in pairwise(self.road):
             ab = b - a
@@ -116,6 +121,7 @@ class WorldMap:
         self.image = img
 
     def _draw_road(self, img: pyxel.Image) -> None:
+        """Draw the road with its edge and a dotted middle into `img`."""
         for a, b in pairwise(self.road):
             steps = max(int((b - a).length()), 1)
             for i in range(steps + 1):
@@ -142,6 +148,8 @@ class WorldMap:
         return not cells & taken
 
     def _draw_region(self, img: pyxel.Image, index: int, theme: dict) -> None:
+        """Draw arc `index`'s region into `img` from its `theme`: clumps of tinted wall off the road, then props and
+        decorations."""
         rng = random.Random(index)
         x0, x1 = self.region_x(index), self.region_x(index + 1)
         walls: set[tuple[int, int]] = set()
@@ -204,6 +212,7 @@ class WorldMap:
                 self._draw_fog(index, cam_x, t, amount)
 
     def _draw_fog(self, index: int, cam_x: float, t: float, amount: float) -> None:
+        """Draw fog over region `index` (`amount` 0..1), with clouds drifting by and, while thick, a question mark."""
         x0 = self.region_x(index) - cam_x - 6
         x1 = (self.width if index == len(self.arcs) else self.region_x(index + 1)) - cam_x + 6
         if x1 < 0 or x0 > pyxel.width:

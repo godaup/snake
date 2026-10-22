@@ -19,6 +19,9 @@ STEP = 4  # px: a shot tests for hits at least this often along its flight
 
 
 class Projectile:
+    """A shot flying straight (or homing, or bouncing) at `speed` px per frame; the snake's hit hostile entities,
+    hostile ones the snake."""
+
     LIFETIME = 1.2  # seconds before it fizzles out
 
     def __init__(
@@ -120,6 +123,7 @@ class Projectile:
         self.bounces -= 1
 
     def draw(self, offset: Vec2) -> None:
+        """A dot, or for a beam a streak along its flight."""
         if self.pierce:  # a beam: a streak along its flight
             tail = self.pos - self.dir * (self.speed * 2)
             pyxel.line(tail.x + offset.x, tail.y + offset.y, self.pos.x + offset.x, self.pos.y + offset.y, self.col)
@@ -140,9 +144,11 @@ class Weapon(ABC):
 
     @property
     def ready(self) -> bool:
+        """Whether it can fire: ammo left and the cooldown over."""
         return self.ammo > 0 and self.cooldown <= 0
 
     def update(self, snake: "Snake", map: "Map", fire: bool, seconds: float) -> None:
+        """One frame: cool down, and on `fire` while ready release a shot (or a mine), using up ammo."""
         self.cooldown = max(self.cooldown - seconds, 0.0)
         if fire and self.ready:
             self.release(snake, map)
@@ -324,6 +330,7 @@ class TractorBeam(Projectile):
 
     @classmethod
     def in_cone(cls, snake: "Snake", ent) -> bool:
+        """Whether `ent` lies within RANGE px of the head and CONE degrees of where it points."""
         to_ent = ent.pos + Vec2(ent.w / 2, ent.h / 2) - snake.head.pos
         if not 0 < to_ent.length() <= cls.RANGE:
             return False
@@ -344,6 +351,7 @@ class TractorBeam(Projectile):
                 self.target.pos = self.target.pos + to_head * (min(self.PULL, length) / length)
 
     def draw(self, offset: Vec2) -> None:
+        """A dotted, crawling line from the head to what it pulls."""
         if self.target is None:
             return
         end = self.target.pos + Vec2(self.target.w / 2, self.target.h / 2)

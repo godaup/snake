@@ -80,6 +80,7 @@ class Tree(Entity):
 
     @property
     def grown(self) -> bool:
+        """Whether the sapling has grown into a tree that drops apples."""
         return self.age >= self.GROW
 
     def update(self, snake: "Snake", map: "Map"):
@@ -240,6 +241,7 @@ class Crow(Entity):
 
     @property
     def grounded(self) -> bool:
+        """Whether it is on the ground (perched or stunned): only then can the snake bite it."""
         return self.state in ("perch", "stunned")
 
     def update(self, snake: "Snake", map: "Map"):
@@ -346,6 +348,8 @@ class Hand:
         return [(x, y), (x + 1, y), (x, y + 1), (x + 1, y + 1)] if tool == "tree" else [tile]
 
     def can_place(self, tool: str, tile: tuple[int, int], snake: "Snake") -> bool:
+        """Whether `tool` can go on `tile` now: some left, and every tile it takes free (plain floor, nothing on it,
+        away from the head)."""
         if self.left.get(tool, 0) <= 0:
             return False
         clear = CLEAR + 4 if tool == "tree" else CLEAR
@@ -412,6 +416,8 @@ class Hand:
     # ---- every frame --------------------------------------------------------------------------------------------
 
     def update(self, snake: "Snake") -> None:
+        """One frame: cool down, grow sprouts into hedges once the snake has left them and is far enough away, and let
+        the player act."""
         seconds = self.map.game.dt.total_seconds()
         self.cooldown = max(self.cooldown - seconds, 0.0)
         self.placed = [ent for ent in self.placed if ent.alive]
@@ -475,9 +481,11 @@ class HandInput:
 
     @staticmethod
     def pressed(*keys: int, hold: int = 0, repeat: int = 0) -> bool:
+        """Whether any of `keys` was pressed this frame (`hold` / `repeat` as for pyxel.btnp)."""
         return any(pyxel.btnp(key, hold=hold, repeat=repeat) for key in keys)
 
     def act(self, hand: Hand, snake: "Snake", map: "Map") -> None:
+        """Read the mouse, keyboard and gamepad: move the cursor, choose a tool, place or lift."""
         cfg = map.game.cfg
         top, footer = cfg.header.h, cfg.header.h + cfg.area.h
         mouse = (pyxel.mouse_x, pyxel.mouse_y)
@@ -570,7 +578,8 @@ class PetController(PathController):
         return threats
 
     def _wall(self, map, cell):
-        hand = map.hand  # a sprouting hedge is a wall to its way at once
+        """A sprouting hedge is a wall to the pet's way at once, before it has grown."""
+        hand = map.hand
         if (
             hand is not None
             and hand.sprouts
@@ -580,16 +589,20 @@ class PetController(PathController):
         return super()._wall(map, cell)
 
     def sees(self, ent: Entity, lights: list | None) -> bool:
+        """Whether the pet can see `ent`: always in a lit level, else only inside one of `lights`."""
         if lights is None:
             return True
         center = ent.pos + Vec2(ent.w / 2, ent.h / 2)
         return any((center - pos).length() < radius for pos, radius in lights)
 
     def choose(self, snake: "Snake", map: "Map") -> Vec2:
+        """The point the pet goes for now (also kept in `goal` for drawing)."""
         self.goal = self._choose(snake, map)
         return self.goal
 
     def _choose(self, snake: "Snake", map: "Map") -> Vec2:
+        """What the pet goes for: a grounded boss in reach, else the food it sees that is nearest by walking distance
+        (golden apples count further, guarded food last), else the nearest lantern in the dark, else a wander."""
         distance = map.flight(snake)
         boss = map.boss
         body = boss.target() if boss is not None else None
@@ -657,6 +670,7 @@ class PetController(PathController):
 
     @staticmethod
     def _open(map: "Map", tile: tuple[int, int]) -> bool:
+        """Whether the eight tiles around `tile` and `tile` itself are free of walls."""
         x, y = tile
         tilemap = pyxel.tilemaps[map.tm]
         return all(tilemap.pget(x + dx, y + dy) not in WALL_TILES for dx in (-1, 0, 1) for dy in (-1, 0, 1))
@@ -725,6 +739,8 @@ class HandBot:
         self.score_at_start: int | None = None
 
     def act(self, hand: Hand, snake: "Snake", map: "Map") -> None:
+        """At most one action per REACTION s (plus the cursor's travel): first what the moment needs (`react`), else the
+        plan's next step."""
         seconds = map.game.dt.total_seconds()
         self.elapsed += seconds
         if self.score_at_start is None:
@@ -749,6 +765,8 @@ class HandBot:
             self.busy = self.REACTION + travel
 
     def planned(self, hand: Hand, snake: "Snake", map: "Map", seconds: float) -> tuple[str, tuple] | None:
+        """The plan's next action, once its `after` and `reach` conditions hold; None while waiting. A step that stays
+        impossible for GIVE_UP s is skipped."""
         while self.steps:
             kind, value = self.steps[0]
             if kind == "after":
@@ -774,6 +792,7 @@ class HandBot:
         return None
 
     def _after(self, value, snake: "Snake", map: "Map") -> bool:
+        """Whether the plan's `after` conditions all hold: seconds played, length, score made, the boss's phase."""
         checks = {
             "seconds": lambda n: self.elapsed >= n,
             "length": lambda n: len(snake) >= n,
@@ -783,6 +802,8 @@ class HandBot:
         return all(checks[key](n) for key, n in dict(value).items())
 
     def react(self, hand: Hand, snake: "Snake", map: "Map") -> tuple[str, tuple] | None:
+        """An action the moment asks for, or None: a hedge across the Crow's swoop line (lifting the oldest one when
+        none are left), a lure for a hunter close to the snake."""
         boss = map.boss
         swoop = getattr(boss, "swoop_line", None)
         line = swoop() if swoop is not None else None
@@ -814,6 +835,7 @@ class HandBot:
 
     @staticmethod
     def _on_line(tile: tuple[int, int], start: Vec2, end: Vec2, map: "Map") -> bool:
+        """Whether `tile`'s centre lies within 6 px of the line from `start` to `end`."""
         center = map.tile_center(tile)
         line = end - start
         length = line.length()
@@ -824,6 +846,7 @@ class HandBot:
 
     @staticmethod
     def _near_free(hand: Hand, tool: str, tile: tuple[int, int], snake: "Snake") -> tuple[int, int] | None:
+        """The tile nearest `tile` (in rings up to 3 tiles out) where `tool` can be placed, or None."""
         x, y = tile
         for reach in range(4):
             for dx in range(-reach, reach + 1):
