@@ -25,7 +25,7 @@ NECK = 3.0  # px along the body from the head that it can't bite: 3 segments at 
 TAPER = 6  # tail segments drawn thinner (radius 1, the last two a single pixel), on snakes longer than twice that
 TONGUE_EVERY, TONGUE_OUT = 2.4, 0.3  # seconds: the tongue flicks out for TONGUE_OUT once every TONGUE_EVERY
 BLINK_EVERY, BLINK = 3.7, 0.15  # seconds: the eyes shut for BLINK once every BLINK_EVERY
-AMMO_BAND = 12  # at most this many segments behind the head show a spine in the weapon's colour, one per shot left
+AMMO_BAND = 12  # at most this many bands across the body behind the head, in the weapon's colour, one per shot left
 COL_TONGUE, COL_LID = 8, 13
 LIGHT = {0: 5, 1: 5, 2: 14, 3: 11, 4: 9, 5: 12, 6: 7, 7: 7, 8: 14, 9: 10, 10: 7, 11: 7, 12: 6, 13: 7, 14: 15, 15: 7}
 
@@ -127,7 +127,7 @@ class Snake:
 
     def draw(self, offset: Vec2):
         """Draw the snake shifted by the camera's `offset`: the body from the tail up (tapering to a point, the ammo
-        as a stripe down the spine behind the head), then the head with its eyes and, now and then, its tongue."""
+        as a cartridge belt behind the head), then the head with its eyes and, now and then, its tongue."""
         n = len(self.segs)
         for index in range(n - 1, 0, -1):
             seg = self.segs[index]
@@ -138,19 +138,22 @@ class Snake:
             if n > 2 * TAPER and index >= n - TAPER:
                 radius = 0 if index >= n - 2 else 1
             pyxel.circ(seg.pos.x + offset.x, seg.pos.y + offset.y, radius, seg.col)
-        # details on top, as the segments overlap: the gloss along the back, the ammo down the spine
-        band = min(self.weapon.ammo, AMMO_BAND) if self.weapon is not None else 0
-        for index in range(1, n - TAPER if n > 2 * TAPER else n):
+        # details on top, as the segments overlap: the gloss along the back, the ammo as a cartridge belt
+        body = n - TAPER if n > 2 * TAPER else n
+        bands = min(self.weapon.ammo, AMMO_BAND, (body - 2) // 2) if self.weapon is not None else 0
+        for index in range(1, body):
             seg = self.segs[index]
             if seg.key is not None:
                 continue
             x, y = seg.pos.x + offset.x, seg.pos.y + offset.y
+            ahead = self.segs[index - 1].pos - seg.pos
+            length = ahead.length() or 1
+            dx, dy = ahead.x / length, ahead.y / length
             if self.colors.gloss:
-                ahead = self.segs[index - 1].pos - seg.pos
-                length = ahead.length() or 1
-                pyxel.pset(x + ahead.y / length * 1.2 - 0.3, y - ahead.x / length * 1.2 - 0.3, LIGHT[seg.col])
-            if index <= band:  # a segment a shot
-                pyxel.pset(x, y, self.weapon.COL)
+                pyxel.pset(x + dy * 1.2 - 0.3, y - dx * 1.2 - 0.3, LIGHT[seg.col])
+            if index % 2 == 0 and index // 2 <= bands:  # a band across the body every other segment, a shot each
+                across_x, across_y = dy * self.size, -dx * self.size
+                pyxel.line(x + across_x, y + across_y, x - across_x, y - across_y, self.weapon.COL)
         self._draw_head(offset)
 
     def _draw_head(self, offset: Vec2) -> None:
