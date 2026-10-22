@@ -127,6 +127,17 @@ crashing it; bots follow a written solution, the level's `plan`); built (see M8)
 Unlocked after the campaign. The bot (`PathController`) steers the snake, and the player shapes the world with the
 mouse: build and remove walls, plant apple trees, set decoys that lure enemies away. Needs a mouse input layer and a
 bot whose choices the player can read and predict. Goals as usual (score, length, survive), but reached for the snake.
+Designed in detail in [docs/arc8-keeper.md](docs/arc8-keeper.md) (a pet bot that eats the nearest apple by walking
+distance, keeps its choice and draws its way; a hand with budgets of hedges, trees, lures and lanterns; a second bot
+plays the hand in tests, and the levels must be lost without it).
+
+| #  | Level              | Twist                                                                  | Goal                      |
+|----|--------------------|------------------------------------------------------------------------|---------------------------|
+| 36 | Hedges             | Plant and lift hedges to lead the snake round thorns it can't see      | length                    |
+| 37 | Orchard            | Apple trees are the only food: where they stand steers the snake       | score, in time            |
+| 38 | Lures              | Beetles hunt lures before the tail; thorns and hedge pens stop them    | hold a length             |
+| 39 | Lanterns           | In the dark the snake sees only what is lit and walks to the lanterns  | collect all golden apples |
+| 40 | **Boss: The Crow** | Lands to steal, swoops at the tail, calls its flock; bitten only while down | defeat the boss      |
 
 ### One-off levels
 
