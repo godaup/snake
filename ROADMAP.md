@@ -235,7 +235,8 @@ Workshop is done, its own victory after level 40), the Keeper's waltz and three 
 keys or gamepad; budgets; sprouting hedges), Hedges (level 36), Orchard (level 37: apple trees), Lures (level 38:
 lures, hedge pens), Lanterns (level 39: lanterns in the dark), Boss: The Crow (level 40: it steals, swoops and calls
 its flock; a hedge across a swoop brings it down). A `HandBot` plays the hand in tests, and a slow test checks that
-the pet left alone loses every level. Open: playtesting (above all: is the pet's way readable enough to plan with?),
+the pet left alone loses every level. Open: balancing (Hedges, Lures, Lanterns and the Crow are outside some win-rate bands: see "As built" in
+docs/arc8-keeper.md), playtesting (above all: is the pet's way readable enough to plan with?),
 the "keeper's breath" slow-down (see docs/arc8-keeper.md), the Shepherd as a Keeper level.
 
 ### M5: Release

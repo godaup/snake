@@ -345,3 +345,47 @@ methods as `Hand` (`place(tool, tile)`, `lift(tile)`), so it can't do what the p
 - **The one-off levels.** Shepherd (the body herds critters into a pen) fits this arc's spirit but asks the player to
   steer. It stays a one-off for the campaign; a Keeper version (the player builds the fences, the snake drives the
   flock) could be a sixth level later.
+
+## As built
+
+The arc is in the game (levels 36–40, M9 in the roadmap). Its balancing is not finished: this section records where
+it stands.
+
+### Balancing: open issues
+
+Bot win rates with the `HandBot` (8 seeds, `tools/balance.py --levels hedges orchard lures lanterns crow --seeds 8`;
+easy / medium / hard / nightmare). The bands are those of `tests/test_winnable.py` (`WIN_RATES`: easy 75–100%,
+medium 50–100%, hard 25–90%, nightmare 10–70%; a harder difficulty must not be won more often, give or take one
+seed). Out of band in bold.
+
+| Level | Easy | Medium | Hard | Nightmare | Losses (hard, nightmare) |
+|---|---|---|---|---|---|
+| Hedges | 100% | 75% | **0%** | **0%** | killed 8, killed 8 |
+| Orchard | 75% | 75% | 50% | 38% | tail 3, killed 1; tail 3, killed 2 |
+| Lures | 100% | 75% | **12%** | **0%** | killed 3, tail 2, wall 2; killed 7, wall 1 |
+| Lanterns | **62%** | 100% | **12%** | **25%** | killed 4, wall 3; wall 3, tail 2, killed 1 |
+| Boss: The Crow | 88% | 62% | 38% | **0%** | tail 5; tail 8 |
+
+Orchard was measured with its difficulty overrides; the others before the budget fix below. So
+`test_difficulties_keep_their_win_rates` (slow) fails for Hedges, Lures, Lanterns and the Crow.
+
+- **Tool budgets (fixed, not yet re-measured).** The hand divided its budgets by the goals factor itself, after the
+  level's per-difficulty overrides were merged, so an override was scaled again. On hard Hedges had 10 hedges and
+  its plan needs 12 for the four thorny gaps; the pet walked into the open ones ("killed 8" on hard and nightmare).
+  Lures needs 16 for the two pens and had 14 and 12. The budgets now scale in `difficulty.apply` with everything
+  else, and Hedges (`hedge: 12`) and Lures (`hedge: 16`) override them on hard and nightmare. Next: re-measure both.
+  If Hedges on hard is then won about as often as on medium, harder could mean a faster apple turn-over instead.
+- **Orchard (in band).** The score goal scaled to 48 and 56 grew the snake (3 segments an apple) past 140, and it
+  bit itself. Hard and nightmare keep a score of 40: harder means less time and a faster snake.
+- **Lanterns (not investigated).** Easy loses to beetles (killed 2) and hard to beetles and walls; nightmare beats
+  hard by more than the one-seed slack. Easy's brighter light (`light` 1.3) may wake the sleeping beetles sooner, and
+  its slower snake gives them longer to catch it; hard's dimmer light (0.9) may leave the pet blind between lanterns
+  for longer. To look at: the outcomes per seed (who kills it, and where), then light or beetle overrides per
+  difficulty.
+- **Boss: The Crow, nightmare.** Every loss is the pet biting itself at 69–106 segments, with the Crow on 1–4 of its
+  7 health (6 scaled by the `boss` factor 1.2): the longer fight lets the trees and apples grow the snake too long.
+  To try: `nightmare: {boss: {health: 6}}`, or fewer apples (the `apples` timer's `max: 1`), or a larger `chunk` so
+  the swoops keep it short.
+- **The pet alone (`test_the_garden_needs_its_keeper`, slow).** It last failed for Lures (the pet won 3 of 4 runs
+  alone). Two beetles a nest (`BROOD: 2`, `SPAWN: 12`) brought that to 0 of 8 at medium (`--no-hand`), but the slow
+  test hasn't been rerun since.
