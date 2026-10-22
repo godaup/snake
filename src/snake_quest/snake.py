@@ -26,10 +26,13 @@ NECK = 3.0  # px along the body from the head that it can't bite: 3 segments at 
 TAPER = 6  # tail segments drawn thinner (radius 1, the last two a single pixel), on snakes longer than twice that
 TONGUE_EVERY, TONGUE_OUT = 2.4, 0.3  # seconds: the tongue flicks out for TONGUE_OUT once every TONGUE_EVERY
 BLINK_EVERY, BLINK = 3.7, 0.15  # seconds: the eyes shut for BLINK once every BLINK_EVERY
-AMMO_BEADS = 12  # at most this many beads down the back behind the head, in the weapon's colour, one per shot left
-AMMO_PIE = False  # the ammo also as a pie floating over the head, a piece a shot (to try out: see _draw_ammo_pie)
-PIE_RADIUS, PIE_ABOVE, PIE_FOLLOW = 4, 11, 0.25  # px, px over the head, share of the way it catches up per frame
-COL_TONGUE, COL_LID, COL_BEAD, COL_PIE_EMPTY, COL_PIE_CUT = 8, 13, 7, 1, 0
+PIE_RADIUS, PIE_ABOVE, PIE_ASIDE, PIE_FOLLOW = 4, 14, 10, 0.3  # px; px over the head (or aside, clear of the body);
+# share of the way it catches up per frame
+PIE_KICK = 0.12  # seconds the ammo pie swells when a shot is fired (see _draw_ammo_pie)
+PIE_CUTS = 8  # cut into pieces while it holds at most this many shots
+PIE_LOW = 0.25  # share of the shots left below which it blinks
+COL_TONGUE, COL_LID, COL_PIE_EMPTY = 8, 13, 1
+DARK = {0: 0, 1: 0, 2: 1, 3: 1, 4: 2, 5: 1, 6: 5, 7: 13, 8: 2, 9: 4, 10: 9, 11: 3, 12: 5, 13: 5, 14: 2, 15: 4}
 LIGHT = {0: 5, 1: 5, 2: 14, 3: 11, 4: 9, 5: 12, 6: 7, 7: 7, 8: 14, 9: 10, 10: 7, 11: 7, 12: 6, 13: 7, 14: 15, 15: 7}
 
 
@@ -85,9 +88,11 @@ class Snake:
         self.controller: Controller = controller or Controller()  # the default one goes straight
         self.turn_speed = turn_speed
         self.clock = 0.0  # seconds it has lived, for the tongue and the blinking (no random numbers: bots replay)
-        self.pie: Vec2 | None = None  # where the ammo pie floats (see AMMO_PIE)
+        self.pie: Vec2 | None = None  # where the ammo pie floats (see _draw_ammo_pie)
         self.ammo_full = 0  # the most shots the weapon carried has held: the whole pie
+        self.pie_kick = 0.0  # seconds left of its swell after a shot
         self._carried: Weapon | None = None
+        self._ammo_before = 0
 
     def __len__(self):
         return len(self.segs)
@@ -133,7 +138,7 @@ class Snake:
 
     def draw(self, offset: Vec2):
         """Draw the snake shifted by the camera's `offset`: the body from the tail up (tapering to a point, the ammo
-        as beads behind the head), then the head with its eyes and, now and then, its tongue."""
+        and the gloss on top), then the head with its eyes and, now and then, its tongue, and the ammo pie over it."""
         n = len(self.segs)
         for index in range(n - 1, 0, -1):
             seg = self.segs[index]
@@ -144,43 +149,46 @@ class Snake:
             if n > 2 * TAPER and index >= n - TAPER:
                 radius = 0 if index >= n - 2 else 1
             pyxel.circ(seg.pos.x + offset.x, seg.pos.y + offset.y, radius, seg.col)
-        # details on top, as the segments overlap: the gloss along the back, the ammo as beads
-        body = n - TAPER if n > 2 * TAPER else n
-        beads = min(self.weapon.ammo, AMMO_BEADS, (body - 2) // 2) if self.weapon is not None else 0
-        for index in range(1, body):
+        # the gloss along the back on top, as the segments overlap
+        for index in range(1, n - TAPER if n > 2 * TAPER else n) if self.colors.gloss else ():
             seg = self.segs[index]
             if seg.key is not None:
                 continue
             x, y = seg.pos.x + offset.x, seg.pos.y + offset.y
             ahead = self.segs[index - 1].pos - seg.pos
             length = ahead.length() or 1
-            dx, dy = ahead.x / length, ahead.y / length
-            if self.colors.gloss:
-                pyxel.pset(x + dy * 1.2 - 0.3, y - dx * 1.2 - 0.3, LIGHT[seg.col])
-            if index % 2 == 0 and index // 2 <= beads:  # a bead every other segment, a shot each
-                pyxel.circ(x, y, 1, self.weapon.COL)
-                pyxel.pset(x, y, COL_BEAD)
+            pyxel.pset(x + ahead.y / length * 1.2 - 0.3, y - ahead.x / length * 1.2 - 0.3, LIGHT[seg.col])
         self._draw_head(offset)
-        if AMMO_PIE and self.weapon is not None and self.pie is not None:
+        if self.weapon is not None and self.pie is not None:
             self._draw_ammo_pie(offset)
 
     def _draw_ammo_pie(self, offset: Vec2) -> None:
         """The ammo as a pie over the head in the weapon's colour: a piece for each shot the weapon has held, the
-        ones fired gone (dark), clockwise from the top; cut into pieces while there are few enough to tell apart."""
-        full, left = max(self.ammo_full, 1), self.weapon.ammo
-        x, y = self.pie.x + offset.x, self.pie.y + offset.y + round(math.sin(self.clock * 4))
-        reach = PIE_RADIUS * PIE_RADIUS + PIE_RADIUS
-        for py in range(-PIE_RADIUS, PIE_RADIUS + 1):
-            for px in range(-PIE_RADIUS, PIE_RADIUS + 1):
+        ones fired gone (dark), clockwise from the top, with a rim and a gloss. It swells a little at each shot and
+        blinks when the shots run low."""
+        weapon = self.weapon
+        full, left = max(self.ammo_full, 1), weapon.ammo
+        radius = PIE_RADIUS + (1 if self.pie_kick > 0 else 0)
+        x, y = round(self.pie.x + offset.x), round(self.pie.y + offset.y + math.sin(self.clock * 4))
+        col, rim = weapon.COL, DARK[weapon.COL]
+        if left and left <= full * PIE_LOW and self.clock % 0.5 < 0.25:  # running low
+            col = LIGHT[col]
+        filled = 360 * left / full
+        reach = radius * radius + radius
+        for py in range(-radius, radius + 1):
+            for px in range(-radius, radius + 1):
                 if px * px + py * py > reach:
                     continue
-                angle = math.degrees(math.atan2(px, -py)) % 360
-                pyxel.pset(x + px, y + py, self.weapon.COL if angle < 360 * left / full else COL_PIE_EMPTY)
-        if full <= 8:
+                if math.degrees(math.atan2(px, -py)) % 360 < filled:
+                    shine = px + py < -radius and px * px + py * py > radius  # the gloss, upper left
+                    pyxel.pset(x + px, y + py, LIGHT[col] if shine else col)
+                else:
+                    pyxel.pset(x + px, y + py, COL_PIE_EMPTY)
+        if full <= PIE_CUTS:
             for piece in range(full):
                 angle = math.radians(piece * 360 / full)
-                pyxel.line(x, y, x + math.sin(angle) * PIE_RADIUS, y - math.cos(angle) * PIE_RADIUS, COL_PIE_CUT)
-        pyxel.pset(x, y, COL_PIE_CUT)
+                pyxel.line(x, y, x + math.sin(angle) * radius, y - math.cos(angle) * radius, rim)
+        pyxel.circb(x, y, radius + 1, rim)
 
     def _draw_head(self, offset: Vec2) -> None:
         """A head one pixel bigger than the body, its eyes to either side of where it points (shut while it
@@ -241,13 +249,31 @@ class Snake:
         # fire
         if self.weapon:
             self.weapon.update(self, map, fire=self.controller.fire(self, map), seconds=dt.total_seconds())
-        # the ammo pie: full is the most the weapon has held; it floats after the head
+        self._follow_pie(dt.total_seconds())
+
+    def _follow_pie(self, seconds: float) -> None:
+        """The ammo pie: whole is the most the weapon has held; a shot fired makes it swell; it floats
+        after the head, above it unless the body lies there, then aside."""
         if self.weapon is not self._carried:
             self._carried, self.ammo_full = self.weapon, 0
+            self._ammo_before = self.weapon.ammo if self.weapon is not None else 0
+        self.pie_kick = max(self.pie_kick - seconds, 0.0)
         if self.weapon is not None:
-            self.ammo_full = max(self.ammo_full, self.weapon.ammo)
-        above = self.head.pos + Vec2(0, -PIE_ABOVE)
-        self.pie = above if self.pie is None else self.pie + (above - self.pie) * PIE_FOLLOW
+            ammo = self.weapon.ammo
+            if ammo < self._ammo_before and self.ammo_full:
+                self.pie_kick = PIE_KICK
+            self._ammo_before = ammo
+            self.ammo_full = max(self.ammo_full, ammo)
+        head = self.head.pos
+        spots = [Vec2(0, -PIE_ABOVE), Vec2(-PIE_ASIDE, -PIE_ABOVE / 2), Vec2(PIE_ASIDE, -PIE_ABOVE / 2)]
+        clear = PIE_RADIUS + self.size + 2
+        target = head + spots[0]
+        near = self.segs[1:40] if self.weapon is not None else ()  # only the body near the head can be in the way
+        for spot in spots:
+            if not any((seg.pos - (head + spot)).length() < clear for seg in near):
+                target = head + spot
+                break
+        self.pie = target if self.pie is None else self.pie + (target - self.pie) * PIE_FOLLOW
 
     def cut(self, n: int) -> bool:
         """Lose `n` segments from the tail; False (and nothing cut) when the snake isn't longer than that."""
