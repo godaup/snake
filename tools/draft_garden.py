@@ -16,24 +16,24 @@
     python tools/draft_garden.py fortress src/snake_quest/resources/arc3.pyxres \\
         --level src/snake_quest/levels/turrets.yaml --src-tm 0 --dst-tm 0 --seed 1
 
-    # a cave (arc 5): caverns from a cellular automaton, joined by tunnels; --long: one winding tunnel instead
-    python tools/draft_garden.py cave src/snake_quest/resources/arc5.pyxres \\
+    # a cave (arc 4): caverns from a cellular automaton, joined by tunnels; --long: one winding tunnel instead
+    python tools/draft_garden.py cave src/snake_quest/resources/arc4.pyxres \\
         --level src/snake_quest/levels/webs.yaml --src-tm 0 --dst-tm 0 --seed 1
     # put down entity tiles far from the start, in side caverns (e.g. the crystals to collect)
-    python tools/draft_garden.py scatter src/snake_quest/resources/arc5.pyxres \\
+    python tools/draft_garden.py scatter src/snake_quest/resources/arc4.pyxres \\
         --level src/snake_quest/levels/webs.yaml --entity crystal --count 8 --seed 1
     # string webs across narrow passages
-    python tools/draft_garden.py webs src/snake_quest/resources/arc5.pyxres \\
+    python tools/draft_garden.py webs src/snake_quest/resources/arc4.pyxres \\
         --level src/snake_quest/levels/webs.yaml --count 10 --seed 1
 
-    # the same with pillars and short walls (arc 4, the temple), and patches of mirrored floor
-    python tools/draft_garden.py temple src/snake_quest/resources/arc4.pyxres \\
+    # the same with pillars and short walls (arc 7, the temple), and patches of mirrored floor
+    python tools/draft_garden.py temple src/snake_quest/resources/arc7.pyxres \\
         --level src/snake_quest/levels/trail.yaml --src-tm 0 --dst-tm 0 --seed 1
-    python tools/draft_garden.py mirror src/snake_quest/resources/arc4.pyxres \\
+    python tools/draft_garden.py mirror src/snake_quest/resources/arc7.pyxres \\
         --level src/snake_quest/levels/mirror.yaml --bands 3 --seed 1
 
-    # small clusters of thorns, here only between tile columns 100 and 150 (--region works for ice and mirror too)
-    python tools/draft_garden.py thorns src/snake_quest/resources/arc4.pyxres \\
+    # small clusters of thorns, here only between tile columns 100 and 150 (--region works for ice, mirror and webs too)
+    python tools/draft_garden.py thorns src/snake_quest/resources/arc7.pyxres \\
         --level src/snake_quest/levels/gauntlet.yaml --patches 20 --region 100 150 --seed 1
 
 The organic layout is a hedge border plus rounded bushes (unions of circles) and gently curved hedge rows. Every
@@ -289,7 +289,7 @@ CAVE_CELL = 3  # tiles per cell of the cave automaton: passages are at least thi
 
 
 def cave(tilemap, width, height, rng, start, keep: dict, fill=0.5, passes=3, open_areas=(), long=False):
-    """A cave (arc 5): rock everywhere but caverns carved by a cellular automaton on a grid of CAVE_CELL-tile cells
+    """A cave (arc 4): rock everywhere but caverns carved by a cellular automaton on a grid of CAVE_CELL-tile cells
     (random rock at `fill`, then `passes` rounds of "rock where most neighbours are rock"), joined by tunnels so every
     cavern can be reached from the start, with rounded edges. `long`: one winding tunnel from the left end to the right
     one instead, with side caverns (some of them dead ends). Returns (caverns joined, unreachable tiles filled)."""
@@ -426,12 +426,14 @@ def scatter(tilemap, width, height, rng, start, tile, count: int) -> int:
     return len(taken) - 1
 
 
-def webs(tilemap, width, height, rng, start, count: int, spacing: int = 14, widest: int = 5) -> int:
+def webs(tilemap, width, height, rng, start, count: int, spacing: int = 14, widest: int = 5, region=None) -> int:
     """String `count` webs across narrow passages (floor runs of at most `widest` tiles between rock, across the way),
-    `spacing` tiles apart and away from the start; returns how many."""
+    `spacing` tiles apart and away from the start, only between the tile columns of `region` if given; returns how
+    many."""
     passages = []
+    x0, x1 = region or (1, width - 1)
     for y in range(1, height - 1):
-        for x in range(1, width - 1):
+        for x in range(max(x0, 1), min(x1, width - 1)):
             if tilemap.pget(x, y) not in FLOOR or abs(x - start[0]) + abs(y - start[1]) < 16:
                 continue
             for dx, dy in ((1, 0), (0, 1)):
@@ -613,7 +615,11 @@ def main() -> None:
     parser.add_argument("--patches", type=int, default=12, help="ice/mirror: how many patches")
     parser.add_argument("--bands", type=int, default=0, help="mirror: bands across the level instead of patches")
     parser.add_argument(
-        "--region", type=int, nargs=2, metavar=("X0", "X1"), help="ice/mirror/thorns: only between these tile columns"
+        "--region",
+        type=int,
+        nargs=2,
+        metavar=("X0", "X1"),
+        help="ice/mirror/thorns/webs: only between these tile columns",
     )
     parser.add_argument(
         "--open",
@@ -644,7 +650,7 @@ def main() -> None:
     entity_sprites = set(ENTITY_TILES) | set(PORTAL_TILES) | {EXIT_TILE, HAZARD_TILE, ICE_TILE, MIRROR_TILE}
 
     if args.command == "webs":
-        count = webs(pyxel.tilemaps[level.tm], width, height, rng, start, args.count)
+        count = webs(pyxel.tilemaps[level.tm], width, height, rng, start, args.count, region=args.region)
         print(f"tilemap {level.tm}: {count} webs")
     elif args.command == "scatter":
         from snake_quest.entity import ENTITY_NAMES

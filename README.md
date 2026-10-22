@@ -1,8 +1,8 @@
 # Snake Quest
 
 **Snake, but every level brings a new twist.** A retro campaign of 40 levels built with [Pyxel](https://github.com/kitao/pyxel):
-hunt and be hunted, shoot turrets, slide over ice, crawl through dark caves, steer through gravity wells, push crates
-in a clockwork workshop, and face eight bosses on the way.
+hunt and be hunted, shoot turrets, slide over ice, crawl through dark caves, push crates in a clockwork workshop,
+steer through gravity wells, and face a rival snake at the end.
 
 [![CI](https://github.com/godaup/snake/actions/workflows/ci.yml/badge.svg)](https://github.com/godaup/snake/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.10%2B-3776ab)
@@ -10,7 +10,7 @@ in a clockwork workshop, and face eight bosses on the way.
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 <p align="center">
-  <img src="docs/media/montage.gif" width="640" alt="A few seconds from each arc: a long snake in the garden, portals, beetles on the hunt, a boss and its pack, turrets, a rival snake, bats in the dark caves, asteroids, crates in the workshop and the Keeper's garden">
+  <img src="docs/media/montage.gif" width="640" alt="A few seconds from each arc: a long snake in the garden, portals, beetles on the hunt, a boss and its pack, turrets, bats in the dark caves, crates in the workshop, asteroids, a rival snake and the Keeper's garden">
 </p>
 
 ## Features
@@ -18,7 +18,7 @@ in a clockwork workshop, and face eight bosses on the way.
 - **35 story levels in 7 arcs, plus a bonus arc.** Each level adds at most one new mechanic and later ones combine
   them, so the game keeps teaching you something new.
 - **8 bosses**, each with its own phases: a hunger that eats you from the inside, a pack leader, a fortress core behind
-  a ring of turrets, a rival snake, a spider queen in the dark, a mothership, a clockwork, and a crow.
+  a ring of turrets, a spider queen in the dark, a clockwork, a mothership, a rival snake, and a crow.
 - **Weapons**: a gun, spread shot, ricochet, mines, laser, homing shots, flares and a tractor beam.
 - **Terrain with rules**: portals, thorns, ice, mirrored floor, webs, cave-ins, airlocks, pressure plates, conveyor
   belts, keys and locks.
@@ -42,10 +42,10 @@ in a clockwork workshop, and face eight bosses on the way.
 | 1. The Garden | Classic, Yummy, Maneuver, The Maze | The Hunger |
 | 2. The Wilds | Hunted, Armed, Prey, Burrows | The Alpha |
 | 3. The Fortress | Turrets, Swarm, Ice, Minefield | The Core |
-| 4. Ouroboros | Trail, Mirror, Armored, Gauntlet | Ouroboros |
-| 5. The Caves | Webs, Moles, Collapse, Bats | The Brood Mother |
+| 4. The Caves | Webs, Moles, Collapse, Bats | The Brood Mother |
+| 5. The Workshop | Crates, Pressure Plates, Keys, Conveyors | The Clockwork |
 | 6. Space | Airlock, Zero-G, Gravity Wells, Asteroids | The Mothership |
-| 7. The Workshop | Crates, Pressure Plates, Keys, Conveyors | The Clockwork |
+| 7. Ouroboros | Trail, Mirror, Armored, Gauntlet | Ouroboros |
 | Bonus: The Keeper | Hedges, Orchard, Lures, Lanterns | The Crow |
 
 Finishing an arc opens the next one on the overview map; The Keeper opens after the story's end. What each level

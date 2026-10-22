@@ -1,4 +1,4 @@
-tm: 4  # tools/draft_workshop.py arc7.pyxres --tm 4 tools/puzzles/clockwork.txt
+tm: 4  # tools/draft_workshop.py arc5.pyxres --tm 4 tools/puzzles/clockwork.txt
 width: 416
 height: 320
 tint: {3: 4, 11: 10}  # the hedges as brass and copper
@@ -40,13 +40,13 @@ timers:
       type: spawn
       entity: gun
       max: 2
-  homing:
+  spread:  # a fan of shots finds the open face while the snake circles it
     duration: 30
     frequency: 20
     fire_n: 0
     callback:
       type: spawn
-      entity: homing
+      entity: spread
       max: 1
   apple1:
     duration: 0
@@ -74,3 +74,6 @@ intro:
   - "Push crates onto the red plates to jam its gears,"
   - "lie on the blue ones to hold its springs, bring"
   - "keys to its locks. Shoot its face while it's open."
+
+difficulty:  # nightmare: as tough as the boss factor makes it, but with medium's health (shots only land while the face is open)
+  nightmare: {boss: {health: 9}}

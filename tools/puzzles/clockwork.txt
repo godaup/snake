@@ -1,4 +1,4 @@
-; Level 35, Boss: The Clockwork (tm 4): the arena. The boss puts the Clockwork on cells (12, 9)-(13, 10).
+; Level 25, Boss: The Clockwork (tm 4): the arena. The boss puts the Clockwork on cells (12, 9)-(13, 10).
 ; Phase 1: crates onto the four red plates. Phase 2: the body on blue plates. Phase 3: keys it puts out.
 ##########################
 #........................#

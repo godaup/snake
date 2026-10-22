@@ -34,18 +34,8 @@ arcs:
       decor: [[5, 9], [5, 9], [6, 10]]
       props: [[0, 13], [0, 13], [6, 13], [7, 13], [5, 13]]
       boss: [8, 13]
-  - name: Ouroboros
-    resources: arc4.pyxres
-    music: ouroboros
-    levels: [trail, mirror, armored, gauntlet, ouroboros]
-    map:
-      ground: 2
-      tint: {3: 1, 11: 14}
-      decor: [[0, 9], [5, 9], [5, 9]]
-      props: [[7, 10], [8, 10], [9, 10], [11, 13], [11, 13], [10, 13]]
-      boss: [13, 13]
   - name: The Caves
-    resources: arc5.pyxres
+    resources: arc4.pyxres
     music: caves
     levels: [webs, moles, collapse, bats, brood]
     map:
@@ -54,6 +44,16 @@ arcs:
       decor: [[6, 9], [6, 9], [7, 9]]
       props: [[10, 15], [10, 15], [2, 15], [0, 15], [5, 15], [3, 15]]
       boss: [12, 15]
+  - name: The Workshop
+    resources: arc5.pyxres
+    music: workshop
+    levels: [crates, plates, keys, conveyors, clockwork]
+    map:
+      ground: 1
+      tint: {3: 4, 11: 10}
+      decor: [[10, 9], [10, 9], [11, 9]]
+      props: [[3, 21], [3, 21], [5, 21], [6, 21], [16, 10], [28, 10]]
+      boss: [12, 21]
   - name: Space
     resources: arc6.pyxres
     music: space
@@ -64,16 +64,16 @@ arcs:
       decor: [[8, 9], [8, 9], [8, 9], [9, 9]]
       props: [[0, 17], [1, 17], [3, 17], [3, 17], [12, 17], [2, 17]]
       boss: [14, 17]
-  - name: The Workshop
+  - name: Ouroboros
     resources: arc7.pyxres
-    music: workshop
-    levels: [crates, plates, keys, conveyors, clockwork]
+    music: ouroboros
+    levels: [trail, mirror, armored, gauntlet, ouroboros]
     map:
-      ground: 1
-      tint: {3: 4, 11: 10}
-      decor: [[10, 9], [10, 9], [11, 9]]
-      props: [[3, 21], [3, 21], [5, 21], [6, 21], [16, 10], [28, 10]]
-      boss: [12, 21]
+      ground: 2
+      tint: {3: 1, 11: 14}
+      decor: [[0, 9], [5, 9], [5, 9]]
+      props: [[7, 10], [8, 10], [9, 10], [11, 13], [11, 13], [10, 13]]
+      boss: [13, 13]
   - name: The Keeper  # a bonus arc, opened after the story's end: the snake moves on its own
     resources: keeper.pyxres
     music: keeper

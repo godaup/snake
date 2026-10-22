@@ -1,4 +1,4 @@
-"""The entities of arc 5, The Caves (registered like those in entity.py, which imports this module at its end)."""
+"""The entities of arc 4, The Caves (registered like those in entity.py, which imports this module at its end)."""
 
 from typing import TYPE_CHECKING
 
@@ -433,7 +433,7 @@ class EggSac(Nest):
 
 @register("brood")
 class BroodMother(Entity):
-    """The Brood Mother (level 25, put in and steered by the `brood` boss): a 16x16 spider. In her lair (`hang`) she
+    """The Brood Mother (level 20, put in and steered by the `brood` boss): a 16x16 spider. In her lair (`hang`) she
     hangs high above the floor, and up on the ceiling (`ceiling`) only her eyes show: nothing reaches her there (shots
     fly underneath). Dropping (`shadow`), her shadow grows where she will land; landed (`rest`) she lies stunned, and
     shots hurt her; dazed, she can't bite."""

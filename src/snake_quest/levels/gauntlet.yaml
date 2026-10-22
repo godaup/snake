@@ -1,7 +1,10 @@
 tm: 3  # tools/draft_garden.py temple (--src-tm 3 --dst-tm 3 --seed 8, keeping the exit), then ice (--patches 10
-# --region 10 50 --seed 1), mirror (--bands 2 --region 52 100 --seed 3) and thorns (--patches 26 --region 104 152 --seed 2);
-# a golden apple in every stretch
-width: 1280
+# --region 10 50 --seed 1), mirror (--bands 2 --region 52 100 --seed 3) and thorns (--patches 26 --region 104 152 --seed 2).
+# Widened from 1280 px for the arcs before it: tile columns 156-239 from temple at width 1920 (--src-tm 5 --dst-tm 5
+# --seed 9 --open 205 16 5 --open 224 16 8, copied over, tilemap 5 cleared), then webs (--count 6 --region 156 195
+# --seed 1), belts by hand (columns 196-199 up, 203-206 down, 210-213 up), a spider, a planet at tile (223, 15) and the
+# exit at (235, 16); a golden apple in every stretch
+width: 1920
 height: 256
 tint: {3: 2, 11: 14}  # the hedges as temple stone
 
@@ -13,12 +16,12 @@ timers:
   turrets:  # watching the whole way
     duration: 0
     frequency: 0.05
-    fire_n: 6
+    fire_n: 8
     callback:
       type: spawn
       entity: turret
       away: 200
-      clear: [[1252, 256, 64]]  # not right at the exit
+      clear: [[1884, 152, 64]]  # not right at the exit
   drones:  # and the swarm follows
     duration: 15
     frequency: 15
@@ -66,19 +69,26 @@ timers:
     callback:
       type: spawn
       entity: apple
+  apple4:
+    duration: 0
+    frequency: 0
+    fire_n: 0
+    callback:
+      type: spawn
+      entity: apple
 
 goal:
   collect_all: golden
   exit: true
-  time_limit: 75
+  time_limit: 110
 
 title: Gauntlet
 intro:
-  - "Everything at once, against the clock: across the"
-  - "ice, the mirrors and the thorns, with a golden"
-  - "apple to fetch in each, to the far exit. Turrets"
-  - "watch, drones follow. HOMING shots find a target."
+  - "Everything at once, against the clock: ice, mirrors,"
+  - "thorns, webs, belts and a planet's pull, with a"
+  - "golden apple to fetch in each, to the far exit."
+  - "Turrets watch, drones follow; HOMING shots seek."
 
-difficulty:  # harder: more turrets watching, more drones following
-  hard: {timers: {turrets: {fire_n: 7}, drones: {callback: {max: 5}}}}
-  nightmare: {timers: {turrets: {fire_n: 9}, drones: {callback: {max: 6}}}}
+difficulty:  # harder: more turrets watching, more drones following; nightmare: less time (set after scaling) than the goals factor alone gives
+  hard: {timers: {turrets: {fire_n: 9}, drones: {callback: {max: 5}}}}
+  nightmare: {goal: {time_limit: 65}, timers: {turrets: {fire_n: 11}, drones: {callback: {max: 6}}}}

@@ -30,7 +30,7 @@ WALL_VARIANT_ROW = 8
 TRAIL_TILE = (7, 10)
 TRAIL_CRUMBLE_TILE = (8, 10)  # its last TRAIL_CRUMBLE seconds
 TRAIL_CRUMBLE = 1.5
-# the cave-in (arc 5, the `collapse` goal): cracked ceiling (dust falling) on floor the front is about to reach, then
+# the cave-in (arc 4, the `collapse` goal): cracked ceiling (dust falling) on floor the front is about to reach, then
 # rubble, a wall for good
 CRACK_TILE = (13, 10)
 RUBBLE_TILE = (12, 10)
@@ -38,7 +38,7 @@ RUBBLE_TILE = (12, 10)
 # of a level take turns (see Map._cycle_doors)
 DOOR_TILE = (14, 10)
 DOOR_OPEN_TILE = (15, 10)
-# the Workshop (arc 7, see workshop.py), in three colours each (red, blue, yellow): a plate is down while a crate
+# the Workshop (arc 5, see workshop.py), in three colours each (red, blue, yellow): a plate is down while a crate
 # rests on it or the snake lies on it; a gate is open while every plate of its colour is down; a lock opens for good
 # when the head brings a key of its colour. Belts carry what lies on them (right, down, left, up); a lever reverses
 # the belts of its room, the reset lever puts the room's crates back
@@ -68,7 +68,7 @@ HAZARD_CUT = 5
 ICE_TILE = (6, 10)
 ICE_GRIP = 0.12  # share of the way to where the snake points that its heading turns per frame on ice
 MIRROR_TILE = (9, 10)
-# webs (arc 5): the head entering one is held (slowed to WEB_SLOW for WEB_HOLD seconds) and tears it; a torn web
+# webs (arc 4): the head entering one is held (slowed to WEB_SLOW for WEB_HOLD seconds) and tears it; a torn web
 # grows back after WEB_REGROW seconds. Spiders spin new ones (see caves.py)
 WEB_TILE = (10, 10)
 TORN_WEB_TILE = (11, 10)

@@ -11,7 +11,8 @@ from snake_quest.entity import GoldenApple, HomingPickup, Hunter, Knight
 from snake_quest.goals import TimeLimitGoal
 from snake_quest.map import Map
 from snake_quest.snake import Snake
-from snake_quest.tiles import EMPTY_TILE, HAZARD_TILE, ICE_TILE, MIRROR_TILE
+from snake_quest.space import Planet
+from snake_quest.tiles import BELT_TILES, EMPTY_TILE, HAZARD_TILE, ICE_TILE, MIRROR_TILE, WEB_TILE
 from snake_quest.utils import Vec2
 from snake_quest.weapons import Homing, Projectile
 
@@ -36,19 +37,21 @@ def open_square(level_map):
 
 
 def test_the_gauntlet_has_every_stretch_and_a_golden_apple_in_each(gauntlet):
-    tiles = {pyxel.tilemaps[gauntlet.tm].pget(x, y) for x in range(160) for y in range(32)}
-    assert {ICE_TILE, MIRROR_TILE, HAZARD_TILE} <= tiles
+    """A stretch from each arc before it: ice, mirrors, thorns, webs, belts and a planet."""
+    tiles = {pyxel.tilemaps[gauntlet.tm].pget(x, y) for x in range(240) for y in range(32)}
+    assert {ICE_TILE, MIRROR_TILE, HAZARD_TILE, WEB_TILE} <= tiles and set(BELT_TILES) & tiles
+    assert any(isinstance(ent, Planet) for ent in gauntlet.entities)
     goldens = sorted(ent.pos.x for ent in gauntlet.entities if isinstance(ent, GoldenApple))
-    assert len(goldens) == 4 and goldens[0] < 400 and goldens[-1] > 800
+    assert len(goldens) == 7 and goldens[0] < 400 and goldens[-1] > 1600
 
 
 def test_the_clock_runs_out(gauntlet):
     goal = next(goal for goal in gauntlet.goals if isinstance(goal, TimeLimitGoal))
     snake = Snake(pos=gauntlet.start, orient=0, size=2)
-    assert goal.done(gauntlet, snake) and goal.status(gauntlet, snake) == "TIME 1:15"
-    goal.update(gauntlet, snake, datetime.timedelta(seconds=74.5))
+    assert goal.done(gauntlet, snake) and goal.status(gauntlet, snake) == "TIME 1:50"
+    goal.update(gauntlet, snake, datetime.timedelta(seconds=109.5))
     assert goal.status(gauntlet, snake) == "TIME 0:01" and not gauntlet.snake_killed
-    assert goal.progress(gauntlet, snake) == pytest.approx(0.5 / 75)
+    assert goal.progress(gauntlet, snake) == pytest.approx(0.5 / 110)
     goal.update(gauntlet, snake, datetime.timedelta(seconds=1))
     assert not goal.done(gauntlet, snake) and gauntlet.snake_killed
 

@@ -1,4 +1,4 @@
-"""Check and solve Workshop puzzles (arc 7) on their text (tools/puzzles/*.txt, see draft_workshop.py).
+"""Check and solve Workshop puzzles (arc 5) on their text (tools/puzzles/*.txt, see draft_workshop.py).
 
     python tools/solve_workshop.py check tools/puzzles/crates.txt src/snake_quest/levels/crates.yaml
     python tools/solve_workshop.py solve tools/puzzles/crates.txt

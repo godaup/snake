@@ -2,9 +2,10 @@
 
 Snake is the starting point, not the limit: **every level gives the game its own twist.** The campaign has
 **35 levels in 7 story arcs**, and each arc ends with a boss level (5, 10, 15, ..., 35). Difficulty and mechanics ramp
-up gradually. A level introduces at most one new mechanic, and later levels combine them. The first four arcs are below;
-the Caves, Space and the Workshop were built from the [Expansion](#expansion), and so was a bonus arc after them,
-The Keeper, where the snake moves on its own. The Expansion still plans one-off levels.
+up gradually. A level introduces at most one new mechanic, and later levels combine them. The seven arcs are below in
+order of play: the Caves, the Workshop and Space were built from the [Expansion](#expansion) after the first four,
+and placed before Ouroboros, the finale. So was a bonus arc after the story, The Keeper, where the snake moves on its
+own. The Expansion still plans one-off levels.
 
 Ground rules:
 
@@ -48,49 +49,33 @@ Ground rules:
 | 14 | Minefield         | **Mines** dropped from the tail; enemies follow the trail     | defeat N (exists)  |
 | 15 | **Boss: The Core** | Shielded core with turret phases                              | defeat the boss (exists) |
 
-### Arc 4: Ouroboros (everything at once)
-
-| #  | Level                | Twist                                                         | Goal                 |
-|----|----------------------|---------------------------------------------------------------|----------------------|
-| 16 | Trail                | The snake's path turns into walls                             | score (exists)       |
-| 17 | Mirror               | Mirrored floor swaps left and right                           | length, exit (exists) |
-| 18 | Armored              | Armored enemies that only the **Laser** pierces               | defeat N (exists)    |
-| 19 | Gauntlet             | Timed run through earlier twists; **Homing** shots            | goldens, exit, in time (exists) |
-| 20 | **Boss: Ouroboros**  | A rival AI snake that eats, grows and shoots like the player  | defeat the boss (exists) |
-
-### Weapons
-
-| Weapon   | Introduced | Projectile behavior                         |
-|----------|------------|---------------------------------------------|
-| Gun      | 7          | single straight shot (exists)               |
-| Spread   | 12         | fan of three shots (exists)                 |
-| Ricochet | 13         | bounces off walls (exists)                  |
-| Mines    | 14         | dropped behind the tail, area damage (exists) |
-| Laser    | 18         | piercing beam (exists)                      |
-| Homing   | 19         | steers towards the nearest enemy (exists)   |
-| Flare    | 24         | burns on where it lands: a light that scares bats (exists) |
-| Tractor  | 27         | no shot: pulls the nearest pickup ahead in (exists) |
-
-`Weapon.next_pattern()` already returns a list of projectiles. The rest needs projectile behaviors (pierce, bounce,
-home, explode, lifetime), weapon pickups and switching, and ammo/cooldown in the footer HUD.
-
-## Expansion
-
-Ideas for after the first 20 levels. The level tables are drafts, and the order is open: Ouroboros may move to the end
-as the finale.
-
-### Arc 5: The Caves (darkness and digging)
+### Arc 4: The Caves (darkness and digging)
 
 Builds on `darkness` and the hunters. New: a map that changes while playing (walls dug away or caving in).
-Designed in detail in [docs/arc5-caves.md](docs/arc5-caves.md); built (see M6).
+Designed in detail in [docs/arc4-caves.md](docs/arc4-caves.md); built (see M6).
 
 | #  | Level                 | Twist                                                              | Goal              |
 |----|-----------------------|--------------------------------------------------------------------|-------------------|
-| 21 | Webs                  | Spiders spin webs that hold the snake for a moment                 | collect all crystals, in time (exists) |
-| 22 | Moles                 | Moles dig new tunnels through the walls, opening shortcuts for enemies | defeat N (exists) |
-| 23 | Collapse              | A cave-in front chases the snake through a long tunnel              | reach the exit (exists) |
-| 24 | Bats                  | Bats wake up in any light; **Flare** shots light the way and scare them | survive N seconds (exists) |
-| 25 | **Boss: The Brood Mother** | A giant spider: egg sacs, then drops from the dark ceiling, webs the cave shut | defeat the boss (exists) |
+| 16 | Webs                  | Spiders spin webs that hold the snake for a moment                 | collect all crystals, in time (exists) |
+| 17 | Moles                 | Moles dig new tunnels through the walls, opening shortcuts for enemies | defeat N (exists) |
+| 18 | Collapse              | A cave-in front chases the snake through a long tunnel              | reach the exit (exists) |
+| 19 | Bats                  | Bats wake up in any light; **Flare** shots light the way and scare them | survive N seconds (exists) |
+| 20 | **Boss: The Brood Mother** | A giant spider: egg sacs, then drops from the dark ceiling, webs the cave shut | defeat the boss (exists) |
+
+### Arc 5: The Workshop (puzzles)
+
+Sokoban for snakes: the level is a puzzle with one solution or a few, and timing matters less than the order of moves.
+New: pushable objects and switches.
+Designed in detail in [docs/arc5-workshop.md](docs/arc5-workshop.md) (a blocked crate stops the snake instead of
+crashing it; bots follow a written solution, the level's `plan`); built (see M8).
+
+| #  | Level                  | Twist                                                             | Goal              |
+|----|------------------------|-------------------------------------------------------------------|-------------------|
+| 21 | Crates                 | The head pushes crates onto plates to open gates; a lever resets the room | reach the exit (exists) |
+| 22 | Pressure Plates        | Plates stay down only while the body lies on them: grow long enough to hold several | reach the exit (exists) |
+| 23 | Keys                   | Keys carried in the body (as segments) open matching locks; mice bite them off | reach the exit (exists) |
+| 24 | Conveyors              | Belts carry crates and the snake; levers reverse them             | reach the exit (exists) |
+| 25 | **Boss: The Clockwork** | A machine opened only by jamming its gears, holding its springs and unlocking it | defeat the boss (exists) |
 
 ### Arc 6: Space (oxygen and inertia)
 
@@ -107,20 +92,40 @@ Designed in detail in [docs/arc6-space.md](docs/arc6-space.md) (new weapon: the 
 | 29 | Asteroids              | Asteroids split when shot and bounce off the hull (wrap-around edges: later) | destroy all (exists) |
 | 30 | **Boss: The Mothership** | A ship that circles through the gravity wells and drops raiders  | defeat the boss (exists) |
 
-### Arc 7: The Workshop (puzzles)
+### Arc 7: Ouroboros (everything at once)
 
-Sokoban for snakes: the level is a puzzle with one solution or a few, and timing matters less than the order of moves.
-New: pushable objects and switches.
-Designed in detail in [docs/arc7-workshop.md](docs/arc7-workshop.md) (a blocked crate stops the snake instead of
-crashing it; bots follow a written solution, the level's `plan`); built (see M8).
+The end of the first 20 levels (arc 4 then), and the finale again once the Caves, the Workshop and Space
+were built.
 
-| #  | Level                  | Twist                                                             | Goal              |
-|----|------------------------|-------------------------------------------------------------------|-------------------|
-| 31 | Crates                 | The head pushes crates onto plates to open gates; a lever resets the room | reach the exit (exists) |
-| 32 | Pressure Plates        | Plates stay down only while the body lies on them: grow long enough to hold several | reach the exit (exists) |
-| 33 | Keys                   | Keys carried in the body (as segments) open matching locks; mice bite them off | reach the exit (exists) |
-| 34 | Conveyors              | Belts carry crates and the snake; levers reverse them             | reach the exit (exists) |
-| 35 | **Boss: The Clockwork** | A machine opened only by jamming its gears, holding its springs and unlocking it | defeat the boss (exists) |
+| #  | Level                | Twist                                                         | Goal                 |
+|----|----------------------|---------------------------------------------------------------|----------------------|
+| 31 | Trail                | The snake's path turns into walls                             | score (exists)       |
+| 32 | Mirror               | Mirrored floor swaps left and right                           | length, exit (exists) |
+| 33 | Armored              | Armored enemies that only the **Laser** pierces               | defeat N (exists)    |
+| 34 | Gauntlet             | Timed run through every arc's twists: ice, mirrors, thorns, webs, belts, a planet; **Homing** shots | goldens, exit, in time (exists) |
+| 35 | **Boss: Ouroboros**  | A rival AI snake that eats, grows and shoots like the player  | defeat the boss (exists) |
+
+### Weapons
+
+| Weapon   | Introduced | Projectile behavior                         |
+|----------|------------|---------------------------------------------|
+| Gun      | 7          | single straight shot (exists)               |
+| Spread   | 12         | fan of three shots (exists)                 |
+| Ricochet | 13         | bounces off walls (exists)                  |
+| Mines    | 14         | dropped behind the tail, area damage (exists) |
+| Flare    | 19         | burns on where it lands: a light that scares bats (exists) |
+| Tractor  | 27         | no shot: pulls the nearest pickup ahead in (exists) |
+| Laser    | 33         | piercing beam (exists)                      |
+| Homing   | 34         | steers towards the nearest enemy (exists)   |
+
+`Weapon.next_pattern()` already returns a list of projectiles. The rest needs projectile behaviors (pierce, bounce,
+home, explode, lifetime), weapon pickups and switching, and ammo/cooldown in the footer HUD.
+
+## Expansion
+
+Ideas for after the first 20 levels. The Caves, the Workshop and Space came from here and are arcs 4-6 now (above),
+played before Ouroboros, which became the finale again; Gauntlet got a stretch from each. Still here: the bonus arc
+and the one-off levels.
 
 ### Bonus arc: The Keeper (the snake moves on its own)
 
@@ -191,25 +196,29 @@ Spread), Ice (level 13: drifting on ice, the Ricochet, turrets then the exit), M
 trail, Mines), Boss: The Core (level 15: a shield held up by rings of turrets, drones). Weapon pickups switch weapons
 (`WeaponPickup`); the bot dodges shots, drops mines and stocks ammo. Open: playtesting.
 
-### M4: Arc 4
+### M4: Arc 7 (Ouroboros)
 
 Trail walls, mirrored input, Laser and Homing, AI-controlled rival snake (reusing `Snake` through the input layer).
 
-Done: `arc4.pyxres` with temple layouts (`draft_garden.py temple`), Trail (level 16: the tail leaves walls that
-crumble, crawlers on the trail), Mirror (level 17: bands of mirrored floor across the halls swap left and right), Armored (level 18: knights in
-armour, the Laser), Gauntlet (level 19: ice, mirrors and thorns against the clock, `time_limit`, Homing), Boss: Ouroboros (level
-20: a rival snake driven by the bot, with lives, that eats, grows, takes the guns and shoots). The campaign is complete.
+Done: `arc7.pyxres` with temple layouts (`draft_garden.py temple`), Trail (level 31: the tail leaves walls that
+crumble, crawlers on the trail), Mirror (level 32: bands of mirrored floor across the halls swap left and right), Armored (level 33: knights in
+armour, the Laser), Gauntlet (level 34: ice, mirrors and thorns against the clock, `time_limit`, Homing), Boss: Ouroboros (level
+35: a rival snake driven by the bot, with lives, that eats, grows, takes the guns and shoots). The campaign is complete.
 Open: playtesting.
 
-### M6: Arc 5
+- [x] Moved to the end of the story (it was arc 4) once the Caves, the Workshop and Space were built, as the finale:
+  Gauntlet got a stretch from each of them (webs, conveyor belts, a planet) and is 1920 px long now; the Clockwork
+  drops Spread instead of Homing, which Gauntlet introduces.
 
-Done: `arc5.pyxres` with cave layouts (`draft_garden.py cave`, `scatter`, `webs`), the Caves music, Webs (level 21:
-spiders spin webs that hold the snake, crystals against the clock), Moles (level 22: moles dig tunnels for good,
-`map.dig`, and come up to be shot), Collapse (level 23: the `collapse` goal, a cave-in front through a long tunnel),
-Bats (level 24: bats that wake in any light, the Flare), Boss: The Brood Mother (level 25: egg sacs, then drops from the
+### M6: Arc 4 (The Caves)
+
+Done: `arc4.pyxres` with cave layouts (`draft_garden.py cave`, `scatter`, `webs`), the Caves music, Webs (level 16:
+spiders spin webs that hold the snake, crystals against the clock), Moles (level 17: moles dig tunnels for good,
+`map.dig`, and come up to be shot), Collapse (level 18: the `collapse` goal, a cave-in front through a long tunnel),
+Bats (level 19: bats that wake in any light, the Flare), Boss: The Brood Mother (level 20: egg sacs, then drops from the
 dark with a warning shadow). Open: playtesting.
 
-### M7: Arc 6
+### M7: Arc 6 (Space)
 
 Done: `arc6.pyxres` with station and open-space layouts (`draft_garden.py station`, `void`), the Space music, Airlock
 (level 26: the `oxygen` goal, air tanks, airlock doors that take turns), Zero-G (level 27: low `grip` everywhere, the
@@ -217,20 +226,20 @@ Tractor), Gravity Wells (level 28: planets that pull the heading, `map.pull`), A
 bounce), Boss: The Mothership (level 30: engine pods holding up a shield, a bay that opens and drops raiders, a tractor
 beam). Open: the wrap-around edges for Asteroids (see docs/arc6-space.md), playtesting.
 
-### M8: Arc 7
+### M8: Arc 5 (The Workshop)
 
-Done: `arc7.pyxres` with layouts written from puzzle texts (`tools/draft_workshop.py`, `tools/puzzles/`), plans
-for bots checked by `tools/solve_workshop.py`, the Workshop music, Crates (level 31: crates the head pushes, a
-stall at one that can't move, plates and gates, reset levers), Pressure Plates (level 32: the body holds plates),
-Keys (level 33: keys as segments, locks, clockwork mice), Conveyors (level 34: belts and levers), Boss: The
-Clockwork (level 35: jam its gears, hold its springs, bring keys to its locks; its hands cut). Open: boulders
-(see docs/arc7-workshop.md), playtesting (puzzles need people more than any other arc).
+Done: `arc5.pyxres` with layouts written from puzzle texts (`tools/draft_workshop.py`, `tools/puzzles/`), plans
+for bots checked by `tools/solve_workshop.py`, the Workshop music, Crates (level 21: crates the head pushes, a
+stall at one that can't move, plates and gates, reset levers), Pressure Plates (level 22: the body holds plates),
+Keys (level 23: keys as segments, locks, clockwork mice), Conveyors (level 24: belts and levers), Boss: The
+Clockwork (level 25: jam its gears, hold its springs, bring keys to its locks; its hands cut). Open: boulders
+(see docs/arc5-workshop.md), playtesting (puzzles need people more than any other arc).
 
 ### M9: The Keeper (bonus arc)
 
 Done: `keeper.pyxres` with layouts written from garden texts (`tools/draft_keeper.py`, `tools/gardens/`), a bonus
 arc after the story (`bonus: true`: the victory screen after level 35 as before, the arc open on the map once the
-Workshop is done, its own victory after level 40), the Keeper's waltz and three effects (plant, lift, caw), the pet
+story is done, its own victory after level 40), the Keeper's waltz and three effects (plant, lift, caw), the pet
 (`PetController`: nearest food by walking distance, a kept choice, blind to thorns, its way drawn), the hand (mouse,
 keys or gamepad; budgets; sprouting hedges), Hedges (level 36), Orchard (level 37: apple trees), Lures (level 38:
 lures, hedge pens), Lanterns (level 39: lanterns in the dark), Boss: The Crow (level 40: it steals, swoops and calls

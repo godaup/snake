@@ -1,4 +1,4 @@
-"""Boss: The Clockwork (level 35): a fixed block whose face opens when it is jammed (crates on the red plates), held
+"""Boss: The Clockwork (level 25): a fixed block whose face opens when it is jammed (crates on the red plates), held
 (the body on blue plates) or unlocked (keys brought), and whose hands cut what they sweep over."""
 
 import datetime

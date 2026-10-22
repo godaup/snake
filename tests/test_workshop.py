@@ -1,4 +1,4 @@
-"""Arc 7, the Workshop: crates, plates and gates, reset levers (Crates), the body on plates (Pressure Plates), keys and
+"""Arc 5, the Workshop: crates, plates and gates, reset levers (Crates), the body on plates (Pressure Plates), keys and
 mice (Keys), belts and levers (Conveyors), and the plans bots follow. The Clockwork has its own file."""
 
 import datetime

@@ -1,4 +1,4 @@
-"""The Workshop (arc 7): crates the head pushes, plates and gates, keys carried in the body, belts and levers, and the
+"""The Workshop (arc 5): crates the head pushes, plates and gates, keys carried in the body, belts and levers, and the
 plan bots follow through a puzzle. The entities register like those in entity.py (which imports this module at its
 end); `Works` is the map's part (`map.works`, built when a level has any of it).
 
@@ -708,7 +708,7 @@ class Plan:
 
 @register("clockwork")
 class Clockwork(Crate):
-    """The Clockwork (level 35, put in by the `clockwork` boss): a 32x32 machine that never moves (the head stops at
+    """The Clockwork (level 25, put in by the `clockwork` boss): a 32x32 machine that never moves (the head stops at
     it, as at a crate that can't be pushed). Its face is shut (shots glint off) except while the boss opens it; it
     flashes when hit there. Its two hands are drawn from its centre at the boss's angles."""
 

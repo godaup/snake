@@ -1,4 +1,4 @@
-; Level 31, Crates (tm 0): three rooms opened by their plates, then the exit.
+; Level 21, Crates (tm 0): three rooms opened by their plates, then the exit.
 ; 1: push the crate onto the plate. 2: the crate behind another one: move the first out of the way.
 ; 3: two plates in one column: the first crate must go to the far one, or the second can't get past it.
 ######################################################

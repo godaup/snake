@@ -82,17 +82,17 @@ def test_the_keeper_is_a_bonus_arc_after_the_story():
     assert arc.name == "The Keeper"
     assert [CAMPAIGN.level(n).name for n in range(arc.first, arc.last + 1)] == list(KEEPER)
     assert all(CAMPAIGN.level(n).bonus for n in range(arc.first, arc.last + 1))
-    assert CAMPAIGN.story_last == arc.first - 1 == CAMPAIGN.resolve("clockwork")
+    assert CAMPAIGN.story_last == arc.first - 1 == CAMPAIGN.resolve("ouroboros")
     assert CAMPAIGN.endings == {CAMPAIGN.story_last, len(CAMPAIGN)}
 
 
-def test_it_opens_once_the_workshop_is_done(game):
+def test_it_opens_once_the_story_is_done(game):
     assert CAMPAIGN.arcs[-1] not in game.unlocked_arcs()
-    game.profile.arcs_done.append("The Workshop")
+    game.profile.arcs_done.append("Ouroboros")
     assert CAMPAIGN.arcs[-1] in game.unlocked_arcs()
 
 
-@pytest.mark.parametrize("name", ["clockwork", "crow"])
+@pytest.mark.parametrize("name", ["ouroboros", "crow"])
 def test_the_victory_screen_shows_after_the_story_and_after_the_bonus_arc(game, name):
     game.level_counter = CAMPAIGN.resolve(name)
     game.start_level = CAMPAIGN.arc_of(game.level_counter).first

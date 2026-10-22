@@ -33,10 +33,10 @@ MONTAGE = [
     ("hunted", 18, 2.5, 1, "THE WILDS: BEETLES HUNT YOUR TAIL"),
     ("alpha", 9, 2.5, 2, "PICK UP A GUN: THE ALPHA AND ITS PACK"),
     ("turrets", 5.5, 2.5, 3, "THE FORTRESS: TURRETS SHOOT BACK"),
-    ("ouroboros", 7, 2.5, 3, "OUROBOROS: A RIVAL SNAKE"),
     ("bats", 13, 2.5, 3, "THE CAVES: DARKNESS AND BATS"),
-    ("asteroids", 8, 2.5, 1, "SPACE: ASTEROIDS BREAK UP"),
     ("crates", 20, 2.5, 1, "THE WORKSHOP: PUSH CRATES"),
+    ("asteroids", 8, 2.5, 1, "SPACE: ASTEROIDS BREAK UP"),
+    ("ouroboros", 7, 2.5, 3, "OUROBOROS: A RIVAL SNAKE"),
     ("crow", 25.5, 2.5, 2, "THE KEEPER: YOU ARE THE HAND"),
 ]
 BOSS_SHOT = ("crow", 25, 1)  # level, seconds the bot plays before the shot, seed

@@ -813,7 +813,7 @@ class Knight(Hunter):
 
 @register("rival")
 class Rival(Entity):
-    """Ouroboros (level 20, put in by the `ouroboros` boss): a second snake (`body`, driven by a RivalController) that
+    """Ouroboros (level 35, put in by the `ouroboros` boss): a second snake (`body`, driven by a RivalController) that
     eats apples and grows, picks up weapons and shoots at the snake (its shots are hostile). Its head running into a
     wall, into itself or into the snake's body costs it a life, and so does being shot shorter than MIN (a shot cuts it
     where it strikes, like the snake). Then it is gone for RESPAWN seconds and comes back at its lair, START long. The
@@ -1100,6 +1100,6 @@ class Enemy(Entity):
             self.wdg.draw()
 
 
-# the later arcs' entities (caves: arc 5, space: arc 6, workshop: arc 7, keeper: the bonus arc) register themselves;
+# the later arcs' entities (caves: arc 4, workshop: arc 5, space: arc 6, keeper: the bonus arc) register themselves;
 # they build on the classes above
 from snake_quest import caves, keeper, space, workshop  # noqa: E402, F401

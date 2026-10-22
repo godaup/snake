@@ -1,24 +1,24 @@
-# Arc 5: The Caves: design
+# Arc 4: The Caves: design
 
-Levels 21–25. The theme is **darkness and digging**: the cave is dark, and it changes while you play. Walls get dug
+Levels 16–20. The theme is **darkness and digging**: the cave is dark, and it changes while you play. Walls get dug
 away, tunnels cave in, and webs close passages. The arc builds on what exists: `darkness` (The Hunger), hunters, the
 `trail` bookkeeping (tiles that change and change back), the Core's shield and Turret's warning glow. It adds one
 mechanic per level, as the ground rules say:
 
 | #  | Level                      | New mechanic                                   | Goal                         | Weapon        |
 |----|----------------------------|------------------------------------------------|------------------------------|---------------|
-| 21 | Webs                       | spiders spin webs that hold the snake          | collect all crystals         | –             |
-| 22 | Moles                      | moles dig through the walls (the map changes)  | defeat N moles               | gun           |
-| 23 | Collapse                   | a cave-in chases the snake through a long cave | reach the exit               | –             |
-| 24 | Bats                       | bats wake in the light; the **Flare**          | survive N seconds            | flare (new)   |
-| 25 | **Boss: The Brood Mother** | a giant spider drops from the dark ceiling     | defeat the boss              | flare, gun    |
+| 16 | Webs                       | spiders spin webs that hold the snake          | collect all crystals         | –             |
+| 17 | Moles                      | moles dig through the walls (the map changes)  | defeat N moles               | gun           |
+| 18 | Collapse                   | a cave-in chases the snake through a long cave | reach the exit               | –             |
+| 19 | Bats                       | bats wake in the light; the **Flare**          | survive N seconds            | flare (new)   |
+| 20 | **Boss: The Brood Mother** | a giant spider drops from the dark ceiling     | defeat the boss              | flare, gun    |
 
 The difficulty ramps the way the earlier arcs do: 21 adds a hindrance (not a killer), 22 adds a map that changes, 23
 adds time pressure, 24 adds deep darkness and a new weapon, and 25 combines them.
 
 ## Look, sound, map
 
-- **Resources:** `arc5.pyxres`, tilemaps 0–4, like the other arcs.
+- **Resources:** `arc4.pyxres`, tilemaps 0–4, like the other arcs.
 - **Layouts:** a new `draft_garden.py cave` command: a cellular automaton (random fill, then a few smoothing passes)
   carves organic caverns, which are then joined by tunnels (each cavern to its nearest, so everything is reachable).
   It has the same options as the other commands (`--seed`, `--open X Y R` for the boss arena), plus `--fill` (rock
@@ -62,7 +62,7 @@ The tiles below are free (rows 10, 11 and 12 have room, row 15 and below are emp
 | Glow mushroom              | (10, 15)           | decor that glows (an `Entity` with `light`) |
 | Brood Mother               | (12, 15)–(13, 16)  | 16x16                                      |
 
-## Level 21: Webs
+## Level 16: Webs
 
 > Spiders spin webs across the dark tunnels. Touch one and it holds you for a moment.
 
@@ -103,7 +103,7 @@ The tiles below are free (rows 10, 11 and 12 have room, row 15 and below are emp
 **Tuning knobs:** `WEB_HOLD`, spider count and `SPIN` (`hostile`), the crystal count (fixed in the tilemap). Hard and
 nightmare overrides add spiders and webs.
 
-## Level 22: Moles
+## Level 17: Moles
 
 > Something digs beneath the cave. Moles break through the walls, and the hunters use their tunnels.
 
@@ -138,7 +138,7 @@ nightmare overrides add spiders and webs.
 - `bot.target` moves it towards the nearest mound while it has ammo, and the aim needs the 1.5 s window. Expect a lower
   win rate than Armed; tune `UP` and `SURFACE`.
 
-## Level 23: Collapse
+## Level 18: Collapse
 
 > The cave is coming down. Run.
 
@@ -158,7 +158,7 @@ nightmare overrides add spiders and webs.
 **Level** (`collapse.yaml`, tm 2, 1536×256):
 - one long winding tunnel (`draft_garden.py cave --long`) with side caverns holding speed apples and goldens: risk
   against reward;
-- a few webs from level 21 at bends (they hold you while the cave comes down);
+- a few webs from level 16 at bends (they hold you while the cave comes down);
 - goal `exit: true` at the far end;
 - darkness light 80.
 
@@ -173,7 +173,7 @@ nightmare overrides add spiders and webs.
 - The side caverns are tested: the bot takes them only when the front is far enough behind (`map.collapse.margin(pos)`
   says how many seconds a detour can take).
 
-## Level 24: Bats
+## Level 19: Bats
 
 > Deep in the cave, bats hang asleep. Your light wakes them.
 
@@ -206,7 +206,7 @@ nightmare overrides add spiders and webs.
 - Keep to dark paths: a small BFS cost for tiles near roosts.
 - Bats are threats while awake. Expect to tune this; the bot only needs to be relatively good (the band tests).
 
-## Level 25: Boss: The Brood Mother
+## Level 20: Boss: The Brood Mother
 
 > The Brood Mother waits in the dark. When the light goes out, look up.
 
@@ -271,14 +271,14 @@ She works in three phases (by `below`, like the Alpha and the Core).
    - the shadow as a dodge.
 7. **Tools and content:**
    - `draft_garden.py cave` (and `--long`);
-   - `arc5.pyxres` with five layouts;
+   - `arc4.pyxres` with five layouts;
    - the sprites above;
    - the `caves` music;
    - the map theme;
-   - `campaign.yaml` arc 5.
+   - `campaign.yaml` arc 4.
 
-Ouroboros stays the finale as level 20 for now; the roadmap's open question (move it to the end) comes back once arc
-6 exists.
+Ouroboros stayed the finale as level 20 then; once Space and the Workshop existed too, it moved to the end of the story
+(level 35), and the Caves became arc 4.
 
 ## Tests
 
@@ -289,7 +289,7 @@ Ouroboros stays the finale as level 20 for now; the roadmap's open question (mov
   - a bat wakes in the light and flees a flare;
   - a flare burns webs;
   - the drop crushes and stuns.
-- **Per level:** `bot.LEVELS` and the `WIN_RATES` bands (8 seeds), as in arc 4.
+- **Per level:** `bot.LEVELS` and the `WIN_RATES` bands (8 seeds), as in arc 7.
 - **Registry:** new entities and tiles, no stray tiles, and `test_music` with the `caves` track.
 
 ## Open questions
@@ -302,7 +302,7 @@ Ouroboros stays the finale as level 20 for now; the roadmap's open question (mov
 
 ## As built
 
-The arc is in the game (levels 21–25, M6 in the roadmap). Where it differs from the design above, and why:
+The arc is in the game (levels 16–20, M6 in the roadmap). Where it differs from the design above, and why:
 
 - **The neck.** Slowed by a web, the body bunches up behind the head, and the self-bite test (three segments) took
   that for a bite. `Snake.neck()` now measures the part that can't be bitten by distance along the body (3 px: still

@@ -264,7 +264,7 @@ class CoreBoss(Boss):
 
 
 class OuroborosBoss(Boss):
-    """Ouroboros (level 20): a rival snake (the Rival entity) with `lives`, starting from its lair at `pos`, moving at
+    """Ouroboros (level 35): a rival snake (the Rival entity) with `lives`, starting from its lair at `pos`, moving at
     `speed` and `length` segments long at every start, shooting every `reload` seconds at most; it is back `respawn`
     seconds after losing a life. The bar is its lives (the current one by its length). Phases start when its lives
     fall `below` a fraction and may change these settings (from its next start).
@@ -321,7 +321,7 @@ class OuroborosBoss(Boss):
 
 
 class BroodMotherBoss(Boss):
-    """The Brood Mother (level 25): a giant spider (the BroodMother entity) in her lair at `pos` with `health`; the bar
+    """The Brood Mother (level 20): a giant spider (the BroodMother entity) in her lair at `pos` with `health`; the bar
     is her health. First she hangs there out of reach (shots glance off), guarded by `sacs` egg sacs about the cave,
     each sending out spiderlings every `call` seconds while the snake is near; every sac destroyed (shot, or burnt by a
     flare) costs her a share of a third of her health. Then (phases by `below`, like the Alpha's) she climbs into the
@@ -571,7 +571,7 @@ class MothershipBoss(Boss):
 
 
 class ClockworkBoss(Boss):
-    """The Clockwork (level 35): the Clockwork entity (a 32x32 block that never moves) at `pos` with `health`; the bar
+    """The Clockwork (level 25): the Clockwork entity (a 32x32 block that never moves) at `pos` with `health`; the bar
     is its health. Its two hands (`hands`: their lengths) tick round it once a second, `tick` degrees (the short hand a
     quarter of that): what they sweep over or the head runs into is cut there, as by a shot. Its face is shut, so shots
     glint off, except while it is open (`open` seconds). Phase by phase (by `below`, like the Core's):

@@ -1,4 +1,4 @@
-; Level 33, Keys (tm 2): keys ride in the body; a lock opens for the key of its colour. Mice bite keys off.
+; Level 23, Keys (tm 2): keys ride in the body; a lock opens for the key of its colour. Mice bite keys off.
 ; 1: the red key. 2: the yellow one past the thorns. 3: the blue one in a pocket between two mouse holes.
 ############################################################
 #............#.................#...............#...........#

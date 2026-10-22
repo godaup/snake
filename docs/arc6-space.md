@@ -305,7 +305,7 @@ level's planets: `path: [[x, y], ...]`, at `speed`), pulled by nothing. It has t
   the sector's doors) and keep Airlock about oxygen alone?
 - **The finale.** With six arcs, should Ouroboros (the rival snake) move to the end as the campaign's last boss? It
   would make the story arc "everything at once" again; the Mothership would then be arc 6's boss as planned, and The
-  Brood Mother stays arc 5's.
+  Brood Mother stays arc 4's.
 - **Zero-G controls.** A "brake" would make low grip fairer, but the game has only steer and fire. The Tractor uses
   fire; a brake could be "fire with no weapon", but that is hidden. Probably no brake: wide corridors instead.
 
@@ -314,7 +314,7 @@ level's planets: `path: [[x, y], ...]`, at `speed`), pulled by nothing. It has t
 The arc is in the game (levels 26–30, M7 in the roadmap). Decisions taken, and where it differs from the design above:
 
 - **Decisions.** The wrap-around edges are left for later: Asteroids is a bordered sector whose rocks bounce off the
-  hull. The arc order stays (Ouroboros remains level 20). The airlock doors are in Airlock, the station level, where
+  hull. The arc order stayed then (Ouroboros remained level 20; it moved to the end later). The airlock doors are in Airlock, the station level, where
   corridors make them meaningful; oxygen is the pressure there, as the time limit is in Webs.
 - **Airlock.**
   - No beetles: faster than the snake and with no gun to fight back, they ended every run within seconds.
@@ -340,7 +340,7 @@ The arc is in the game (levels 26–30, M7 in the roadmap). Decisions taken, and
   - They reach 100 px, less than a gun: careful aim from afar is safe.
   - The ship moves at 0.45 (0.3 in the last phase), has 10 health, two raiders at most, and its bay opens for 5 s.
   - Hard has its own boss (8 health, the bay open for 6 s): scaled up, the bot needed seven minutes.
-- **Moles (arc 5).** Harder difficulties no longer make the moles surface more often (more targets made it easier);
+- **Moles (arc 4).** Harder difficulties no longer make the moles surface more often (more targets made it easier);
   they come up for a shorter time instead (`UP` times the square root of the hostile factor).
 
 Bot win rates (8 seeds; easy / medium / hard / nightmare):

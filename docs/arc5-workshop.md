@@ -1,6 +1,6 @@
-# Arc 7: The Workshop: design
+# Arc 5: The Workshop: design
 
-Levels 31–35. The theme is **puzzles**: Sokoban for snakes. Each level is a chain of rooms, and each room is a puzzle
+Levels 21–25. The theme is **puzzles**: Sokoban for snakes. Each level is a chain of rooms, and each room is a puzzle
 with one solution or a few, where the order of moves matters more than quick steering. The arc builds on what exists:
 - The airlock doors (terrain that opens and shuts, `map.dig`/`map.fill`, the bot's caches starting over).
 - The portals' colour pairs (one colour links things across the level).
@@ -11,11 +11,11 @@ It adds one mechanic per level:
 
 | #  | Level                     | New mechanic                                                      | Goal           | Weapon  |
 |----|---------------------------|-------------------------------------------------------------------|----------------|---------|
-| 31 | Crates                    | the head pushes crates; plates open gates of their colour         | reach the exit | –       |
-| 32 | Pressure Plates           | the body holds plates down too: grow long enough to hold several  | reach the exit | –       |
-| 33 | Keys                      | keys ride in the body as segments and open locks; mice steal them | reach the exit | –       |
-| 34 | Conveyors                 | belts carry crates and the snake; levers reverse them             | reach the exit | –       |
-| 35 | **Boss: The Clockwork**   | a machine opened only by jamming, holding and unlocking it        | defeat the boss | gun, homing |
+| 21 | Crates                    | the head pushes crates; plates open gates of their colour         | reach the exit | –       |
+| 22 | Pressure Plates           | the body holds plates down too: grow long enough to hold several  | reach the exit | –       |
+| 23 | Keys                      | keys ride in the body as segments and open locks; mice steal them | reach the exit | –       |
+| 24 | Conveyors                 | belts carry crates and the snake; levers reverse them             | reach the exit | –       |
+| 25 | **Boss: The Clockwork**   | a machine opened only by jamming, holding and unlocking it        | defeat the boss | gun, spread |
 
 The ramp:
 - 31 teaches pushing on its own (a short snake, nothing that hunts it);
@@ -52,12 +52,12 @@ frame). Sokoban needs a pusher that can stop, back off and line up. These rules 
   crates back where they started (a room is the area between gates, found by a flood fill that counts gates as walls).
   A crate whose start is covered waits until it is free. Sokoban needs an undo, and this is it, without a menu.
 - **Gates and the body.** The snake's length decides how long it holds a plate: a body `n` segments long covers a spot
-  for about `n × 1.3 px / speed` after the head has passed it. That is the puzzle of level 32. In level 31 the snake is
+  for about `n × 1.3 px / speed` after the head has passed it. That is the puzzle of level 22. In level 21 the snake is
   too short for it (10 segments, 13 px), and the plates lie far enough from their gates.
 
 ## Look, sound, map
 
-- **Resources:** `arc7.pyxres`, tilemaps 0–4.
+- **Resources:** `arc5.pyxres`, tilemaps 0–4.
 - **Layouts** come from text. A new `tools/draft_workshop.py` reads a puzzle in Sokoban-like notation (one character per
   16 px cell) and writes the tilemap, with walls as `WALL_TILE` blocks so the autotiler draws them:
 
@@ -109,7 +109,7 @@ entities into row 21 on:
 A gate's or lock's colour is in its tile, so the editor shows what links to what. Every new terrain tile goes into
 `TILE_KINDS` and `TERRAIN_TILES`; shut gates and locks into `WALL_TILES`.
 
-## Level 31: Crates
+## Level 21: Crates
 
 > The Workshop's doors are worked by plates. Push the crates onto them. Stuck? Cross the lever to start the room again.
 
@@ -133,7 +133,7 @@ A gate's or lock's colour is in its tile, so the editor shows what links to what
 
 **Bot:** follows the level's plan (see Bot, below).
 
-## Level 32: Pressure Plates
+## Level 22: Pressure Plates
 
 > Some doors need more plates than you have crates. You are long enough to lie on them yourself, if you eat.
 
@@ -156,7 +156,7 @@ A gate's or lock's colour is in its tile, so the editor shows what links to what
 **Bot:** the plan names the plates to cross in order and the gate; the bot grows first (the plan's `grow` step: eat
 until `length` is reached), then drives the route.
 
-## Level 33: Keys
+## Level 23: Keys
 
 > Keys ride in your body. Keep them deep: the mice bite tails, and a bitten-off key falls to the floor.
 
@@ -194,7 +194,7 @@ until `length` is reached), then drives the route.
 - Locks without a matching key are walls in its way-finding; with one, the lock is a target.
 - Threats: mice as hunters, which it already keeps away from.
 
-## Level 34: Conveyors
+## Level 24: Conveyors
 
 > The belts never stop. They carry crates, and they carry you. Throw a lever to turn them round.
 
@@ -221,7 +221,7 @@ until `length` is reached), then drives the route.
 **Bot:** the plan has `lever` steps (cross a lever) and `wait` steps (until a crate rests on a cell or a gate opens).
 Its arcs include the belts' drift.
 
-## Level 35: Boss: The Clockwork
+## Level 25: Boss: The Clockwork
 
 > The Clockwork winds the whole Workshop. Jam its gears, hold its springs, open its locks, then break its heart.
 
@@ -240,7 +240,8 @@ Its face (the core) is shut, so shots glance off, except while it is open. Three
    - The hands tick faster. A ring of six blue plates lies two cells out round the face; the face opens while `hold`
      of them are down.
    - Only the body can hold them (the crates are gone, swept to the wall): coil round the Clockwork and shoot.
-   - Homing pickups appear (shots that turn towards it while the snake circles it).
+   - Spread pickups appear (a fan of shots finds the open face while the snake circles it; Homing, as first planned,
+     only comes in Gauntlet, after this arc).
 3. **The locks (below 1/3).**
    - It winds itself shut behind three locks (red, blue, yellow) on its face. A conveyor ring round the arena carries
      keys in from a hatch, and a lever reverses it.
@@ -256,13 +257,13 @@ Its face (the core) is shut, so shots glance off, except while it is open. Three
 - `danger()`: circles along each hand where it will be after its next tick, so bots stay off the hands.
 
 **Level** (`clockwork.yaml`, tm 4, 640×640, the arena):
-- guns at the start, homing pickups in phase 2, apples (the body must be long for phase 2);
+- guns at the start, spread pickups in phase 2, apples (the body must be long for phase 2);
 - goal `boss: defeated`, `music: boss`.
 
 **Bot:** the boss has no fixed plan, since the crates and keys move. Its target rules per phase:
 - Phase 1: the plate whose crate is closest to it; the crate is in line with its plate, so the push is one straight
   push from the outside (an approach point two cells behind the crate, then the plate).
-- Phase 2: a loop of points over the blue plates (the bot's `orbit` targets), firing when its homing shots can reach.
+- Phase 2: a loop of points over the blue plates (the bot's `orbit` targets), firing when its shots can reach.
 - Phase 3: the nearest key on the belt, then the lock of its colour.
 
 ## Bot
@@ -316,8 +317,8 @@ Win rates are as relative as ever: the bot reads the solution, people find it. T
 5. **Belts:** `map.drift_at`, the head's shift, crates carried, levers; the bot's arcs. Needed by 34, 35.
 6. **Boss:** `ClockworkBoss` (hands, face, the three phases).
 7. **Bot:** the plan rule, pushes, the reset fallback; `tools/solve_workshop.py`.
-8. **Tools and content:** `tools/draft_workshop.py`, `tools/puzzles/*.txt`, `arc7.pyxres`, the sprites, the
-   `workshop` music, the map theme, `campaign.yaml` arc 7 ("The Workshop").
+8. **Tools and content:** `tools/draft_workshop.py`, `tools/puzzles/*.txt`, `arc5.pyxres`, the sprites, the
+   `workshop` music, the map theme, `campaign.yaml` arc 5 ("The Workshop").
 
 ## Tests
 
@@ -344,13 +345,13 @@ Win rates are as relative as ever: the bot reads the solution, people find it. T
   (the boss's kicked crates). But keys, body plates and belts are beyond plain Sokoban. So: written plans for the
   levels, the offline solver to write and check the crate rooms, and simple per-phase rules for the boss.
 - **Boulders.** The roadmap's "crates and boulders": a boulder rolls on until it hits something (ice Sokoban). It is
-  one more rule; it would fit level 34 next to the belts, or a one-off level. Left out for now.
-- **Length in level 31.** Without apples the length is fixed, which keeps the body out of the plates' way. If it feels
+  one more rule; it would fit level 24 next to the belts, or a one-off level. Left out for now.
+- **Length in level 21.** Without apples the length is fixed, which keeps the body out of the plates' way. If it feels
   stingy, a few apples in the last room.
 
 ## As built
 
-The arc is in the game (levels 31–35, M8 in the roadmap). Decisions taken, and where it differs from the design above:
+The arc is in the game (levels 21–25, M8 in the roadmap). Decisions taken, and where it differs from the design above:
 
 - **The rules.**
   - The stall is built as designed, for crates only (and the Clockwork, a crate that never moves).

@@ -107,7 +107,7 @@ it is the core of the arc's design: if the line is wrong, the arc doesn't work.
   - the quietest track in the game: the player is gardening. The boss level uses `music: boss`.
 - **Effects:** three new sounds on `EFFECT_CHANNEL`: `plant` (a soft rustle), `lift` (the same, rising) and `caw`
   (the crow), in `EFFECTS` and `tools/compose_effects.py`, sounds 15, 43 and 44.
-- **Overview map:** a region after the Workshop, joined to it by the road, with a little gate on the way that marks
+- **Overview map:** a region after the story's last arc, joined to it by the road, with a little gate on the way that marks
   it as a bonus. Its theme in `campaign.yaml`: ground 3, the plain hedges, decor clover and flowers, props trees,
   lures and lanterns, boss sprite the perched crow.
 
@@ -141,7 +141,7 @@ Rows 25–31 are free.
 **Level** (`hedges.yaml`, tm 0, 320×192):
 - An open garden with three thorn beds lying on the short ways between the spots where apples come up (spawn timers
   with fixed `pos` lists: the apples come up in turn at four spots, so the player learns the pattern).
-- A thorn bed cuts `HAZARD_CUT` segments a tile, as in arc 4, so a snake that crosses one shrinks. That is the cost of
+- A thorn bed cuts `HAZARD_CUT` segments a tile, as in arc 7, so a snake that crosses one shrinks. That is the cost of
   a mistake, not death: it starts 12 long, and only a snake too short dies.
 - `hand: {hedge: 10}`; goal `length: 40`.
 - Difficulty: speed as usual; the budget scales; hard and nightmare add a fourth thorn bed (`difficulty:` overrides)
@@ -291,8 +291,8 @@ methods as `Hand` (`place(tool, tile)`, `lift(tile)`), so it can't do what the p
 
 1. **Arc and unlocking:**
    - `campaign.yaml` arc 8 with `bonus: true`; `Campaign.story_last` (the last level not in a bonus arc).
-   - `game.level_up()` shows `VICTORY` after level 35 as now, and opens the Keeper's region on the map
-     (`unlocked_arcs()` already opens it once the Workshop is done).
+   - `game.level_up()` shows `VICTORY` after the story's last level as now, and opens the Keeper's region on the map
+     (`unlocked_arcs()` already opens it once the story's last arc is done).
    - After level 40 it returns to the level select with a short "THE GARDEN IS KEPT" panel (a `VictoryStateHandler`
      variant).
 2. **The pet:**

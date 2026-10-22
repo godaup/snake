@@ -163,7 +163,7 @@ class Map:
         # optional: the play area is dark except around the head and glowing entities
         self.darkness = Darkness(self.cfg.darkness, game) if "darkness" in self.cfg else None
         tilemap = pyxel.tilemaps[self.tm]
-        # the Workshop's machinery (arc 7: crates, plates, gates, locks, belts, levers), if the level has any
+        # the Workshop's machinery (arc 5: crates, plates, gates, locks, belts, levers), if the level has any
         workshop = set(PLATE_TILES) | set(GATE_TILES) | set(LOCK_TILES) | set(BELT_TILES) | set(LEVER_TILES)
         has_works = any(ent.block for ent in self.entities) or any(
             tilemap.pget(x, y) in workshop for y in range(self.cfg.height // 8) for x in range(self.cfg.width // 8)

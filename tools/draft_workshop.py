@@ -1,6 +1,6 @@
-"""Write a Workshop level (arc 7) from its puzzle text: one character per bench grid cell (16 px, two by two tiles).
+"""Write a Workshop level (arc 5) from its puzzle text: one character per bench grid cell (16 px, two by two tiles).
 
-    python tools/draft_workshop.py src/snake_quest/resources/arc7.pyxres --tm 0 tools/puzzles/crates.txt
+    python tools/draft_workshop.py src/snake_quest/resources/arc5.pyxres --tm 0 tools/puzzles/crates.txt
 
 The text is the source of truth for the layout (edit it, then run this again); the tool prints the level's `width`,
 `height` and `start` for its level file. Characters:

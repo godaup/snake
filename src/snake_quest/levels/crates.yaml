@@ -1,4 +1,4 @@
-tm: 0  # tools/draft_workshop.py arc7.pyxres --tm 0 tools/puzzles/crates.txt
+tm: 0  # tools/draft_workshop.py arc5.pyxres --tm 0 tools/puzzles/crates.txt
 width: 864
 height: 224
 tint: {3: 4, 11: 10}  # the hedges as brass and copper
