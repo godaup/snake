@@ -14,6 +14,9 @@ area:
   bg: 0
 scale: 4
 debug: False
+# the snake gets faster the longer a level lasts: its speed times 1 + rate * seconds, at most max (a level may set
+# its own `ramp`, or `ramp: null` for none)
+ramp: {rate: 0.004, max: 1.4}
 # difficulty factors, see difficulty.py (medium is the reference the levels are tuned for)
 difficulty:
   easy: {speed: 0.85, goals: 0.6, helpful: 0.7, hostile: 1.5, boss: 0.7, light: 1.3}

@@ -4,6 +4,7 @@ height: 320
 tint: {3: 2, 11: 14}  # the hedges as temple stone
 trail:  # the tail leaves a wall behind that stands this long
   seconds: 6
+reverses: 0  # turning round would run the new head straight into the wall the tail just laid
 
 start:
   x: 60

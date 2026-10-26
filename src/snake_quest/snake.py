@@ -20,6 +20,10 @@ MIN_SPEED = 1
 INIT_SPEED = 1.3
 SPAWN_DELAY = datetime.timedelta(microseconds=300)
 TURN_SPEED = 9  # degrees per frame at full steering
+GEARS = (0.7, 1.0, 1.3, 1.6)  # speed factors; up / down shift between them (faster turns wider: the risk)
+START_GEAR = 1
+SHIFT_RATE = 2.0  # how fast the speed follows a shift: speed factor per second
+REVERSES = 1  # times per level the player's snake can turn round (a level may set `reverses`)
 NECK = 3.0  # px along the body from the head that it can't bite: 3 segments at any normal speed, more while
 # slowed (webs), when the segments lie closer
 # its looks (drawing only: collisions use `size` everywhere)
@@ -80,6 +84,10 @@ class Snake:
         self._speed: float = speed
         self.boost_factor: float = 1.0  # temporary speed factor, see boost()
         self.boost_left: float = 0.0  # seconds
+        self.gear: int = START_GEAR  # index into GEARS
+        self.pace: float = GEARS[START_GEAR]  # the speed factor, following the gear's within SHIFT_RATE per second
+        self.ramp: float = 1.0  # speed factor set by the level: it gets faster the longer it lasts
+        self.reverses: int = 0  # turns round left (the player's snake gets REVERSES in each level)
         self.colors: Palette = colors or palette(DEFAULT_PALETTE)
         self.segs: list[SnakeSeg] = [SnakeSeg(pos, self.size, self.colors.head)]
         self.grow: int = 20
@@ -113,13 +121,44 @@ class Snake:
 
     @property
     def effective_speed(self) -> float:
-        """Speed including an active boost, never above MAX_SPEED."""
-        return min(self._speed * self.boost_factor, MAX_SPEED) if self.boost_left > 0 else self._speed
+        """Speed including an active boost, the gear and the level's ramp, never above MAX_SPEED."""
+        boost = self.boost_factor if self.boost_left > 0 else 1.0
+        return min(self._speed * boost * self.pace * self.ramp, MAX_SPEED)
 
     def boost(self, factor: float, seconds: float) -> None:
         """Move `factor` times faster for `seconds`; a new boost replaces a running one."""
         self.boost_factor = factor
         self.boost_left = seconds
+
+    def _shift(self, shift: int, seconds: float) -> None:
+        """Shift a gear up or down (if there is one), and let `pace` follow the gear's speed."""
+        self.gear = max(0, min(self.gear + shift, len(GEARS) - 1))
+        target, step = GEARS[self.gear], SHIFT_RATE * seconds
+        self.pace = min(self.pace + step, target) if self.pace < target else max(self.pace - step, target)
+
+    def turn_round(self) -> bool:
+        """Turn round, using a reverse up: the tail becomes the head and moves on the way the tail came from. False
+        (and nothing changed) without a reverse left or a body to turn into."""
+        if self.reverses <= 0 or len(self) < 2:
+            return False
+        tail = None  # the way out of the tail: the last step between segments that is no portal's jump
+        for index in range(len(self.segs) - 1, 0, -1):
+            step = self.segs[index].pos - self.segs[index - 1].pos
+            if 0 < step.length() <= 2 * MAX_SPEED:
+                tail = step
+                break
+        if tail is None:
+            return False
+        self.segs.reverse()
+        if self.head.key is not None:  # a key stays in the body, on the first segment free of one
+            spare = next((seg for seg in self.segs[1:] if seg.key is None), None)
+            if spare is not None:
+                spare.key, self.head.key = self.head.key, None
+        self.orient = round(math.degrees(math.atan2(tail.y, tail.x))) % 360
+        self.heading = self.orient
+        self.recolor(self.colors)
+        self.reverses -= 1
+        return True
 
     def body_color(self, index: int) -> int:
         """The colour of segment `index`: the palette's body colours repeated along the body."""
@@ -209,17 +248,21 @@ class Snake:
             pyxel.pset(x + dx * 1.2 + dy * side * 1.6, y + dy * 1.2 - dx * side * 1.6, eyes)
 
     def update(self, dt: datetime.timedelta, map: "Map"):
-        """One frame: steer (through the controller, the other way on mirrored floor), drift on ice and with the
-        planets' pull, move (or stall at a crate), grow or shrink one segment and let the weapon fire."""
+        """One frame: steer (through the controller, the other way on mirrored floor) or turn round, drift on ice and
+        with the planets' pull, shift gears, move (or stall at a crate), grow or shrink one segment and let the weapon
+        fire."""
         self.clock += dt.total_seconds()
         self.boost_left = max(self.boost_left - dt.total_seconds(), 0.0)
         # steer
         steering = self.controller.steer(self, map)
         self.turn(round((-steering if self.mirrored else steering) * self.turn_speed))
+        if self.controller.reverse(self, map) and self.turn_round() and getattr(map, "game", None):
+            map.game.sm.effect("portal")
         self.heading = drift(self.heading, self.orient, self.grip)
         if getattr(map, "wells", None):  # planets pull the snake round: where it points and where it moves
             pull = map.pull(self.head.pos, self.heading)
             self.orient, self.heading = (self.orient + pull) % 360, (self.heading + pull) % 360
+        self._shift(self.controller.shift(self, map), dt.total_seconds())
         # move
         step = Vec2(self.effective_speed * pyxel.cos(self.heading), self.effective_speed * pyxel.sin(self.heading))
         works = getattr(map, "works", None)

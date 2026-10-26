@@ -11,7 +11,7 @@ from snake_quest.hud import Hud
 from snake_quest.keeper import HandInput, PetController
 from snake_quest.map import Map
 from snake_quest.palettes import palette
-from snake_quest.snake import INIT_SPEED, Snake
+from snake_quest.snake import INIT_SPEED, REVERSES, Snake
 from snake_quest.sound import MUSIC
 from snake_quest.states import StateID
 from snake_quest.states.abstract import GameStateHandler
@@ -37,6 +37,9 @@ class RunningStateHandler(GameStateHandler):
             controller=KeyboardController(),
             speed=INIT_SPEED * game.difficulty.speed,
         )
+        self.snake.reverses = int(self.map.cfg.get("reverses", REVERSES))
+        # the level gets faster the longer it lasts (not in the Keeper's levels: the snake isn't the player's there)
+        self.ramp = None if self.map.hand is not None else self.map.cfg.get("ramp", game.cfg.get("ramp"))
         if self.map.hand is not None:  # the Keeper: the snake moves on its own, the player is the hand
             self.snake.controller = PetController()
             self.map.hand.player = HandInput()
@@ -57,6 +60,8 @@ class RunningStateHandler(GameStateHandler):
 
     def update(self) -> None:
         self.elapsed += self.game.dt.total_seconds()
+        if self.ramp:
+            self.snake.ramp = min(1 + self.ramp.rate * self.elapsed, self.ramp.max)
         # pause
         if pyxel.btnp(pyxel.KEY_P) or pyxel.btnp(pyxel.KEY_ESCAPE) or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_START):
             self.game.change_state(state=StateID.PAUSE)

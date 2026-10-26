@@ -27,9 +27,18 @@ class Controller:
         """Shoot this frame (if the snake has a weapon that is ready)."""
         return False
 
+    def shift(self, snake: "Snake", map: Optional["Map"]) -> int:
+        """Shift a gear up (1) or down (-1) this frame, or stay in it (0)."""
+        return 0
+
+    def reverse(self, snake: "Snake", map: Optional["Map"]) -> bool:
+        """Turn round this frame, the tail becoming the head (if the snake has a reverse left)."""
+        return False
+
 
 class KeyboardController(Controller):
-    """The player: arrow keys or d-pad to steer, space to shoot."""
+    """The player: left / right (keys or d-pad) to steer, up / down to shift gears, shift (or B) to turn round, space
+    to shoot."""
 
     def steer(self, snake, map):
         if pyxel.btn(pyxel.KEY_LEFT) or pyxel.btn(pyxel.GAMEPAD1_BUTTON_DPAD_LEFT):
@@ -41,13 +50,32 @@ class KeyboardController(Controller):
     def fire(self, snake, map):
         return pyxel.btnp(pyxel.KEY_SPACE)
 
+    def shift(self, snake, map):
+        if pyxel.btnp(pyxel.KEY_UP) or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_DPAD_UP):
+            return 1
+        if pyxel.btnp(pyxel.KEY_DOWN) or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_DPAD_DOWN):
+            return -1
+        return 0
+
+    def reverse(self, snake, map):
+        return pyxel.btnp(pyxel.KEY_SHIFT) or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_B)
+
 
 class ScriptedController(Controller):
-    """Plays back one steering value per frame, then goes straight; fires on the given frames. For tests."""
+    """Plays back one steering value per frame, then goes straight; fires, shifts (frame: +1 or -1) and turns round on
+    the given frames. For tests."""
 
-    def __init__(self, steering: Iterable[float] = (), fire_frames: Iterable[int] = ()):
+    def __init__(
+        self,
+        steering: Iterable[float] = (),
+        fire_frames: Iterable[int] = (),
+        shifts: dict[int, int] | None = None,
+        reverse_frames: Iterable[int] = (),
+    ):
         self.steering = list(steering)
         self.fire_frames = set(fire_frames)
+        self.shifts = shifts or {}
+        self.reverse_frames = set(reverse_frames)
         self.frame = -1  # advanced by steer(), which the snake asks first every frame
 
     def steer(self, snake, map):
@@ -56,6 +84,12 @@ class ScriptedController(Controller):
 
     def fire(self, snake, map):
         return self.frame in self.fire_frames
+
+    def shift(self, snake, map):
+        return self.shifts.get(self.frame, 0)
+
+    def reverse(self, snake, map):
+        return self.frame in self.reverse_frames
 
 
 class ChaseController(Controller):

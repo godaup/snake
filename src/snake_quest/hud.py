@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 import pyxel
 
 from snake_quest.entity import Apple
+from snake_quest.snake import GEARS
 
 if TYPE_CHECKING:
     from snake_quest.game import Game
@@ -17,6 +18,8 @@ if TYPE_CHECKING:
 
 COL_BORDER, COL_LABEL, COL_VALUE, COL_ACCENT = 5, 13, 7, 10
 COL_BAR_BG, COL_BAR, COL_BAR_DONE = 5, 11, 10
+COL_GEAR, COL_GEAR_OFF, COL_REVERSE = 10, 5, 13
+GEAR_X = 196  # px: where the gear's bars stand in the header, right of the score
 COL_BOOST = 12  # same blue as the speed apple
 COL_BOSS, COL_BOSS_BG, COL_BOSS_PANEL = 8, 2, 0
 BOSS_BAR_W = 120
@@ -107,11 +110,22 @@ class Hud:
         for y, text in ((top, best), (bottom, length)):
             col = COL_BOOST if text.startswith(("SPEED", "MIRRORED")) else COL_LABEL
             pyxel.text(self.width - MARGIN - len(text) * pyxel.FONT_WIDTH, y, text, col)
+        if self.map.hand is None:
+            self.draw_gear(top)
         # score in the middle, with an apple in front
         center_x, center_y = self.width / 2 + 6, (self.header_h - 1) / 2
         self.score_text.draw(center_x, center_y, f"{self.game.score:05}", COL_VALUE)
         apple_x = center_x - self.score_text.width / 2 - 12
         pyxel.blt(apple_x, center_y - 4, 0, Apple._img_x * 8, Apple._img_y * 8, 8, 8, colkey=0)
+
+    def draw_gear(self, y: int) -> None:
+        """The gear as rising bars, those up to the one engaged lit, and REV while the snake can turn round."""
+        for index in range(len(GEARS)):
+            h = 2 + index
+            col = COL_GEAR if index <= self.snake.gear else COL_GEAR_OFF
+            pyxel.rect(GEAR_X + index * 4, y + 6 - h, 3, h, col)
+        if self.snake.reverses:
+            pyxel.text(GEAR_X + len(GEARS) * 4 + 3, y, "REV", COL_REVERSE)
 
     # ---- footer -------------------------------------------------------------------------------------------------
 
