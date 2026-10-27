@@ -41,14 +41,22 @@ def test_gears_stop_at_the_lowest_and_highest():
     assert snake.gear == len(GEARS) - 1
 
 
-def test_the_ramp_speeds_the_snake_up(game, assets):
+def test_the_maze_speeds_the_snake_up(game, assets):
+    game.level_counter = game.campaign.resolve("maze")
+    running = RunningStateHandler(game)
+    running.intro_pending = False
+    running.elapsed = 1000.0  # long past the ramp's top
+    running.update()
+    assert running.snake.ramp == pytest.approx(running.map.cfg.ramp.max)
+
+
+def test_levels_have_no_ramp_by_default(game, assets):
     game.level_counter = 1
     running = RunningStateHandler(game)
     running.intro_pending = False
-    ramp = game.cfg.ramp
-    running.elapsed = 1000.0  # long past the ramp's top
+    running.elapsed = 1000.0
     running.update()
-    assert running.snake.ramp == pytest.approx(ramp.max)
+    assert running.snake.ramp == 1.0
 
 
 def test_turning_round_makes_the_tail_the_head():

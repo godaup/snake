@@ -2,6 +2,8 @@ tm: 3  # draft from tools/draft_maze.py; the original layout is still in tilemap
 width: 1408
 height: 640
 
+ramp: {rate: 0.004, max: 1.4}  # a long way: it gets faster as it goes, +40% after 100 s
+
 start:
   x: 150
   y: 100
